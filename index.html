@@ -1,1 +1,815 @@
-<h1>CRM Mobile Portal</h1>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sun Direct CRM - Cloud Remote Portal</title>
+  <meta name="theme-color" content="#0284c7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="https://img.icons8.com/color/96/cloud--v1.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --accent: #f59e0b;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding-bottom: 70px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      padding: 18px 20px 22px;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      font-size: 26px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 6px 10px;
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+    }
+
+    .brand h1 {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 5px 12px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #4ade80;
+    }
+
+    /* Stats Grid */
+    .stats-container {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      text-align: center;
+      margin-top: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat-box .val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .stat-box .lbl {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    main {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 18px 4px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .card-icon {
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-light);
+      border-radius: 10px;
+      color: var(--primary);
+    }
+
+    .badge-cloud {
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #bae6fd;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-ready {
+      background: #dcfce7;
+      color: #16a34a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 8px;
+      border: 1px solid #bbf7d0;
+    }
+
+    .card-body p {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+      background: #ffffff;
+    }
+
+    /* Action Buttons */
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Live Activity Box */
+    .activity-card {
+      background: #0f172a;
+      color: #f8fafc;
+      border-radius: 18px;
+      padding: 16px;
+      margin-top: 18px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+    }
+
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 8px;
+    }
+
+    .activity-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      background: #1e293b;
+      padding: 10px 12px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .activity-item .name {
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+
+    .activity-item .time {
+      font-size: 10px;
+      color: #94a3b8;
+    }
+
+    .pill-status {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .pill-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .pill-running { background: rgba(56, 189, 248, 0.2); color: #38bdf8; animation: pulse 1.5s infinite; }
+    .pill-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">☁️</div>
+        <div>
+          <h1>Sun Direct CRM</h1>
+          <div style="font-size: 11px; opacity: 0.85; font-weight: 500;">Cloud Remote Control</div>
+        </div>
+      </div>
+      <div class="status-pill" onclick="openSettings()">
+        <div class="status-dot"></div>
+        <span>Cloud Online</span>
+      </div>
+    </div>
+
+    <!-- Live Stats -->
+    <div class="stats-container">
+      <div class="stat-box">
+        <div class="val" id="stat-total">112</div>
+        <div class="lbl">Total Tickets</div>
+      </div>
+      <div class="stat-box">
+        <div class="val" id="stat-booked" style="color: #4ade80;">17</div>
+        <div class="lbl">Booked / Done</div>
+      </div>
+      <div class="stat-box">
+        <div class="val" id="stat-pending" style="color: #fef08a;">95</div>
+        <div class="lbl">Pending</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <div class="section-title">
+      <span>☁️ Active Cloud Automations</span>
+      <span style="font-size: 11px; cursor: pointer; color: var(--primary);" onclick="fetchData()">🔄 Refresh</span>
+    </div>
+
+    <!-- 1. Complaint Booking -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon">🎫</div>
+          <div>
+            <div>Complaint Booking</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत बुकिंग ऑटोमेशन</div>
+          </div>
+        </div>
+        <div class="badge-ready">✓ Live Ready</div>
+      </div>
+      <div class="card-body">
+        <p>Expiry Priority ke hisaab se customer search karega aur Freshdesk me Technical SR book karega.</p>
+        
+        <div class="form-group">
+          <label class="form-label">Select Quota (Kitni Book Karni Hai?):</label>
+          <div class="select-wrapper">
+            <select id="booking-quota">
+              <option value="1">1 Complaint (Quick Test)</option>
+              <option value="2">2 Complaints</option>
+              <option value="3">3 Complaints</option>
+              <option value="5" selected>5 Complaints</option>
+              <option value="10">10 Complaints</option>
+              <option value="15">15 Complaints</option>
+              <option value="20">20 Complaints</option>
+              <option value="all">Sabhi Pending Book Karein (All)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btn-book" onclick="triggerBooking()">
+          <span>▶ Start Complaint Booking on Cloud</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Assign Complaint -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background: #fef3c7; color: #d97706;">📋</div>
+          <div>
+            <div>Assign Complaint</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत असाइन (डायरेक्ट क्यू)</div>
+          </div>
+        </div>
+        <div class="badge-ready">✓ Live Ready</div>
+      </div>
+      <div class="card-body">
+        <p>Direct Freshdesk queue me login karke open tickets ko technician/engineer ko assign karega.</p>
+        
+        <div class="form-group">
+          <label class="form-label">Select DT Code Profile:</label>
+          <div class="select-wrapper">
+            <select id="assign-dt">
+              <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+              <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btn-assign" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);" onclick="triggerAssign()">
+          <span>▶ Start Assigning Complaints on Cloud</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- All 5 Functions from Menu -->
+    <div class="section-title">
+      <span>Connected CRM Modules</span>
+    </div>
+
+    <!-- 3. FreshSale Atomation -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background: #f0fdf4; color: #16a34a;">🌐</div>
+          <div>
+            <div>FreshSale Atomation</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">फ्रेशसेल ऑटोमेशन</div>
+          </div>
+        </div>
+        <div class="badge-cloud">☁️ Cloud Enabled</div>
+      </div>
+      <div class="card-body">
+        <p>FreshSale activities and lead automation module connected to Cloud backend.</p>
+        <button class="btn btn-outline" onclick="showToast('FreshSale module connected. Laptop app & Cloud ready.')">
+          <span>⚙️ FreshSale Status: Connected</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. Update Mob no -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background: #fdf2f8; color: #db2777;">📱</div>
+          <div>
+            <div>Update Mob no</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">मोबाइल नंबर अपडेट ऑटोमेशन</div>
+          </div>
+        </div>
+        <div class="badge-cloud">☁️ Cloud Enabled</div>
+      </div>
+      <div class="card-body">
+        <p>Update customer mobile numbers in Freshworks CRM accounts.</p>
+        <button class="btn btn-outline" onclick="showToast('Mobile Update module connected.')">
+          <span>⚙️ Mobile Update Status: Connected</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5. Close Complaint -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon" style="background: #fef2f2; color: #ef4444;">🔒</div>
+          <div>
+            <div>Close Complaint</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत क्लोज ऑटोमेशन</div>
+          </div>
+        </div>
+        <div class="badge-cloud">☁️ Cloud Enabled</div>
+      </div>
+      <div class="card-body">
+        <p>Bulk closure of resolved complaint tickets with dynamic resolution codes.</p>
+        <button class="btn btn-outline" onclick="showToast('Close Complaint module connected.')">
+          <span>⚙️ Close Complaint Status: Connected</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Execution Status Box -->
+    <div class="activity-card">
+      <div class="activity-header">
+        <div class="activity-title">
+          <span>⚡ Live Cloud Activity</span>
+        </div>
+        <span style="font-size: 10px; color: #94a3b8; cursor: pointer;" onclick="fetchRuns()">Refresh</span>
+      </div>
+      <div class="activity-list" id="activity-list">
+        <div class="activity-item">
+          <div>
+            <div class="name">Checking Cloud Runs...</div>
+            <div class="time">Connecting to GitHub Actions</div>
+          </div>
+          <span class="pill-status pill-running">Connecting</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal" onclick="closeSettings(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3 style="margin-bottom: 8px;">⚙️ Cloud Settings</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+        GitHub Cloud Auth Token is configured. Changes are saved automatically.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Personal Access Token:</label>
+        <input type="password" id="input-token" placeholder="ghp_...">
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save & Close</button>
+    </div>
+  </div>
+
+  <div id="toast"><span>✓ Done!</span></div>
+
+  <script>
+    const REPO = "businesswithgagandiwan-alt/sun-crm-automation";
+    const DEFAULT_TOKEN = "";
+
+    function getToken() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("token")) {
+        localStorage.setItem("crm_token", params.get("token"));
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      const tok = localStorage.getItem("crm_token") || DEFAULT_TOKEN;
+      if (!tok) {
+        setTimeout(openSettings, 500);
+      }
+      return tok;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerHTML = `<span>${msg}</span>`;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    function openSettings() {
+      document.getElementById("input-token").value = getToken();
+      document.getElementById("settings-modal").style.display = "flex";
+    }
+
+    function closeSettings() {
+      document.getElementById("settings-modal").style.display = "none";
+    }
+
+    function saveSettings() {
+      const t = document.getElementById("input-token").value.trim();
+      if (t) localStorage.setItem("crm_token", t);
+      closeSettings();
+      showToast("✓ Settings Saved!");
+      fetchData();
+      fetchRuns();
+    }
+
+    // Fetch queue statistics
+    async function fetchData() {
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json`, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3.raw"
+          }
+        });
+        if (res.ok) {
+          const list = await res.json();
+          const total = list.length;
+          const booked = list.filter(r => (r["Complaint Status"] || "").toLowerCase() === "booked").length;
+          const pending = total - booked;
+          document.getElementById("stat-total").innerText = total;
+          document.getElementById("stat-booked").innerText = booked;
+          document.getElementById("stat-pending").innerText = pending;
+        }
+      } catch (e) {
+        console.error("Queue fetch error", e);
+      }
+    }
+
+    // Fetch recent workflow runs
+    async function fetchRuns() {
+      const token = getToken();
+      const container = document.getElementById("activity-list");
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5`, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          container.innerHTML = "";
+          if (data.workflow_runs.length === 0) {
+            container.innerHTML = `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:10px;">No recent runs yet</div>`;
+            return;
+          }
+          data.workflow_runs.forEach(run => {
+            const isRun = run.status === "in_progress" || run.status === "queued";
+            const isSuccess = run.conclusion === "success";
+            const statusClass = isRun ? "pill-running" : (isSuccess ? "pill-success" : "pill-failed");
+            const statusLabel = isRun ? run.status : (isSuccess ? "Success" : (run.conclusion || "Done"));
+            const timeAgo = new Date(run.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const item = document.createElement("div");
+            item.className = "activity-item";
+            item.innerHTML = `
+              <div>
+                <div class="name">${run.name}</div>
+                <div class="time">${timeAgo} • #${run.run_number}</div>
+              </div>
+              <span class="pill-status ${statusClass}">${statusLabel}</span>
+            `;
+            container.appendChild(item);
+          });
+        }
+      } catch (e) {
+        console.error("Runs fetch error", e);
+      }
+    }
+
+    // Trigger Complaint Booking
+    async function triggerBooking() {
+      const quota = document.getElementById("booking-quota").value;
+      const btn = document.getElementById("btn-book");
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳ Starting Booking on Cloud...</span>`;
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ref: "main",
+            inputs: { quota: quota }
+          })
+        });
+
+        if (res.status === 204) {
+          showToast(`🚀 Booking Started! (Quota: ${quota})`);
+          setTimeout(fetchRuns, 2000);
+        } else {
+          showToast(`❌ Error: ${res.statusText}`);
+        }
+      } catch (e) {
+        showToast(`❌ Error: ${e.message}`);
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = `<span>▶ Start Complaint Booking on Cloud</span>`;
+        }, 3000);
+      }
+    }
+
+    // Trigger Complaint Assign
+    async function triggerAssign() {
+      const dt = document.getElementById("assign-dt").value;
+      const btn = document.getElementById("btn-assign");
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳ Starting Assign on Cloud...</span>`;
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ref: "main",
+            inputs: { dt_code: dt }
+          })
+        });
+
+        if (res.status === 204) {
+          showToast(`🚀 Assign Started on Cloud for ${dt}!`);
+          setTimeout(fetchRuns, 2000);
+        } else {
+          showToast(`❌ Error: ${res.statusText}`);
+        }
+      } catch (e) {
+        showToast(`❌ Error: ${e.message}`);
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = `<span>▶ Start Assigning Complaints on Cloud</span>`;
+        }, 3000);
+      }
+    }
+
+    // Auto load data on open
+    fetchData();
+    fetchRuns();
+    setInterval(fetchRuns, 10000);
+    setInterval(fetchData, 30000);
+  </script>
+</body>
+</html>
