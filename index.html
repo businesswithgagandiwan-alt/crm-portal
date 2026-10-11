@@ -1493,6 +1493,55 @@
       }
     }
 
+    // Fetch and display active time settings configured from laptop
+    async function fetchTimeSetting() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
+          }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          let ts = null;
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            ts = JSON.parse(rawUtf8);
+          } else if (apiJson.min_minutes !== undefined) {
+            ts = apiJson;
+          }
+          if (ts) {
+            const cb = document.getElementById("cb-timer-delay");
+            const lbl = document.getElementById("timer-status-label");
+            const isEnabled = Boolean(ts.enabled);
+            if (cb) cb.checked = isEnabled;
+            
+            let desc = "";
+            if (ts.mode === "fixed") {
+              desc = `Fixed Delay (${ts.fixed_minutes || 45}m)`;
+            } else {
+              desc = `Random Delay (${ts.min_minutes || 1}-${ts.max_minutes || 2}m)`;
+            }
+
+            if (lbl) {
+              if (isEnabled) {
+                lbl.innerText = `⏱️ Timer Delay Active: ${desc}`;
+                lbl.style.color = "#1E40AF";
+              } else {
+                lbl.innerText = "⚡ Instant Mode Active (No wait between complaints)";
+                lbl.style.color = "#059669";
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Time settings fetch error", err);
+      }
+    }
+
     // Live Run Tracking with active step-by-step log streaming
     let seenSteps = new Set();
     function startLiveRunTracking(mode = "book") {
@@ -1655,6 +1704,7 @@
     function cloudSync() {
       showToast("☁️ Syncing with GitHub cloud database...");
       fetchData();
+      fetchTimeSetting();
       fetchRuns();
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
@@ -1668,9 +1718,11 @@
     // Init
     getToken();
     fetchData();
+    fetchTimeSetting();
     fetchRuns();
     setInterval(fetchRuns, 10000);
     setInterval(fetchData, 30000);
+    setInterval(fetchTimeSetting, 30000);
   </script>
 </body>
 </html>
