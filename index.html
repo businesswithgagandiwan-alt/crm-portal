@@ -1550,9 +1550,16 @@
     }
 
     function verifyDeviceAuth() {
-      const pin = document.getElementById("device-pin-input").value.trim();
+      const pin = (document.getElementById("device-pin-input").value || "").trim();
       const errEl = document.getElementById("auth-error-msg");
-      if (pin === MASTER_SECRET_KEY || pin === "2016272" || pin === "2017416" || pin === VALID_TOKEN) {
+      const validPins = [
+        "newlife@1#2",
+        "newlife@1#2345678",
+        "diwan@1#234567",
+        "2016272",
+        "2017416"
+      ];
+      if (validPins.includes(pin.toLowerCase()) || pin === VALID_TOKEN) {
         localStorage.setItem("crm_device_authorized", "true");
         localStorage.setItem("crm_token", VALID_TOKEN);
         if (errEl) errEl.style.display = "none";
@@ -1578,8 +1585,15 @@
 
     function checkDeviceAuthOnLoad() {
       const params = new URLSearchParams(window.location.search);
-      const urlKey = params.get("key") || params.get("auth") || params.get("token");
-      if (urlKey && (urlKey === MASTER_SECRET_KEY || urlKey === "2016272" || urlKey === "2017416" || urlKey === VALID_TOKEN)) {
+      const urlKey = (params.get("key") || params.get("auth") || params.get("token") || "").trim();
+      const validPins = [
+        "newlife@1#2",
+        "newlife@1#2345678",
+        "diwan@1#234567",
+        "2016272",
+        "2017416"
+      ];
+      if (urlKey && (validPins.includes(urlKey.toLowerCase()) || urlKey === VALID_TOKEN)) {
         localStorage.setItem("crm_device_authorized", "true");
         localStorage.setItem("crm_token", VALID_TOKEN);
         window.history.replaceState({}, document.title, window.location.pathname);
