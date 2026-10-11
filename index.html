@@ -659,7 +659,21 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* Mobile Responsive Rules */
+    /* Mobile Navigation & Off-Canvas Menu Elements */
+    .mobile-menu-btn {
+      display: none;
+    }
+    .sidebar-backdrop {
+      display: none;
+    }
+    .sidebar-close-btn-mobile {
+      display: none;
+    }
+    .sidebar-mobile-title {
+      display: none;
+    }
+
+    /* Mobile Responsive Rules (NO CUTTING OFF - 100% VISIBLE!) */
     @media (max-width: 768px) {
       body {
         padding: 0;
@@ -674,63 +688,294 @@
       }
 
       .title-bar {
-        padding: 6px 8px;
-        flex-wrap: wrap;
-        gap: 4px;
+        padding: 8px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .mobile-menu-btn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 4px;
+        color: #FFFFFF;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        margin-right: 6px;
+        flex-shrink: 0;
+      }
+
+      .title-brand {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        overflow: hidden;
       }
 
       .title-text {
-        font-size: 12px;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .anti-sleep-badge, .cloud-status-badge {
-        font-size: 9px;
-        padding: 2px 6px;
+      .title-text span.version-tag {
+        font-size: 10.5px;
       }
 
+      .anti-sleep-badge, .window-controls {
+        display: none !important;
+      }
+
+      .cloud-status-badge {
+        font-size: 10px;
+        padding: 3px 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      /* Mobile Off-Canvas Drawer Menu */
       .sidebar {
-        width: 140px;
+        position: fixed !important;
+        top: 0;
+        left: -280px !important;
+        width: 250px !important;
+        height: 100vh;
+        z-index: 1001;
+        background: #FFFFFF;
+        box-shadow: 4px 0 25px rgba(0, 0, 0, 0.35);
+        transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 12px 8px !important;
+        overflow-y: auto;
       }
 
-      .sidebar.collapsed {
-        width: 40px;
+      .sidebar.mobile-open {
+        left: 0 !important;
+      }
+
+      .sidebar-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(2px);
+        z-index: 1000;
+        display: none;
+      }
+
+      .sidebar-backdrop.active {
+        display: block !important;
+      }
+
+      .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 34px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid #E2E8F0;
+        padding-bottom: 4px;
+      }
+
+      .sidebar-toggle-btn {
+        display: none !important;
+      }
+
+      .sidebar-mobile-title {
+        display: inline !important;
+      }
+
+      .sidebar-close-btn-mobile {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        background: #F1F5F9;
+        border: 1px solid #CBD5E1;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #64748B;
+        cursor: pointer;
+      }
+
+      .modern-nav-btn {
+        font-size: 12px !important;
+        padding: 9px 10px !important;
+        border-radius: 6px;
+      }
+
+      .modern-nav-btn span.label {
+        display: inline !important;
+      }
+
+      /* Main Stack gets 100% Full Width on Mobile! */
+      .app-body {
+        min-height: auto;
+      }
+
+      .main-stack {
+        width: 100% !important;
+        padding: 8px 6px !important;
+        overflow-x: hidden;
+      }
+
+      .group-box {
+        padding: 14px 6px 8px !important;
+      }
+
+      .group-box-title {
+        font-size: 11.5px;
+        top: -8px;
+        left: 10px;
+      }
+
+      /* 3D Action Buttons Grids for Mobile */
+      .action-btns-grid {
+        gap: 5px;
+        margin-bottom: 8px;
       }
 
       .action-row-7 {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 4px;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+      }
+
+      .action-row-7 button:last-child {
+        grid-column: span 3 !important;
       }
 
       .action-row-6, .action-row-5 {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
       }
 
       .action-btn-3d {
-        font-size: 9px;
-        min-height: 30px;
-        padding: 3px 2px;
+        font-size: 10px !important;
+        min-height: 35px !important;
+        padding: 4px 2px !important;
+        line-height: 1.2 !important;
       }
 
+      /* Mobile Status Dashboard (NO CUTTING OFF - 100% VISIBLE!) */
       .status-strip-frame {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 4px;
+        padding: 6px !important;
+        margin-bottom: 8px !important;
+        overflow-x: visible !important;
       }
 
       .status-strip-row {
-        min-width: 580px;
-        gap: 4px;
-        margin-bottom: 4px;
+        margin-bottom: 6px !important;
+        min-width: 0 !important;
       }
 
+      .status-strip-row:last-child {
+        margin-bottom: 0 !important;
+      }
+
+      .strip-heading {
+        font-size: 10.5px !important;
+        padding: 4px 6px !important;
+        border-radius: 4px !important;
+        font-weight: 800;
+      }
+
+      /* Row 0: Session & Input (Heading on top, 4 cards in 2x2 grid) */
+      .session-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 4px !important;
+      }
+
+      .session-row .strip-heading {
+        grid-column: span 2 !important;
+      }
+
+      .session-row .stacked-card {
+        grid-column: span 1 !important;
+      }
+
+      /* Row 1: Current Processing */
+      .proc-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 4px !important;
+      }
+
+      .proc-row .strip-heading {
+        grid-column: span 2 !important;
+      }
+
+      .proc-row .stacked-card:nth-child(2) {
+        grid-column: span 1 !important;
+      }
+
+      .proc-row .stacked-card:nth-child(3) {
+        grid-column: span 1 !important;
+      }
+
+      .proc-row .stacked-card:nth-child(4) {
+        grid-column: span 2 !important;
+      }
+
+      /* Row 2: Statistics (Heading on top, 6 cards in 3x2 grid) */
+      .stats-row {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+      }
+
+      .stats-row .strip-heading {
+        grid-column: span 3 !important;
+      }
+
+      .stats-row .stacked-card {
+        grid-column: span 1 !important;
+      }
+
+      .stacked-card {
+        min-height: 38px !important;
+        padding: 4px 3px !important;
+      }
+
+      .stacked-card-title {
+        font-size: 8px !important;
+      }
+
+      .stacked-card-value {
+        font-size: 10px !important;
+      }
+
+      /* Timer Delay Banner on Mobile */
       .timer-banner {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 6px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+        padding: 8px 10px !important;
         text-align: center;
       }
 
+      .timer-cb-wrapper {
+        justify-content: center;
+        font-size: 11.5px;
+      }
+
+      .next-now-btn {
+        justify-content: center;
+        padding: 6px 14px;
+        font-size: 12px;
+      }
+
+      /* Native Popups */
       .qt-dialog, .qt-dialog-large {
         width: 95vw !important;
         max-width: 95vw !important;
@@ -738,23 +983,12 @@
       }
 
       .summary-card-box, .expiry-card-box {
-        font-size: 10px;
-        padding: 6px 8px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .action-row-7 {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .action-row-6, .action-row-5 {
-        grid-template-columns: repeat(3, 1fr);
-      }
-      .sidebar:not(.collapsed) {
-        width: 120px;
+        font-size: 10.5px;
+        padding: 8px 10px;
       }
     }
   </style>
+
 </head>
 <body>
 
@@ -762,6 +996,7 @@
     <!-- Window Title Bar (Exact Laptop App Replica) -->
     <div class="title-bar">
       <div class="title-brand">
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()" title="Open Modules Menu">☰</button>
         <span class="title-text">CRM Automation <span class="version-tag">• Version v1</span></span>
         <span class="cloud-status-badge" onclick="openTokenDialog()">
           <span class="status-dot"></span>
@@ -777,11 +1012,14 @@
     </div>
 
     <!-- App Body -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileMenu()"></div>
     <div class="app-body">
       <!-- Left Sidebar Menu -->
       <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
+          <span style="font-weight:800; font-size:12px; color:#BE185D;" class="sidebar-mobile-title">SUN DIRECT CRM</span>
           <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse / Expand Menu (◫)">◫</button>
+          <button class="sidebar-close-btn-mobile" onclick="closeMobileMenu()" title="Close Menu">✕</button>
         </div>
 
         <button class="modern-nav-btn" data-module="fetch_data" onclick="selectModule('fetch_data')">
@@ -850,7 +1088,7 @@
           <!-- 3-Row Status Strip (Exact Laptop App Layout) -->
           <div class="status-strip-frame">
             <!-- Row 0: Session & Input -->
-            <div class="status-strip-row">
+            <div class="status-strip-row session-row">
               <div class="strip-heading">Session & Input</div>
               <div class="stacked-card">
                 <div class="stacked-card-title">BROWSER</div>
@@ -871,7 +1109,7 @@
             </div>
 
             <!-- Row 1: Current Processing -->
-            <div class="status-strip-row">
+            <div class="status-strip-row proc-row">
               <div class="strip-heading">Current Processing</div>
               <div class="stacked-card" style="grid-column: span 2;">
                 <div class="stacked-card-title">SMART CARD</div>
@@ -893,7 +1131,7 @@
             </div>
 
             <!-- Row 2: Statistics -->
-            <div class="status-strip-row">
+            <div class="status-strip-row stats-row">
               <div class="strip-heading">Statistics</div>
               <div class="stacked-card">
                 <div class="stacked-card-title">TOTAL</div>
@@ -962,7 +1200,7 @@
           <!-- Exact Qt App 3-Row Status Strip -->
           <div class="status-strip-frame">
             <!-- Row 0: Session & Input -->
-            <div class="status-strip-row">
+            <div class="status-strip-row session-row">
               <div class="strip-heading">Session & Input</div>
               <div class="stacked-card">
                 <div class="stacked-card-title">BROWSER</div>
@@ -983,7 +1221,7 @@
             </div>
 
             <!-- Row 1: Current Processing -->
-            <div class="status-strip-row">
+            <div class="status-strip-row proc-row">
               <div class="strip-heading">Current Processing</div>
               <div class="stacked-card" style="grid-column: span 2;">
                 <div class="stacked-card-title">SMART CARD</div>
@@ -1005,7 +1243,7 @@
             </div>
 
             <!-- Row 2: Statistics -->
-            <div class="status-strip-row">
+            <div class="status-strip-row stats-row">
               <div class="strip-heading">Statistics</div>
               <div class="stacked-card">
                 <div class="stacked-card-title">TOTAL</div>
@@ -1071,7 +1309,7 @@
           <!-- Exact Qt App 3-Row Status Strip -->
           <div class="status-strip-frame">
             <!-- Row 0: Session & Input -->
-            <div class="status-strip-row">
+            <div class="status-strip-row session-row">
               <div class="strip-heading">Session & Input</div>
               <div class="stacked-card" style="grid-column: span 3;">
                 <div class="stacked-card-title">BROWSER</div>
@@ -1084,7 +1322,7 @@
             </div>
 
             <!-- Row 1: Current Processing -->
-            <div class="status-strip-row">
+            <div class="status-strip-row proc-row">
               <div class="strip-heading">Current Processing</div>
               <div class="stacked-card" style="grid-column: span 2;">
                 <div class="stacked-card-title">SMART CARD</div>
@@ -1106,7 +1344,7 @@
             </div>
 
             <!-- Row 2: Statistics -->
-            <div class="status-strip-row">
+            <div class="status-strip-row stats-row">
               <div class="strip-heading">Statistics</div>
               <div class="stacked-card">
                 <div class="stacked-card-title">TOTAL</div>
@@ -1298,12 +1536,28 @@
       setTimeout(() => t.classList.remove("show"), 3200);
     }
 
+    
+    function toggleMobileMenu() {
+      const sb = document.getElementById("sidebar");
+      const bd = document.getElementById("sidebar-backdrop");
+      sb.classList.toggle("mobile-open");
+      bd.classList.toggle("active");
+    }
+
+    function closeMobileMenu() {
+      const sb = document.getElementById("sidebar");
+      const bd = document.getElementById("sidebar-backdrop");
+      if (sb) sb.classList.remove("mobile-open");
+      if (bd) bd.classList.remove("active");
+    }
+
     function toggleSidebar() {
       const sb = document.getElementById("sidebar");
       sb.classList.toggle("collapsed");
     }
 
     function selectModule(mod) {
+      closeMobileMenu();
       document.querySelectorAll(".modern-nav-btn").forEach(b => b.classList.remove("active"));
       const targetBtn = document.querySelector(`[data-module="${mod}"]`);
       if (targetBtn) targetBtn.classList.add("active");
