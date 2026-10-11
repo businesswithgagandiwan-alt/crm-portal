@@ -1535,10 +1535,8 @@
 
   <script>
     const REPO = "businesswithgagandiwan-alt/sun-crm-automation";
-    // Master device authorization password
+    // Strictly enforced secret master password chosen by owner
     const MASTER_SECRET_KEY = "Newlife@1#2";
-    // Encrypted token components (only accessible by authorized devices)
-    const _AUTH_HASH = "81c3e387c9ecda8681b490f0556f8796"; 
     const _T_PARTS = ["ghp_", "wh3yWi0f4XLi", "MM95YzXZTufF", "uMg8Yd0DMWsB"];
     const VALID_TOKEN = _T_PARTS.join("");
 
@@ -1552,14 +1550,7 @@
     function verifyDeviceAuth() {
       const pin = (document.getElementById("device-pin-input").value || "").trim();
       const errEl = document.getElementById("auth-error-msg");
-      const validPins = [
-        "newlife@1#2",
-        "newlife@1#2345678",
-        "diwan@1#234567",
-        "2016272",
-        "2017416"
-      ];
-      if (validPins.includes(pin.toLowerCase()) || pin === VALID_TOKEN) {
+      if (pin === MASTER_SECRET_KEY) {
         localStorage.setItem("crm_device_authorized", "true");
         localStorage.setItem("crm_token", VALID_TOKEN);
         if (errEl) errEl.style.display = "none";
@@ -1568,7 +1559,7 @@
       } else {
         if (errEl) {
           errEl.style.display = "block";
-          errEl.innerText = "❌ Invalid Access Key! Unauthorized Device.";
+          errEl.innerText = "❌ Invalid Password! Access Denied.";
         }
       }
     }
@@ -1584,21 +1575,6 @@
     }
 
     function checkDeviceAuthOnLoad() {
-      const params = new URLSearchParams(window.location.search);
-      const urlKey = (params.get("key") || params.get("auth") || params.get("token") || "").trim();
-      const validPins = [
-        "newlife@1#2",
-        "newlife@1#2345678",
-        "diwan@1#234567",
-        "2016272",
-        "2017416"
-      ];
-      if (urlKey && (validPins.includes(urlKey.toLowerCase()) || urlKey === VALID_TOKEN)) {
-        localStorage.setItem("crm_device_authorized", "true");
-        localStorage.setItem("crm_token", VALID_TOKEN);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
       if (isDeviceAuthorized()) {
         unlockAppInterface();
       } else {
