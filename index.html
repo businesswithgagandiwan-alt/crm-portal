@@ -57,11 +57,11 @@
       overflow: hidden;
     }
 
-    /* Windows Title Bar */
+    /* Windows Title Bar (Exact Qt App Match) */
     .title-bar {
-      background: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%);
-      border-bottom: 1.5px solid #CBD5E1;
-      padding: 6px 12px;
+      background: linear-gradient(180deg, #FF2E99 0%, #F0008E 10%, #D6007E 90%, #B8006C 100%);
+      border-bottom: 2px solid #8B0052;
+      padding: 6px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -71,7 +71,7 @@
     .title-brand {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .app-icon {
@@ -80,18 +80,40 @@
     }
 
     .title-text {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #0F172A;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 0.3px;
+    }
+
+    .title-text span.version-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: #FFE4EF;
+      margin-left: 6px;
+    }
+
+    .anti-sleep-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      background: #059669;
+      color: #FFFFFF;
+      border: 1px solid #34D399;
+      padding: 3px 12px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     }
 
     .cloud-status-badge {
       font-size: 10px;
       font-weight: 700;
-      background: #E0F2FE;
-      color: #0284C7;
-      border: 1px solid #BAE6FD;
-      padding: 2px 8px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      padding: 3px 10px;
       border-radius: 12px;
       display: inline-flex;
       align-items: center;
@@ -102,16 +124,17 @@
     .status-dot {
       width: 6.5px;
       height: 6.5px;
-      background: #16A34A;
+      background: #22C55E;
       border-radius: 50%;
-      box-shadow: 0 0 6px #16A34A;
+      box-shadow: 0 0 6px #22C55E;
     }
 
     .window-controls {
       display: flex;
+      align-items: center;
       gap: 8px;
       font-size: 12px;
-      color: #64748B;
+      color: #FFFFFF;
     }
 
     .win-btn {
@@ -122,10 +145,11 @@
       justify-content: center;
       border-radius: 3px;
       cursor: pointer;
+      color: #FFFFFF;
     }
 
     .win-btn:hover {
-      background-color: #E2E8F0;
+      background-color: rgba(255, 255, 255, 0.2);
     }
 
     .win-close:hover {
@@ -326,47 +350,65 @@
       border-bottom: 3.5px solid #0C4A6E !important;
     }
 
-    /* 4-Row Status Strip */
+    /* 4-Row Status Strip (Exact Mathematical Qt Grid) */
     .status-strip-frame {
       background-color: #F8FAFC;
       border: 1.5px solid #CBD5E1;
-      border-radius: 5px;
+      border-radius: 6px;
       padding: 6px;
-      display: grid;
-      grid-template-columns: 120px 1fr 1fr;
-      grid-template-rows: auto auto auto;
-      gap: 5px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
+    .status-strip-row {
+      display: grid;
+      grid-template-columns: 140px repeat(6, 1fr);
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+
+    .status-strip-row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Main Green Gradient Heading (Exact Qt Match) */
     .strip-heading {
-      font-size: 10px;
+      background: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
+      color: #FFFFFF;
       font-weight: 800;
-      color: #0F172A;
+      font-size: 10.5px;
+      border: 1px solid #4ADE80;
+      border-right: 2px solid #14532D;
+      border-bottom: 3px solid #14532D;
+      border-radius: 5px;
+      padding: 4px 6px;
       display: flex;
       align-items: center;
-      background: #F1F5F9;
-      border: 1px solid #CBD5E1;
-      border-radius: 4px;
-      padding: 4px 8px;
+      justify-content: center;
+      text-align: center;
+      user-select: none;
     }
 
+    /* Stacked 3D Card (Exact Qt Match) */
     .stacked-card {
-      background: #FFFFFF;
+      background-color: #FFFFFF;
       border: 1px solid #CBD5E1;
-      border-radius: 4px;
-      padding: 3px 6px;
+      border-right: 2px solid #94A3B8;
+      border-bottom: 3px solid #64748B;
+      border-radius: 5px;
+      padding: 3px 5px;
       display: flex;
       flex-direction: column;
       justify-content: center;
+      min-height: 38px;
     }
 
     .stacked-card-title {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 800;
-      color: #64748B;
+      color: #475569;
       text-transform: uppercase;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
+      text-align: center;
     }
 
     .stacked-card-value {
@@ -374,11 +416,60 @@
       font-weight: 700;
       color: #0F172A;
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .status-idle { color: #2563EB; }
+    .status-idle { color: #0F172A; }
     .status-running { color: #059669; animation: pulse 1.5s infinite; }
     .status-booked { color: #16A34A; }
+
+    /* Timer Delay Banner */
+    .timer-banner {
+      background: #EFF6FF;
+      border: 1.5px solid #93C5FD;
+      border-radius: 6px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+
+    .timer-cb-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 11.5px;
+      color: #1E3A8A;
+      user-select: none;
+    }
+
+    .timer-status-pill {
+      flex: 1;
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #1E40AF;
+    }
+
+    .next-now-btn {
+      background: linear-gradient(180deg, #F97316 0%, #EA580C 100%);
+      color: #FFFFFF;
+      border: 1px solid #C2410C;
+      border-bottom: 2.5px solid #9A3412;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
 
     /* Live Progress Bar */
     .progress-track {
@@ -613,7 +704,7 @@
       }
 
       .sidebar {
-        width: 155px;
+        width: 140px;
       }
 
       .action-row {
@@ -625,11 +716,15 @@
       }
 
       .status-strip-frame {
-        grid-template-columns: 1fr 1fr;
+        overflow-x: auto;
       }
 
-      .strip-heading {
-        grid-column: span 2;
+      .status-strip-row {
+        min-width: 600px;
+      }
+
+      .timer-banner {
+        flex-wrap: wrap;
       }
     }
   </style>
@@ -637,20 +732,20 @@
 <body>
 
   <div class="app-window">
-    <!-- Window Title Bar -->
+    <!-- Window Title Bar (Exact Laptop App Replica) -->
     <div class="title-bar">
       <div class="title-brand">
-        <img src="https://img.icons8.com/color/48/cloud--v1.png" class="app-icon" alt="icon">
-        <span class="title-text">Sun Direct CRM Automation</span>
+        <span class="title-text">CRM Automation <span class="version-tag">• Version v1</span></span>
         <span class="cloud-status-badge" onclick="openTokenDialog()">
           <span class="status-dot"></span>
           <span>Cloud Online (GitHub)</span>
         </span>
       </div>
       <div class="window-controls">
-        <div class="win-btn">─</div>
-        <div class="win-btn">□</div>
-        <div class="win-btn win-close" onclick="showToast('App Running on Cloud Background')">✕</div>
+        <div class="anti-sleep-badge">Anti-Sleep: ON</div>
+        <div class="win-btn" title="Minimize">─</div>
+        <div class="win-btn" title="Maximize">□</div>
+        <div class="win-btn win-close" onclick="showToast('App Running on Cloud Background')" title="Close">✕</div>
       </div>
     </div>
 
@@ -724,39 +819,89 @@
             </div>
           </div>
 
-          <!-- 4-Row Status Strip -->
+          <!-- 3-Row Status Strip (Exact Laptop App Layout) -->
           <div class="status-strip-frame">
-            <div class="strip-heading">Session & Status</div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">BROWSER</div>
-              <div class="stacked-card-value status-idle" id="booking-browser-status">● Idle (Headless)</div>
-            </div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">PORTAL</div>
-              <div class="stacked-card-value status-idle" id="booking-portal-status">● Standby (Freshdesk)</div>
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="booking-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="booking-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">PATH</div>
+                <div class="stacked-card-value" id="booking-path-label" style="color: #0284C7;">📁 Saved Queue (<span id="path-pending-count">94</span> pending)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">VALIDATION</div>
+                <div class="stacked-card-value" id="booking-validation-label">● Resumed (<span id="val-pending-count">94</span> Pending, <span id="val-booked-count">18</span> Booked)</div>
+              </div>
             </div>
 
-            <div class="strip-heading">Current Activity</div>
-            <div class="stacked-card" style="grid-column: span 2;">
-              <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
-                <span>ACTIVITY</span>
-                <span id="booking-progress-pct" style="color:#0284C7; font-weight:bold;"></span>
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="booking-card-label">—</div>
               </div>
-              <div class="stacked-card-value" id="booking-activity-label">Awaiting Input... (Click Start Processing)</div>
-              <div class="progress-track" id="booking-progress-track">
-                <div class="progress-bar" id="booking-progress-bar"></div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="booking-activity-label">Synced! 94 Pending</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="booking-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="booking-progress-track" style="display:block; margin-top:2px;">
+                  <div class="progress-bar" id="booking-progress-bar" style="width:0%;"></div>
+                </div>
               </div>
             </div>
 
-            <div class="strip-heading">Queue Status</div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">BOOKED / DONE</div>
-              <div class="stacked-card-value status-booked" id="booking-stat-booked">17</div>
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="booking-stat-total">● 112</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="booking-stat-processed">● 18</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="booking-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 94</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="booking-stat-booked">● 18</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="booking-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="booking-stat-time">⏱ 00:00</div>
+              </div>
             </div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">PENDING IN QUEUE</div>
-              <div class="stacked-card-value" id="booking-stat-pending" style="color: #D97706;">95</div>
-            </div>
+          </div>
+
+          <!-- Timer Delay Banner (Exact Laptop App Replica) -->
+          <div class="timer-banner">
+            <label class="timer-cb-wrapper">
+              <input type="checkbox" id="cb-timer-delay" checked onchange="toggleTimerDelay(this.checked)">
+              <span>⏱️ Timer Delay (1-2m)</span>
+            </label>
+            <div class="timer-status-pill" id="timer-status-label">⏱️ Timer Delay Active (Standby)</div>
+            <button class="next-now-btn" onclick="showToast('⚡ Instant Mode: Next Ticket Active')">⚡ Next Now</button>
           </div>
 
           <!-- Activity Log Area -->
@@ -1184,13 +1329,57 @@
       return 999999;
     }
 
-    function updateBreakdown(records) {
-      const pending = records.filter(r => (r["Complaint Status"] || "").toLowerCase() !== "booked");
-      const totalPending = pending.length;
-      const booked = records.length - totalPending;
+    function isComplaintAlreadyBooked(rec) {
+      const st = String(rec["Complaint Status"] || "").toLowerCase().trim();
+      const rem = String(rec["Complaint Remark"] || "").trim();
+      const isOkStatus = ["submitted", "success", "booked", "done", "complete"].some(w => st.includes(w))
+        && !st.includes("fail")
+        && !st.includes("not found")
+        && !st.includes("not submitted");
+      const isOkRemark = Boolean(rem) && rem.length >= 15 && !rem.toLowerCase().startsWith("fail");
+      return isOkStatus || isOkRemark;
+    }
 
-      document.getElementById("booking-stat-booked").innerText = booked;
-      document.getElementById("booking-stat-pending").innerText = totalPending;
+    function toggleTimerDelay(isOn) {
+      const lbl = document.getElementById("timer-status-label");
+      if (lbl) {
+        if (isOn) {
+          lbl.innerText = "⏱️ Timer Delay Active (Standby)";
+          lbl.style.color = "#1E40AF";
+        } else {
+          lbl.innerText = "⚡ Instant Mode Active (No wait between complaints)";
+          lbl.style.color = "#059669";
+        }
+      }
+    }
+
+    function updateBreakdown(records) {
+      const booked = records.filter(isComplaintAlreadyBooked).length;
+      const total = records.length;
+      const totalPending = total - booked;
+
+      // Update 3-Row Strip Dashboard Cards
+      const statTotal = document.getElementById("booking-stat-total");
+      const statProcessed = document.getElementById("booking-stat-processed");
+      const statPending = document.getElementById("booking-stat-pending");
+      const statBooked = document.getElementById("booking-stat-booked");
+      const pathPending = document.getElementById("path-pending-count");
+      const valPending = document.getElementById("val-pending-count");
+      const valBooked = document.getElementById("val-booked-count");
+
+      if (statTotal) statTotal.innerText = `● ${total}`;
+      if (statProcessed) statProcessed.innerText = `● ${booked}`;
+      if (statPending) statPending.innerText = `● ${totalPending}`;
+      if (statBooked) statBooked.innerText = `● ${booked}`;
+      if (pathPending) pathPending.innerText = totalPending;
+      if (valPending) valPending.innerText = totalPending;
+      if (valBooked) valBooked.innerText = booked;
+
+      // Update Activity label if idle
+      const actLbl = document.getElementById("booking-activity-label");
+      if (actLbl && !actLbl.innerText.includes("Running") && !actLbl.innerText.includes("%")) {
+        actLbl.innerText = `Synced! ${totalPending} Pending`;
+      }
 
       let dt2016 = 0;
       let dt2017 = 0;
@@ -1200,7 +1389,9 @@
       let normal = 0;
       let unknown = 0;
 
-      pending.forEach(r => {
+      const pendingRecords = records.filter(r => !isComplaintAlreadyBooked(r));
+
+      pendingRecords.forEach(r => {
         const dt = String(r["DT Code"] || "");
         if (dt.includes("2016272")) dt2016++;
         else if (dt.includes("2017416")) dt2017++;
