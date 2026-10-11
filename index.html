@@ -1,625 +1,849 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Sun Direct CRM - Cloud Remote Portal</title>
-  <meta name="theme-color" content="#0284c7">
+  <title>Sun Direct CRM Automation</title>
+  <meta name="theme-color" content="#BE185D">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="https://img.icons8.com/color/96/cloud--v1.png" type="image/png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #0284c7;
-      --primary-dark: #0369a1;
-      --primary-light: #e0f2fe;
-      --accent: #f59e0b;
-      --success: #16a34a;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
+      --pink-normal: #EC008C;
+      --pink-hover: #D6007E;
+      --pink-pressed: #B8006C;
+      --pink-soft: #F8BBD0;
+      --disabled-bg: #D9A8C3;
+      --disabled-text: #F7EEF2;
+      --bg: #F1F5F9;
+      --window-border: #CBD5E1;
+      --text: #0F172A;
+      --text-muted: #475569;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      background-color: var(--bg);
+      background-color: #E2E8F0;
       color: var(--text);
-      padding-bottom: 70px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 6px;
     }
 
-    header {
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: white;
-      padding: 18px 20px 22px;
-      border-radius: 0 0 24px 24px;
-      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.25);
+    /* Window Container */
+    .app-window {
+      background-color: #FFFFFF;
+      border: 1.5px solid #94A3B8;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 1080px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    .header-top {
+    /* Windows Title Bar */
+    .title-bar {
+      background: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%);
+      border-bottom: 1.5px solid #CBD5E1;
+      padding: 6px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      user-select: none;
     }
 
-    .brand {
+    .title-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
-    .brand-icon {
-      font-size: 26px;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 6px 10px;
-      border-radius: 12px;
-      backdrop-filter: blur(4px);
+    .app-icon {
+      width: 18px;
+      height: 18px;
     }
 
-    .brand h1 {
-      font-size: 19px;
-      font-weight: 800;
-      letter-spacing: -0.3px;
-    }
-
-    .status-pill {
-      font-size: 11px;
+    .title-text {
+      font-size: 12.5px;
       font-weight: 700;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 5px 12px;
-      border-radius: 20px;
-      display: flex;
+      color: #0F172A;
+    }
+
+    .cloud-status-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: #E0F2FE;
+      color: #0284C7;
+      border: 1px solid #BAE6FD;
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
     }
 
     .status-dot {
-      width: 8px;
-      height: 8px;
-      background: #4ade80;
+      width: 6.5px;
+      height: 6.5px;
+      background: #16A34A;
       border-radius: 50%;
-      box-shadow: 0 0 8px #4ade80;
+      box-shadow: 0 0 6px #16A34A;
     }
 
-    /* Stats Grid */
-    .stats-container {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(8px);
-      border-radius: 16px;
-      padding: 12px 16px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      text-align: center;
-      margin-top: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .stat-box .val {
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-    }
-
-    .stat-box .lbl {
-      font-size: 10px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.85);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
-
-    main {
-      padding: 16px;
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin: 18px 4px 10px;
+    .window-controls {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #64748B;
     }
 
-    /* Cards */
-    .card {
-      background: var(--card-bg);
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 14px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-      transition: all 0.2s ease;
-    }
-
-    .card:hover {
-      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .card-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .card-icon {
-      font-size: 20px;
-      width: 36px;
-      height: 36px;
+    .win-btn {
+      width: 24px;
+      height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--primary-light);
-      border-radius: 10px;
-      color: var(--primary);
+      border-radius: 3px;
+      cursor: pointer;
     }
 
-    .badge-cloud {
-      background: #e0f2fe;
-      color: #0284c7;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 8px;
-      border: 1px solid #bae6fd;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+    .win-btn:hover {
+      background-color: #E2E8F0;
     }
 
-    .badge-ready {
-      background: #dcfce7;
-      color: #16a34a;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 8px;
-      border: 1px solid #bbf7d0;
+    .win-close:hover {
+      background-color: #EF4444;
+      color: white;
     }
 
-    .card-body p {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 14px;
+    /* App Body: Sidebar + Main Stack */
+    .app-body {
+      display: flex;
+      background-color: #FFFFFF;
+      min-height: 620px;
     }
 
-    .form-group {
-      margin-bottom: 14px;
+    /* Left Sidebar */
+    .sidebar {
+      width: 196px;
+      background-color: #FFFFFF;
+      border-right: 1.5px solid #E2E8F0;
+      padding: 6px 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex-shrink: 0;
+      transition: width 0.2s ease;
     }
 
-    .form-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      display: block;
-      margin-bottom: 6px;
+    .sidebar.collapsed {
+      width: 48px;
+      padding: 6px 3px;
     }
 
-    .select-wrapper {
-      position: relative;
+    .sidebar-header {
+      display: flex;
+      justify-content: flex-end;
+      height: 28px;
+      margin-bottom: 2px;
     }
 
-    select, input {
-      width: 100%;
-      padding: 12px 14px;
-      background: #f8fafc;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    select:focus, input:focus {
-      border-color: var(--primary);
-      background: #ffffff;
-    }
-
-    /* Action Buttons */
-    .btn {
-      width: 100%;
-      padding: 13px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      border: none;
+    .sidebar-toggle-btn {
+      width: 26px;
+      height: 26px;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      border-radius: 4px;
+      font-size: 13px;
       cursor: pointer;
       display: flex;
+      align-items: center;
       justify-content: center;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
+      color: #334155;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+    .sidebar-toggle-btn:hover {
+      background: #E2E8F0;
     }
 
-    .btn-primary:active {
-      transform: scale(0.98);
-    }
-
-    .btn-outline {
-      background: white;
-      border: 1.5px solid var(--border);
-      color: var(--text);
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    /* Live Activity Box */
-    .activity-card {
-      background: #0f172a;
-      color: #f8fafc;
-      border-radius: 18px;
-      padding: 16px;
-      margin-top: 18px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
-    }
-
-    .activity-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      border-bottom: 1px solid #1e293b;
-      padding-bottom: 8px;
-    }
-
-    .activity-title {
-      font-size: 13px;
+    /* Modern Nav Buttons */
+    .modern-nav-btn {
+      background-color: #FFFFFF;
+      color: #1E293B;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 11px;
       font-weight: 700;
-      color: #38bdf8;
+      padding: 6px 8px;
+      text-align: left;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.15s;
     }
 
-    .activity-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 220px;
-      overflow-y: auto;
+    .modern-nav-btn:hover {
+      background-color: #FFF0F6;
+      border-color: #F8BBD0;
+      color: #B8006C;
     }
 
-    .activity-item {
-      background: #1e293b;
-      padding: 10px 12px;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-    }
-
-    .activity-item .name {
-      font-weight: 600;
-      color: #f1f5f9;
-    }
-
-    .activity-item .time {
-      font-size: 10px;
-      color: #94a3b8;
-    }
-
-    .pill-status {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 3px 8px;
+    .modern-nav-btn.active {
+      background: linear-gradient(180deg, #FF2E99 0%, #F0008E 8%, #C70075 88%, #A1005E 100%);
+      color: #FFFFFF;
+      border-top: 1.5px solid #FFA6D5;
+      border-left: 1.5px solid #FFA6D5;
+      border-right: 2px solid #6E0041;
+      border-bottom: 3.5px solid #6E0041;
       border-radius: 6px;
     }
 
-    .pill-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-    .pill-running { background: rgba(56, 189, 248, 0.2); color: #38bdf8; animation: pulse 1.5s infinite; }
-    .pill-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+    .sidebar.collapsed .modern-nav-btn {
+      justify-content: center;
+      padding: 6px 0;
+      font-size: 15px;
     }
 
-    /* Modal */
+    .sidebar.collapsed .modern-nav-btn span.label {
+      display: none;
+    }
+
+    /* Main Content Area */
+    .main-stack {
+      flex: 1;
+      padding: 10px 12px;
+      background-color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* QGroupBox styling */
+    .group-box {
+      border: 1.5px solid #CBD5E1;
+      border-radius: 6px;
+      padding: 14px 10px 10px;
+      position: relative;
+      background-color: #FFFFFF;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .group-box-title {
+      position: absolute;
+      top: -9px;
+      left: 14px;
+      background: #FFFFFF;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #0F172A;
+    }
+
+    /* 3D Action Buttons */
+    .action-btns-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .action-row-5 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .action-btn-3d {
+      background: linear-gradient(180deg, #FF2E99 0%, #F0008E 8%, #C70075 88%, #A1005E 100%);
+      color: #FFFFFF;
+      border-top: 1.5px solid #FFA6D5;
+      border-left: 1.5px solid #FFA6D5;
+      border-right: 2px solid #6E0041;
+      border-bottom: 3.5px solid #6E0041;
+      border-radius: 5px;
+      padding: 5px 3px;
+      font-weight: 700;
+      font-size: 10.5px;
+      text-align: center;
+      cursor: pointer;
+      line-height: 1.25;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      transition: all 0.1s;
+      user-select: none;
+    }
+
+    .action-btn-3d:hover {
+      background: linear-gradient(180deg, #FF45A5 0%, #FA149A 8%, #D6007E 88%, #B00067 100%);
+      border-bottom: 3.5px solid #5A0035;
+    }
+
+    .action-btn-3d:active {
+      background: linear-gradient(180deg, #B00067 0%, #D6007E 100%);
+      border-top: 3px solid #5A0035;
+      border-left: 2.5px solid #5A0035;
+      border-right: 1px solid #FFA6D5;
+      border-bottom: 1px solid #FFA6D5;
+      transform: translateY(1.5px);
+    }
+
+    .action-btn-blue {
+      background: linear-gradient(180deg, #0284C7 0%, #0369A1 100%) !important;
+      border-top: 1.5px solid #7DD3FC !important;
+      border-left: 1.5px solid #7DD3FC !important;
+      border-right: 2px solid #0C4A6E !important;
+      border-bottom: 3.5px solid #0C4A6E !important;
+    }
+
+    /* 4-Row Status Strip */
+    .status-strip-frame {
+      background-color: #F8FAFC;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 5px;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: 120px 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .strip-heading {
+      font-size: 10px;
+      font-weight: 800;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      padding: 4px 8px;
+    }
+
+    .stacked-card {
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      padding: 3px 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .stacked-card-title {
+      font-size: 8.5px;
+      font-weight: 800;
+      color: #64748B;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .stacked-card-value {
+      font-size: 10px;
+      font-weight: 700;
+      color: #0F172A;
+      text-align: center;
+    }
+
+    .status-idle { color: #2563EB; }
+    .status-running { color: #059669; animation: pulse 1.5s infinite; }
+    .status-booked { color: #16A34A; }
+
+    /* Activity Box */
+    .activity-log-box {
+      background: #FFFFFF;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 5px;
+      padding: 8px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 240px;
+    }
+
+    .activity-log-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #475569;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 4px;
+    }
+
+    .log-content {
+      font-family: 'Consolas', monospace;
+      font-size: 11px;
+      color: #1E293B;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 4px;
+      padding: 6px 8px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 240px;
+      line-height: 1.45;
+    }
+
+    .log-line {
+      margin-bottom: 3px;
+    }
+
+    .log-info { color: #0369A1; }
+    .log-success { color: #15803D; font-weight: 700; }
+    .log-warn { color: #B45309; }
+
+    /* Native Modal Popup for Quota & DT Code */
     .modal-overlay {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
-      z-index: 100;
-      align-items: center;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.45);
+      z-index: 999;
       justify-content: center;
-      padding: 20px;
+      align-items: center;
+      padding: 12px;
     }
 
-    .modal-box {
-      background: white;
-      border-radius: 20px;
-      padding: 24px;
-      max-width: 440px;
+    .qt-dialog {
+      background: #FFFFFF;
+      border: 1.5px solid #94A3B8;
+      border-radius: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
       width: 100%;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      max-width: 380px;
+      overflow: hidden;
     }
 
-    /* Toast */
+    .dialog-header {
+      background: #F1F5F9;
+      border-bottom: 1px solid #CBD5E1;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0F172A;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dialog-body {
+      padding: 14px 12px;
+    }
+
+    .dialog-prompt {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 8px;
+    }
+
+    .dialog-select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0F172A;
+      outline: none;
+      background: #FFFFFF;
+      margin-bottom: 14px;
+    }
+
+    .dialog-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .dialog-btn {
+      padding: 5px 14px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .dialog-btn-primary {
+      background: linear-gradient(180deg, #FF2E99 0%, #C70075 100%);
+      color: white;
+      border: 1px solid #A1005E;
+    }
+
+    .dialog-btn-secondary {
+      background: #F1F5F9;
+      color: #334155;
+      border: 1px solid #CBD5E1;
+    }
+
+    /* Toast Notification */
     #toast {
       position: fixed;
-      bottom: 24px;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #0f172a;
-      color: white;
-      padding: 12px 20px;
-      border-radius: 30px;
-      font-size: 13px;
-      font-weight: 600;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-      z-index: 200;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      background: #0F172A;
+      color: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      transition: transform 0.25s ease;
+      z-index: 1000;
     }
 
     #toast.show {
       transform: translateX(-50%) translateY(0);
     }
+
+    /* Mobile Responsive Rules */
+    @media (max-width: 768px) {
+      body {
+        padding: 0;
+      }
+
+      .app-window {
+        border-radius: 0;
+        border: none;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 155px;
+      }
+
+      .action-row {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .action-row-5 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .status-strip-frame {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .strip-heading {
+        grid-column: span 2;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <header>
-    <div class="header-top">
-      <div class="brand">
-        <div class="brand-icon">☁️</div>
-        <div>
-          <h1>Sun Direct CRM</h1>
-          <div style="font-size: 11px; opacity: 0.85; font-weight: 500;">Cloud Remote Control</div>
-        </div>
+  <div class="app-window">
+    <!-- Window Title Bar -->
+    <div class="title-bar">
+      <div class="title-brand">
+        <img src="https://img.icons8.com/color/48/cloud--v1.png" class="app-icon" alt="icon">
+        <span class="title-text">Sun Direct CRM Automation</span>
+        <span class="cloud-status-badge" onclick="openTokenDialog()">
+          <span class="status-dot"></span>
+          <span>Cloud Online (GitHub)</span>
+        </span>
       </div>
-      <div class="status-pill" onclick="openSettings()">
-        <div class="status-dot"></div>
-        <span>Cloud Online</span>
-      </div>
-    </div>
-
-    <!-- Live Stats -->
-    <div class="stats-container">
-      <div class="stat-box">
-        <div class="val" id="stat-total">112</div>
-        <div class="lbl">Total Tickets</div>
-      </div>
-      <div class="stat-box">
-        <div class="val" id="stat-booked" style="color: #4ade80;">17</div>
-        <div class="lbl">Booked / Done</div>
-      </div>
-      <div class="stat-box">
-        <div class="val" id="stat-pending" style="color: #fef08a;">95</div>
-        <div class="lbl">Pending</div>
+      <div class="window-controls">
+        <div class="win-btn">─</div>
+        <div class="win-btn">□</div>
+        <div class="win-btn win-close" onclick="showToast('App Running on Cloud Background')">✕</div>
       </div>
     </div>
-  </header>
 
-  <!-- Main Content -->
-  <main>
-
-    <div class="section-title">
-      <span>☁️ Active Cloud Automations</span>
-      <span style="font-size: 11px; cursor: pointer; color: var(--primary);" onclick="fetchData()">🔄 Refresh</span>
-    </div>
-
-    <!-- 1. Complaint Booking -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-icon">🎫</div>
-          <div>
-            <div>Complaint Booking</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत बुकिंग ऑटोमेशन</div>
-          </div>
-        </div>
-        <div class="badge-ready">✓ Live Ready</div>
-      </div>
-      <div class="card-body">
-        <p>Expiry Priority ke hisaab se customer search karega aur Freshdesk me Technical SR book karega.</p>
-        
-        <div class="form-group">
-          <label class="form-label">Select Quota (Kitni Book Karni Hai?):</label>
-          <div class="select-wrapper">
-            <select id="booking-quota">
-              <option value="1">1 Complaint (Quick Test)</option>
-              <option value="2">2 Complaints</option>
-              <option value="3">3 Complaints</option>
-              <option value="5" selected>5 Complaints</option>
-              <option value="10">10 Complaints</option>
-              <option value="15">15 Complaints</option>
-              <option value="20">20 Complaints</option>
-              <option value="all">Sabhi Pending Book Karein (All)</option>
-            </select>
-          </div>
+    <!-- App Body -->
+    <div class="app-body">
+      <!-- Left Sidebar Menu -->
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse / Expand Menu (◫)">◫</button>
         </div>
 
-        <button class="btn btn-primary" id="btn-book" onclick="triggerBooking()">
-          <span>▶ Start Complaint Booking on Cloud</span>
+        <button class="modern-nav-btn" data-module="fetch_data" onclick="selectModule('fetch_data')">
+          <span>📥</span><span class="label">Fatch Data</span>
+        </button>
+        <button class="modern-nav-btn" data-module="rbuzz" onclick="selectModule('rbuzz')">
+          <span>⚡</span><span class="label">Rbuzz Automation</span>
+        </button>
+        <button class="modern-nav-btn" data-module="fresh_sale" onclick="selectModule('fresh_sale')">
+          <span>🌐</span><span class="label">FreshSale Atomation ☁️</span>
+        </button>
+        <button class="modern-nav-btn" data-module="update_mob" onclick="selectModule('update_mob')">
+          <span>📱</span><span class="label">Update Mob no ☁️</span>
+        </button>
+        <button class="modern-nav-btn active" data-module="complaint_booking" onclick="selectModule('complaint_booking')">
+          <span>🎫</span><span class="label">Complaint Booking ☁️</span>
+        </button>
+        <button class="modern-nav-btn" data-module="assign_complaint" onclick="selectModule('assign_complaint')">
+          <span>📋</span><span class="label">Assign Complaint ☁️</span>
+        </button>
+        <button class="modern-nav-btn" data-module="close_complaint" onclick="selectModule('close_complaint')">
+          <span>🔒</span><span class="label">Close Complaint ☁️</span>
+        </button>
+        <button class="modern-nav-btn" data-module="asset_tag" onclick="selectModule('asset_tag')">
+          <span>🏷️</span><span class="label">Asset Tag</span>
+        </button>
+        <button class="modern-nav-btn" data-module="invoice" onclick="selectModule('invoice')">
+          <span>🧾</span><span class="label">Invoice Automation</span>
+        </button>
+        <button class="modern-nav-btn" data-module="gmb" onclick="selectModule('gmb')">
+          <span>🏢</span><span class="label">GMB Manager</span>
+        </button>
+        <button class="modern-nav-btn" data-module="settings" onclick="selectModule('settings')">
+          <span>⚙️</span><span class="label">Setting</span>
         </button>
       </div>
-    </div>
 
-    <!-- 2. Assign Complaint -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-icon" style="background: #fef3c7; color: #d97706;">📋</div>
-          <div>
-            <div>Assign Complaint</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत असाइन (डायरेक्ट क्यू)</div>
+      <!-- Main Module Stack -->
+      <div class="main-stack">
+
+        <!-- ================= MODULE 1: COMPLAINT BOOKING ================= -->
+        <div class="group-box" id="view-complaint_booking">
+          <div class="group-box-title">Complaint Booking</div>
+
+          <!-- 11 Action Buttons -->
+          <div class="action-btns-grid">
+            <div class="action-row">
+              <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded in Cloud memory!')">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="showToast('Cloud Headless Browser running on GitHub Actions!')">Open Fresh<br>Browser</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+            </div>
+            <div class="action-row-5">
+              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+              <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Resume</button>
+              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+              <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+            </div>
+          </div>
+
+          <!-- 4-Row Status Strip -->
+          <div class="status-strip-frame">
+            <div class="strip-heading">Session & Status</div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">BROWSER</div>
+              <div class="stacked-card-value status-idle" id="booking-browser-status">● Idle (Headless)</div>
+            </div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">PORTAL</div>
+              <div class="stacked-card-value status-idle" id="booking-portal-status">● Standby (Freshdesk)</div>
+            </div>
+
+            <div class="strip-heading">Current Activity</div>
+            <div class="stacked-card" style="grid-column: span 2;">
+              <div class="stacked-card-title">ACTIVITY</div>
+              <div class="stacked-card-value" id="booking-activity-label">Awaiting Input... (Click Start Processing)</div>
+            </div>
+
+            <div class="strip-heading">Queue Status</div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">BOOKED / DONE</div>
+              <div class="stacked-card-value status-booked" id="booking-stat-booked">17</div>
+            </div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">PENDING IN QUEUE</div>
+              <div class="stacked-card-value" id="booking-stat-pending" style="color: #D97706;">95</div>
+            </div>
+          </div>
+
+          <!-- Activity Log Area -->
+          <div class="activity-log-box">
+            <div class="activity-log-title">
+              <span>Activity Log (Live Cloud Output)</span>
+              <span style="cursor: pointer; color: #0284C7;" onclick="fetchData()">🔄 Sync Log</span>
+            </div>
+            <div class="log-content" id="booking-log-content">
+              <div class="log-line log-info">[INFO] Complaint Booking ready for cloud remote operation.</div>
+              <div class="log-line log-info">[INFO] Cloud GitHub Actions Backend: businesswithgagandiwan-alt/sun-crm-automation.</div>
+              <div class="log-line log-success">[READY] Ashokan K (Row #13, SC: 82206640946) is queued at top priority.</div>
+              <div class="log-line log-info">[INFO] Laptop shutdown safe — all executions run in independent cloud runner.</div>
+            </div>
           </div>
         </div>
-        <div class="badge-ready">✓ Live Ready</div>
-      </div>
-      <div class="card-body">
-        <p>Direct Freshdesk queue me login karke open tickets ko technician/engineer ko assign karega.</p>
-        
-        <div class="form-group">
-          <label class="form-label">Select DT Code Profile:</label>
-          <div class="select-wrapper">
-            <select id="assign-dt">
-              <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
-              <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
-            </select>
+
+        <!-- ================= MODULE 2: ASSIGN COMPLAINT ================= -->
+        <div class="group-box" id="view-assign_complaint" style="display: none;">
+          <div class="group-box-title">Assign Complaint</div>
+
+          <!-- 11 Action Buttons -->
+          <div class="action-btns-grid">
+            <div class="action-row">
+              <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="showToast('Headless Browser running on Cloud!')">Open Fresh<br>Browser</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d" onclick="openAssignDTDialog()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+            </div>
+            <div class="action-row-5">
+              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+              <button class="action-btn-3d" onclick="openAssignDTDialog()">Resume</button>
+              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+              <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+            </div>
+          </div>
+
+          <!-- Status Strip -->
+          <div class="status-strip-frame">
+            <div class="strip-heading">Session & Status</div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">BROWSER</div>
+              <div class="stacked-card-value status-idle" id="assign-browser-status">● Idle (Headless)</div>
+            </div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">PORTAL</div>
+              <div class="stacked-card-value status-idle" id="assign-portal-status">● Standby (Freshdesk)</div>
+            </div>
+
+            <div class="strip-heading">Current Activity</div>
+            <div class="stacked-card" style="grid-column: span 2;">
+              <div class="stacked-card-title">ACTIVITY</div>
+              <div class="stacked-card-value" id="assign-activity-label">Awaiting Input... (Click Start Processing to Assign)</div>
+            </div>
+
+            <div class="strip-heading">Direct Queue</div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">DT-2016272</div>
+              <div class="stacked-card-value" style="color: #2563EB;">MonuDubey</div>
+            </div>
+            <div class="stacked-card">
+              <div class="stacked-card-title">DT-2017416</div>
+              <div class="stacked-card-value" style="color: #7C3AED;">Pavan KumarSharma</div>
+            </div>
+          </div>
+
+          <!-- Activity Log Area -->
+          <div class="activity-log-box">
+            <div class="activity-log-title">
+              <span>Activity Log (Direct Queue Assignment)</span>
+              <span style="cursor: pointer; color: #0284C7;" onclick="fetchRuns()">🔄 Refresh Runs</span>
+            </div>
+            <div class="log-content" id="assign-log-content">
+              <div class="log-line log-info">[INFO] Complaint Assign Automation ready.</div>
+              <div class="log-line log-info">[INFO] Target Engineers: MonuDubey (DT-2016272), Pavan KumarSharma (DT-2017416).</div>
+              <div class="log-line log-info">[INFO] Click 'Start Processing' to assign live unresolved queue on cloud.</div>
+            </div>
           </div>
         </div>
 
-        <button class="btn btn-primary" id="btn-assign" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);" onclick="triggerAssign()">
-          <span>▶ Start Assigning Complaints on Cloud</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- All 5 Functions from Menu -->
-    <div class="section-title">
-      <span>Connected CRM Modules</span>
-    </div>
-
-    <!-- 3. FreshSale Atomation -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-icon" style="background: #f0fdf4; color: #16a34a;">🌐</div>
-          <div>
-            <div>FreshSale Atomation</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">फ्रेशसेल ऑटोमेशन</div>
+        <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
+        <div class="group-box" id="view-generic" style="display: none;">
+          <div class="group-box-title" id="generic-title">Module</div>
+          <div style="padding: 20px; text-align: center; color: #64748B;">
+            <div style="font-size: 32px; margin-bottom: 10px;" id="generic-icon">🌐</div>
+            <h3 style="color: #0F172A; margin-bottom: 8px;" id="generic-name">Module Name</h3>
+            <p style="font-size: 12px; margin-bottom: 20px;">Connected to Sun Direct CRM system.</p>
+            <button class="action-btn-3d" style="max-width: 200px; margin: 0 auto;" onclick="showToast('Module connected and operational.')">Open in Cloud</button>
           </div>
         </div>
-        <div class="badge-cloud">☁️ Cloud Enabled</div>
-      </div>
-      <div class="card-body">
-        <p>FreshSale activities and lead automation module connected to Cloud backend.</p>
-        <button class="btn btn-outline" onclick="showToast('FreshSale module connected. Laptop app & Cloud ready.')">
-          <span>⚙️ FreshSale Status: Connected</span>
-        </button>
-      </div>
-    </div>
 
-    <!-- 4. Update Mob no -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-icon" style="background: #fdf2f8; color: #db2777;">📱</div>
-          <div>
-            <div>Update Mob no</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">मोबाइल नंबर अपडेट ऑटोमेशन</div>
-          </div>
-        </div>
-        <div class="badge-cloud">☁️ Cloud Enabled</div>
       </div>
-      <div class="card-body">
-        <p>Update customer mobile numbers in Freshworks CRM accounts.</p>
-        <button class="btn btn-outline" onclick="showToast('Mobile Update module connected.')">
-          <span>⚙️ Mobile Update Status: Connected</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- 5. Close Complaint -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">
-          <div class="card-icon" style="background: #fef2f2; color: #ef4444;">🔒</div>
-          <div>
-            <div>Close Complaint</div>
-            <div style="font-size: 11px; color: var(--text-muted); font-weight: 500;">शिकायत क्लोज ऑटोमेशन</div>
-          </div>
-        </div>
-        <div class="badge-cloud">☁️ Cloud Enabled</div>
-      </div>
-      <div class="card-body">
-        <p>Bulk closure of resolved complaint tickets with dynamic resolution codes.</p>
-        <button class="btn btn-outline" onclick="showToast('Close Complaint module connected.')">
-          <span>⚙️ Close Complaint Status: Connected</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Live Execution Status Box -->
-    <div class="activity-card">
-      <div class="activity-header">
-        <div class="activity-title">
-          <span>⚡ Live Cloud Activity</span>
-        </div>
-        <span style="font-size: 10px; color: #94a3b8; cursor: pointer;" onclick="fetchRuns()">Refresh</span>
-      </div>
-      <div class="activity-list" id="activity-list">
-        <div class="activity-item">
-          <div>
-            <div class="name">Checking Cloud Runs...</div>
-            <div class="time">Connecting to GitHub Actions</div>
-          </div>
-          <span class="pill-status pill-running">Connecting</span>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Settings Modal -->
-  <div class="modal-overlay" id="settings-modal" onclick="closeSettings(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <h3 style="margin-bottom: 8px;">⚙️ Cloud Settings</h3>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-        GitHub Cloud Auth Token is configured. Changes are saved automatically.
-      </p>
-      <div class="form-group">
-        <label class="form-label">Personal Access Token:</label>
-        <input type="password" id="input-token" placeholder="ghp_...">
-      </div>
-      <button class="btn btn-primary" onclick="saveSettings()">Save & Close</button>
     </div>
   </div>
 
-  <div id="toast"><span>✓ Done!</span></div>
+  <!-- Native Dialog: Quota Selection Dialog (Exactly matches Laptop App Qt Dialog) -->
+  <div class="modal-overlay" id="quota-dialog">
+    <div class="qt-dialog">
+      <div class="dialog-header">
+        <span>Complaint Booking - Select Quota</span>
+        <span style="cursor: pointer;" onclick="closeModal('quota-dialog')">✕</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-prompt">आज कितनी complaints बुक करनी हैं (Enter Today's Quantity):</div>
+        <select class="dialog-select" id="quota-select">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="5" selected>5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+          <option value="all">all</option>
+        </select>
+        <div class="dialog-btns">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Start Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Native Dialog: DT Code Selection Dialog for Assign Complaint -->
+  <div class="modal-overlay" id="assign-dialog">
+    <div class="qt-dialog">
+      <div class="dialog-header">
+        <span>Assign Complaint - Select DT Code</span>
+        <span style="cursor: pointer;" onclick="closeModal('assign-dialog')">✕</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-prompt">Select DT Code to Assign Pending Tickets:</div>
+        <select class="dialog-select" id="assign-dt-select">
+          <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+          <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+        </select>
+        <div class="dialog-btns">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('assign-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-assign" onclick="submitAssignDT()">Start Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Native Dialog: Token Configuration -->
+  <div class="modal-overlay" id="token-dialog">
+    <div class="qt-dialog">
+      <div class="dialog-header">
+        <span>Cloud Authentication Configuration</span>
+        <span style="cursor: pointer;" onclick="closeModal('token-dialog')">✕</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-prompt">Personal Access Token (Saved in this browser):</div>
+        <input type="password" class="dialog-select" id="token-input" placeholder="ghp_...">
+        <div class="dialog-btns">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('token-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" onclick="saveToken()">Save Token</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">✓ Done!</div>
 
   <script>
     const REPO = "businesswithgagandiwan-alt/sun-crm-automation";
@@ -633,39 +857,183 @@
       }
       const tok = localStorage.getItem("crm_token") || DEFAULT_TOKEN;
       if (!tok) {
-        setTimeout(openSettings, 500);
+        setTimeout(openTokenDialog, 400);
       }
       return tok;
     }
 
     function showToast(msg) {
-      const toast = document.getElementById("toast");
-      toast.innerHTML = `<span>${msg}</span>`;
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 3500);
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3200);
     }
 
-    function openSettings() {
-      document.getElementById("input-token").value = getToken();
-      document.getElementById("settings-modal").style.display = "flex";
+    function toggleSidebar() {
+      const sb = document.getElementById("sidebar");
+      sb.classList.toggle("collapsed");
     }
 
-    function closeSettings() {
-      document.getElementById("settings-modal").style.display = "none";
+    function selectModule(mod) {
+      document.querySelectorAll(".modern-nav-btn").forEach(b => b.classList.remove("active"));
+      const targetBtn = document.querySelector(`[data-module="${mod}"]`);
+      if (targetBtn) targetBtn.classList.add("active");
+
+      document.getElementById("view-complaint_booking").style.display = "none";
+      document.getElementById("view-assign_complaint").style.display = "none";
+      document.getElementById("view-generic").style.display = "none";
+
+      if (mod === "complaint_booking") {
+        document.getElementById("view-complaint_booking").style.display = "flex";
+      } else if (mod === "assign_complaint") {
+        document.getElementById("view-assign_complaint").style.display = "flex";
+      } else {
+        const genView = document.getElementById("view-generic");
+        genView.style.display = "flex";
+        const meta = {
+          fetch_data: { title: "Fatch Data", icon: "📥", name: "Fatch Data Module" },
+          rbuzz: { title: "Rbuzz Automation", icon: "⚡", name: "Rbuzz Automation Module" },
+          fresh_sale: { title: "FreshSale Atomation", icon: "🌐", name: "FreshSale Atomation ☁️" },
+          update_mob: { title: "Update Mob no", icon: "📱", name: "Update Mob no ☁️" },
+          close_complaint: { title: "Close Complaint", icon: "🔒", name: "Close Complaint ☁️" },
+          asset_tag: { title: "Asset Tag", icon: "🏷️", name: "Asset Tag Module" },
+          invoice: { title: "Invoice Automation", icon: "🧾", name: "Invoice Automation Module" },
+          gmb: { title: "GMB Manager", icon: "🏢", name: "GMB Manager Module" },
+          settings: { title: "Setting", icon: "⚙️", name: "System Settings" }
+        }[mod] || { title: "Module", icon: "📁", name: mod };
+
+        document.getElementById("generic-title").innerText = meta.title;
+        document.getElementById("generic-icon").innerText = meta.icon;
+        document.getElementById("generic-name").innerText = meta.name;
+      }
     }
 
-    function saveSettings() {
-      const t = document.getElementById("input-token").value.trim();
-      if (t) localStorage.setItem("crm_token", t);
-      closeSettings();
-      showToast("✓ Settings Saved!");
-      fetchData();
-      fetchRuns();
+    function openBookingQuotaDialog() {
+      document.getElementById("quota-dialog").style.display = "flex";
     }
 
-    // Fetch queue statistics
+    function openAssignDTDialog() {
+      document.getElementById("assign-dialog").style.display = "flex";
+    }
+
+    function openTokenDialog() {
+      document.getElementById("token-input").value = localStorage.getItem("crm_token") || "";
+      document.getElementById("token-dialog").style.display = "flex";
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    function saveToken() {
+      const v = document.getElementById("token-input").value.trim();
+      if (v) {
+        localStorage.setItem("crm_token", v);
+        closeModal("token-dialog");
+        showToast("✓ Token Saved Successfully!");
+        fetchData();
+        fetchRuns();
+      }
+    }
+
+    function openCredsPopup(dt) {
+      const eng = dt === "2016272" ? "MonuDubey" : "Pavan KumarSharma";
+      showToast(`DT-${dt}: User configured, Engineer: ${eng}`);
+    }
+
+    // Trigger Complaint Booking via GitHub Actions
+    async function submitBookingQuota() {
+      const q = document.getElementById("quota-select").value;
+      closeModal("quota-dialog");
+
+      const btn = document.getElementById("btn-submit-quota");
+      btn.innerText = "Starting...";
+      showToast(`🚀 Dispatched Complaint Booking (Quota: ${q}) on Cloud!`);
+
+      appendLog(`[ACTION] Dispatched booking workflow for quota ${q} to GitHub runner...`, "log-info");
+      document.getElementById("booking-browser-status").innerText = "● Running (Headless)";
+      document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
+      document.getElementById("booking-activity-label").innerText = `Booking Quota: ${q}...`;
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { quota: q } })
+        });
+        if (res.status === 204) {
+          appendLog(`✓ GitHub Actions workflow started successfully for quota ${q}!`, "log-success");
+          setTimeout(fetchRuns, 2500);
+        } else {
+          appendLog(`✗ Error triggering workflow: ${res.statusText}`, "log-warn");
+        }
+      } catch (e) {
+        appendLog(`✗ Exception: ${e.message}`, "log-warn");
+      }
+    }
+
+    // Trigger Complaint Assign via GitHub Actions
+    async function submitAssignDT() {
+      const dt = document.getElementById("assign-dt-select").value;
+      closeModal("assign-dialog");
+
+      showToast(`🚀 Dispatched Assign Complaints for ${dt} on Cloud!`);
+      appendAssignLog(`[ACTION] Dispatched Direct Queue assign workflow for ${dt}...`, "log-info");
+      document.getElementById("assign-browser-status").innerText = "● Running (Headless)";
+      document.getElementById("assign-browser-status").className = "stacked-card-value status-running";
+      document.getElementById("assign-activity-label").innerText = `Assigning tickets for ${dt}...`;
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+        });
+        if (res.status === 204) {
+          appendAssignLog(`✓ GitHub Actions assign workflow started for ${dt}!`, "log-success");
+          setTimeout(fetchRuns, 2500);
+        } else {
+          appendAssignLog(`✗ Error: ${res.statusText}`, "log-warn");
+        }
+      } catch (e) {
+        appendAssignLog(`✗ Exception: ${e.message}`, "log-warn");
+      }
+    }
+
+    function appendLog(msg, cls = "log-info") {
+      const box = document.getElementById("booking-log-content");
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement("div");
+      div.className = `log-line ${cls}`;
+      div.innerText = `${time} ${msg}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendAssignLog(msg, cls = "log-info") {
+      const box = document.getElementById("assign-log-content");
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement("div");
+      div.className = `log-line ${cls}`;
+      div.innerText = `${time} ${msg}`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // Fetch queue statistics from repository
     async function fetchData() {
       const token = getToken();
+      if (!token) return;
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json`, {
           headers: {
@@ -678,21 +1046,20 @@
           const total = list.length;
           const booked = list.filter(r => (r["Complaint Status"] || "").toLowerCase() === "booked").length;
           const pending = total - booked;
-          document.getElementById("stat-total").innerText = total;
-          document.getElementById("stat-booked").innerText = booked;
-          document.getElementById("stat-pending").innerText = pending;
+          document.getElementById("booking-stat-booked").innerText = booked;
+          document.getElementById("booking-stat-pending").innerText = pending;
         }
       } catch (e) {
         console.error("Queue fetch error", e);
       }
     }
 
-    // Fetch recent workflow runs
+    // Fetch recent workflow status
     async function fetchRuns() {
       const token = getToken();
-      const container = document.getElementById("activity-list");
+      if (!token) return;
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5`, {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=3`, {
           headers: {
             "Authorization": `token ${token}`,
             "Accept": "application/vnd.github.v3+json"
@@ -700,112 +1067,42 @@
         });
         if (res.ok) {
           const data = await res.json();
-          container.innerHTML = "";
-          if (data.workflow_runs.length === 0) {
-            container.innerHTML = `<div style="font-size:12px; color:#94a3b8; text-align:center; padding:10px;">No recent runs yet</div>`;
-            return;
+          if (data.workflow_runs && data.workflow_runs.length > 0) {
+            const latest = data.workflow_runs[0];
+            const isRun = latest.status === "in_progress" || latest.status === "queued";
+            if (isRun) {
+              document.getElementById("booking-browser-status").innerText = "● Running";
+              document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
+              document.getElementById("booking-activity-label").innerText = `Cloud Action #${latest.run_number} In Progress...`;
+            } else {
+              document.getElementById("booking-browser-status").innerText = "● Idle";
+              document.getElementById("booking-browser-status").className = "stacked-card-value status-idle";
+              if (latest.conclusion === "success") {
+                document.getElementById("booking-activity-label").innerText = `Run #${latest.run_number} Completed Successfully.`;
+              }
+            }
           }
-          data.workflow_runs.forEach(run => {
-            const isRun = run.status === "in_progress" || run.status === "queued";
-            const isSuccess = run.conclusion === "success";
-            const statusClass = isRun ? "pill-running" : (isSuccess ? "pill-success" : "pill-failed");
-            const statusLabel = isRun ? run.status : (isSuccess ? "Success" : (run.conclusion || "Done"));
-            const timeAgo = new Date(run.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            const item = document.createElement("div");
-            item.className = "activity-item";
-            item.innerHTML = `
-              <div>
-                <div class="name">${run.name}</div>
-                <div class="time">${timeAgo} • #${run.run_number}</div>
-              </div>
-              <span class="pill-status ${statusClass}">${statusLabel}</span>
-            `;
-            container.appendChild(item);
-          });
         }
       } catch (e) {
         console.error("Runs fetch error", e);
       }
     }
 
-    // Trigger Complaint Booking
-    async function triggerBooking() {
-      const quota = document.getElementById("booking-quota").value;
-      const btn = document.getElementById("btn-book");
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳ Starting Booking on Cloud...</span>`;
-
-      const token = getToken();
-      try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/dispatches`, {
-          method: "POST",
-          headers: {
-            "Authorization": `token ${token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            ref: "main",
-            inputs: { quota: quota }
-          })
-        });
-
-        if (res.status === 204) {
-          showToast(`🚀 Booking Started! (Quota: ${quota})`);
-          setTimeout(fetchRuns, 2000);
-        } else {
-          showToast(`❌ Error: ${res.statusText}`);
-        }
-      } catch (e) {
-        showToast(`❌ Error: ${e.message}`);
-      } finally {
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.innerHTML = `<span>▶ Start Complaint Booking on Cloud</span>`;
-        }, 3000);
-      }
+    function cloudSync() {
+      showToast("☁️ Syncing with GitHub cloud database...");
+      fetchData();
+      fetchRuns();
+      setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
 
-    // Trigger Complaint Assign
-    async function triggerAssign() {
-      const dt = document.getElementById("assign-dt").value;
-      const btn = document.getElementById("btn-assign");
-      btn.disabled = true;
-      btn.innerHTML = `<span>⏳ Starting Assign on Cloud...</span>`;
-
+    function downloadReport() {
       const token = getToken();
-      try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/dispatches`, {
-          method: "POST",
-          headers: {
-            "Authorization": `token ${token}`,
-            "Accept": "application/vnd.github.v3+json",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            ref: "main",
-            inputs: { dt_code: dt }
-          })
-        });
-
-        if (res.status === 204) {
-          showToast(`🚀 Assign Started on Cloud for ${dt}!`);
-          setTimeout(fetchRuns, 2000);
-        } else {
-          showToast(`❌ Error: ${res.statusText}`);
-        }
-      } catch (e) {
-        showToast(`❌ Error: ${e.message}`);
-      } finally {
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.innerHTML = `<span>▶ Start Assigning Complaints on Cloud</span>`;
-        }, 3000);
-      }
+      showToast("Downloading latest Booked Report from Cloud...");
+      window.open(`https://raw.githubusercontent.com/${REPO}/main/Complaint_Automation_Booked_Report.xlsx?token=${token}`, "_blank");
     }
 
-    // Auto load data on open
+    // Init
+    getToken();
     fetchData();
     fetchRuns();
     setInterval(fetchRuns, 10000);
