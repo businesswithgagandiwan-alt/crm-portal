@@ -380,6 +380,50 @@
     .status-running { color: #059669; animation: pulse 1.5s infinite; }
     .status-booked { color: #16A34A; }
 
+    /* Live Progress Bar */
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: #E2E8F0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #EC008C 0%, #10B981 100%);
+      transition: width 0.4s ease;
+      animation: progressGlow 1.5s infinite alternate;
+    }
+
+    @keyframes progressGlow {
+      from { filter: brightness(1); }
+      to { filter: brightness(1.2); }
+    }
+
+    /* Live Pulse Badge */
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #BBF7D0;
+    }
+
+    .live-indicator.syncing {
+      background: #FEF3C7;
+      color: #92400E;
+      border-color: #FDE68A;
+    }
+
     /* Activity Box */
     .activity-log-box {
       background: #FFFFFF;
@@ -694,8 +738,14 @@
 
             <div class="strip-heading">Current Activity</div>
             <div class="stacked-card" style="grid-column: span 2;">
-              <div class="stacked-card-title">ACTIVITY</div>
+              <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>ACTIVITY</span>
+                <span id="booking-progress-pct" style="color:#0284C7; font-weight:bold;"></span>
+              </div>
               <div class="stacked-card-value" id="booking-activity-label">Awaiting Input... (Click Start Processing)</div>
+              <div class="progress-track" id="booking-progress-track">
+                <div class="progress-bar" id="booking-progress-bar"></div>
+              </div>
             </div>
 
             <div class="strip-heading">Queue Status</div>
@@ -810,13 +860,19 @@
   <div class="modal-overlay" id="quota-dialog">
     <div class="qt-dialog qt-dialog-large">
       <div class="dialog-header">
-        <span style="color: #0369A1; font-weight: 700;">📋 Complaint Booking - Select Quota</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #0369A1; font-weight: 700;">📋 Complaint Booking - Select Quota</span>
+          <span class="live-indicator" id="quota-sync-pill">🟢 Live Synced</span>
+        </div>
         <span style="cursor: pointer;" onclick="closeModal('quota-dialog')">✕</span>
       </div>
       <div class="dialog-body">
         <!-- 1. Summary box: DT-Wise Record Summary (Non-Editable / Pure Info) -->
         <div class="summary-card-box">
-          <div style="font-weight: 700; color: #334155; margin-bottom: 4px;">📊 DT-Wise Record Summary (Read-Only):</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-weight: 700; color: #334155;">📊 DT-Wise Record Summary (Read-Only):</span>
+            <span id="quota-sync-time" style="font-size:10px; color:#64748B;">Synced: --:--:--</span>
+          </div>
           <div id="dt-breakdown-container">
             • <b>DT-2016272</b>: 51 records<br>
             • <b>DT-2017416</b>: 44 records<br>
@@ -959,8 +1015,18 @@
       }
     }
 
-    function openBookingQuotaDialog() {
+    let livePollInterval = null;
+    let activeRunId = null;
+
+    async function openBookingQuotaDialog() {
+      // Always refresh queue data synchronously before displaying dialog
+      const syncPill = document.getElementById("quota-sync-pill");
+      if (syncPill) {
+        syncPill.className = "live-indicator syncing";
+        syncPill.innerText = "🔄 Syncing...";
+      }
       document.getElementById("quota-dialog").style.display = "flex";
+      await fetchData();
     }
 
     function openAssignDTDialog() {
@@ -999,12 +1065,20 @@
 
       const btn = document.getElementById("btn-submit-quota");
       btn.innerText = "Starting...";
-      showToast(`🚀 Dispatched Complaint Booking (Quota: ${q}) on Cloud!`);
+      showToast(`🚀 Dispatched Complaint Booking (${q} Tickets) on Cloud!`);
 
-      appendLog(`[ACTION] Dispatched booking workflow for quota ${q} to GitHub runner...`, "log-info");
+      appendLog(`[ACTION] Dispatched booking workflow for ${q} complaints to GitHub runner...`, "log-info");
       document.getElementById("booking-browser-status").innerText = "● Running (Headless)";
       document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
-      document.getElementById("booking-activity-label").innerText = `Booking Quota: ${q}...`;
+      document.getElementById("booking-activity-label").innerText = `Starting Cloud Worker for ${q} complaints...`;
+
+      // Show and reset progress bar
+      const pTrack = document.getElementById("booking-progress-track");
+      const pBar = document.getElementById("booking-progress-bar");
+      const pPct = document.getElementById("booking-progress-pct");
+      if (pTrack) pTrack.style.display = "block";
+      if (pBar) pBar.style.width = "10%";
+      if (pPct) pPct.innerText = "10%";
 
       const token = getToken();
       try {
@@ -1015,11 +1089,11 @@
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ ref: "main", inputs: { quota: q } })
+          body: JSON.stringify({ ref: "main", inputs: { complaint_count: q } })
         });
         if (res.status === 204) {
-          appendLog(`✓ GitHub Actions workflow started successfully for quota ${q}!`, "log-success");
-          setTimeout(fetchRuns, 2500);
+          appendLog(`✓ GitHub Actions workflow accepted! Runner spinning up...`, "log-success");
+          startLiveRunTracking("book");
         } else {
           appendLog(`✗ Error triggering workflow: ${res.statusText}`, "log-warn");
         }
@@ -1052,7 +1126,7 @@
         });
         if (res.status === 204) {
           appendAssignLog(`✓ GitHub Actions assign workflow started for ${dt}!`, "log-success");
-          setTimeout(fetchRuns, 2500);
+          startLiveRunTracking("assign");
         } else {
           appendAssignLog(`✗ Error: ${res.statusText}`, "log-warn");
         }
@@ -1183,35 +1257,185 @@
         allOpt.innerText = `all (${validPending})`;
         sel.appendChild(allOpt);
       }
+
+      // Update sync time
+      const timeStr = new Date().toLocaleTimeString();
+      const syncTimeEl = document.getElementById("quota-sync-time");
+      if (syncTimeEl) syncTimeEl.innerText = `Synced: ${timeStr}`;
+
+      const syncPill = document.getElementById("quota-sync-pill");
+      if (syncPill) {
+        syncPill.className = "live-indicator";
+        syncPill.innerText = "🟢 Live Synced";
+      }
     }
 
-    // Fetch queue statistics from repository
+    // Fetch queue statistics from repository with dual format handling
     async function fetchData() {
       const token = getToken();
       if (!token) return;
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json`, {
+        // Use cache-busting timestamp
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json?_t=${Date.now()}`, {
           headers: {
             "Authorization": `token ${token}`,
-            "Accept": "application/vnd.github.v3.raw"
+            "Accept": "application/vnd.github.v3+json"
           }
         });
         if (res.ok) {
-          const data = await res.json();
-          const records = Array.isArray(data) ? data : (data.records || []);
-          updateBreakdown(records);
+          const apiJson = await res.json();
+          let records = [];
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const parsed = JSON.parse(rawUtf8);
+            records = Array.isArray(parsed) ? parsed : (parsed.records || []);
+          } else if (Array.isArray(apiJson)) {
+            records = apiJson;
+          } else if (apiJson.records) {
+            records = apiJson.records;
+          }
+          if (records.length > 0) {
+            updateBreakdown(records);
+          }
         }
       } catch (e) {
         console.error("Queue fetch error", e);
       }
     }
 
-    // Fetch recent workflow status
+    // Live Run Tracking with active step-by-step log streaming
+    let seenSteps = new Set();
+    function startLiveRunTracking(mode = "book") {
+      if (livePollInterval) clearInterval(livePollInterval);
+      seenSteps.clear();
+
+      let attempts = 0;
+      livePollInterval = setInterval(async () => {
+        attempts++;
+        const token = getToken();
+        if (!token) return;
+
+        try {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=1&_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+          if (!res.ok) return;
+
+          const data = await res.json();
+          if (!data.workflow_runs || data.workflow_runs.length === 0) return;
+
+          const latest = data.workflow_runs[0];
+          activeRunId = latest.id;
+          const isRun = latest.status === "in_progress" || latest.status === "queued";
+
+          // Update Status Cards
+          const browserStatus = document.getElementById(mode === "book" ? "booking-browser-status" : "assign-browser-status");
+          const portalStatus = document.getElementById(mode === "book" ? "booking-portal-status" : "assign-portal-status");
+          const activityLabel = document.getElementById(mode === "book" ? "booking-activity-label" : "assign-activity-label");
+          const pTrack = document.getElementById("booking-progress-track");
+          const pBar = document.getElementById("booking-progress-bar");
+          const pPct = document.getElementById("booking-progress-pct");
+
+          if (isRun) {
+            browserStatus.innerText = "● Running (Headless)";
+            browserStatus.className = "stacked-card-value status-running";
+            portalStatus.innerText = "● Processing (Freshdesk)";
+            portalStatus.className = "stacked-card-value status-running";
+
+            // Fetch active job steps for live progress
+            const jobsRes = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${latest.id}/jobs?_t=${Date.now()}`, {
+              headers: {
+                "Authorization": `token ${token}`,
+                "Accept": "application/vnd.github.v3+json"
+              }
+            });
+            if (jobsRes.ok) {
+              const jobsData = await jobsRes.json();
+              if (jobsData.jobs && jobsData.jobs.length > 0) {
+                const job = jobsData.jobs[0];
+                const steps = job.steps || [];
+                const totalSteps = steps.length || 7;
+                let completedSteps = 0;
+                let currentStepName = "Initializing Cloud Runner...";
+
+                steps.forEach(st => {
+                  if (st.status === "completed") {
+                    completedSteps++;
+                    if (!seenSteps.has(st.name)) {
+                      seenSteps.add(st.name);
+                      if (mode === "book") appendLog(`✓ Step complete: ${st.name}`, "log-info");
+                      else appendAssignLog(`✓ Step complete: ${st.name}`, "log-info");
+                    }
+                  } else if (st.status === "in_progress") {
+                    currentStepName = st.name;
+                    if (!seenSteps.has("in_" + st.name)) {
+                      seenSteps.add("in_" + st.name);
+                      if (mode === "book") appendLog(`⏳ Running: ${st.name}...`, "log-info");
+                      else appendAssignLog(`⏳ Running: ${st.name}...`, "log-info");
+                    }
+                  }
+                });
+
+                const pct = Math.min(95, Math.max(15, Math.round(((completedSteps + 0.5) / totalSteps) * 100)));
+                activityLabel.innerText = `[${pct}%] ${currentStepName}`;
+                if (pBar) pBar.style.width = `${pct}%`;
+                if (pPct) pPct.innerText = `${pct}%`;
+              }
+            }
+          } else {
+            // Finished!
+            clearInterval(livePollInterval);
+            livePollInterval = null;
+
+            browserStatus.innerText = "● Idle (Headless)";
+            browserStatus.className = "stacked-card-value status-idle";
+            portalStatus.innerText = "● Standby (Freshdesk)";
+            portalStatus.className = "stacked-card-value status-idle";
+
+            if (latest.conclusion === "success") {
+              activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
+              if (pBar) pBar.style.width = "100%";
+              if (pPct) pPct.innerText = "100%";
+              if (mode === "book") {
+                appendLog(`🎉 ALL COMPLAINTS BOOKED SUCCESSFULLY ON CLOUD!`, "log-success");
+                showToast("✓ Complaint Booking Completed on Cloud!");
+              } else {
+                appendAssignLog(`🎉 COMPLAINT TICKETS ASSIGNED SUCCESSFULLY!`, "log-success");
+                showToast("✓ Complaint Assignment Completed!");
+              }
+              setTimeout(() => {
+                if (pTrack) pTrack.style.display = "none";
+                if (pPct) pPct.innerText = "";
+              }, 6000);
+            } else {
+              activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
+              if (mode === "book") appendLog(`⚠️ Run finished with status: ${latest.conclusion}`, "log-warn");
+              else appendAssignLog(`⚠️ Run finished with status: ${latest.conclusion}`, "log-warn");
+            }
+            // Always sync fresh queue records after run
+            fetchData();
+          }
+        } catch (err) {
+          console.error("Live poll error", err);
+        }
+
+        // Safety timeout: 45 minutes
+        if (attempts > 900) {
+          clearInterval(livePollInterval);
+        }
+      }, 3000);
+    }
+
+    // Fetch recent workflow status (Background poller)
     async function fetchRuns() {
+      if (livePollInterval) return; // Don't interfere if live tracking is running
       const token = getToken();
       if (!token) return;
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=3`, {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=1&_t=${Date.now()}`, {
           headers: {
             "Authorization": `token ${token}`,
             "Accept": "application/vnd.github.v3+json"
@@ -1223,11 +1447,9 @@
             const latest = data.workflow_runs[0];
             const isRun = latest.status === "in_progress" || latest.status === "queued";
             if (isRun) {
-              document.getElementById("booking-browser-status").innerText = "● Running";
-              document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
-              document.getElementById("booking-activity-label").innerText = `Cloud Action #${latest.run_number} In Progress...`;
+              startLiveRunTracking("book");
             } else {
-              document.getElementById("booking-browser-status").innerText = "● Idle";
+              document.getElementById("booking-browser-status").innerText = "● Idle (Headless)";
               document.getElementById("booking-browser-status").className = "stacked-card-value status-idle";
               if (latest.conclusion === "success") {
                 document.getElementById("booking-activity-label").innerText = `Run #${latest.run_number} Completed Successfully.`;
