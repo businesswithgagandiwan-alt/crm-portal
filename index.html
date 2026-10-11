@@ -12,6 +12,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="https://img.icons8.com/color/96/cloud--v1.png" type="image/png">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- SheetJS library for direct Excel parsing and 'Add More Data' in browser -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --pink-normal: #EC008C;
@@ -51,7 +53,7 @@
       border-radius: 8px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       width: 100%;
-      max-width: 1080px;
+      max-width: 1100px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -161,7 +163,7 @@
     .app-body {
       display: flex;
       background-color: #FFFFFF;
-      min-height: 620px;
+      min-height: 580px;
     }
 
     /* Left Sidebar */
@@ -286,7 +288,7 @@
       color: #0F172A;
     }
 
-    /* 3D Action Buttons */
+    /* 3D Action Buttons Grid */
     .action-btns-grid {
       display: flex;
       flex-direction: column;
@@ -297,13 +299,25 @@
     .action-row {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 6px;
+      gap: 5px;
+    }
+
+    .action-row-7 {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    .action-row-6 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
     }
 
     .action-row-5 {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 6px;
+      gap: 5px;
     }
 
     .action-btn-3d {
@@ -314,16 +328,16 @@
       border-right: 2px solid #6E0041;
       border-bottom: 3.5px solid #6E0041;
       border-radius: 5px;
-      padding: 5px 3px;
+      padding: 4px 2px;
       font-weight: 700;
-      font-size: 10.5px;
+      font-size: 10px;
       text-align: center;
       cursor: pointer;
-      line-height: 1.25;
+      line-height: 1.2;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 34px;
+      min-height: 32px;
       transition: all 0.1s;
       user-select: none;
     }
@@ -350,7 +364,7 @@
       border-bottom: 3.5px solid #0C4A6E !important;
     }
 
-    /* 4-Row Status Strip (Exact Mathematical Qt Grid) */
+    /* 3-Row Status Strip (Exact Mathematical Qt Grid) */
     .status-strip-frame {
       background-color: #F8FAFC;
       border: 1.5px solid #CBD5E1;
@@ -361,7 +375,7 @@
 
     .status-strip-row {
       display: grid;
-      grid-template-columns: 140px repeat(6, 1fr);
+      grid-template-columns: 135px repeat(6, 1fr);
       gap: 5px;
       margin-bottom: 5px;
     }
@@ -375,7 +389,7 @@
       background: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
       color: #FFFFFF;
       font-weight: 800;
-      font-size: 10.5px;
+      font-size: 10px;
       border: 1px solid #4ADE80;
       border-right: 2px solid #14532D;
       border-bottom: 3px solid #14532D;
@@ -443,7 +457,7 @@
       align-items: center;
       gap: 6px;
       font-weight: 800;
-      font-size: 11.5px;
+      font-size: 11px;
       color: #1E3A8A;
       user-select: none;
     }
@@ -451,7 +465,7 @@
     .timer-status-pill {
       flex: 1;
       text-align: center;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       color: #1E40AF;
     }
@@ -478,8 +492,7 @@
       background: #E2E8F0;
       border-radius: 4px;
       overflow: hidden;
-      margin-top: 5px;
-      display: none;
+      margin-top: 3px;
     }
 
     .progress-bar {
@@ -514,51 +527,6 @@
       color: #92400E;
       border-color: #FDE68A;
     }
-
-    /* Activity Box */
-    .activity-log-box {
-      background: #FFFFFF;
-      border: 1.5px solid #CBD5E1;
-      border-radius: 5px;
-      padding: 8px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 240px;
-    }
-
-    .activity-log-title {
-      font-size: 10px;
-      font-weight: 800;
-      color: #475569;
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #E2E8F0;
-      padding-bottom: 4px;
-    }
-
-    .log-content {
-      font-family: 'Consolas', monospace;
-      font-size: 11px;
-      color: #1E293B;
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 4px;
-      padding: 6px 8px;
-      flex: 1;
-      overflow-y: auto;
-      max-height: 240px;
-      line-height: 1.45;
-    }
-
-    .log-line {
-      margin-bottom: 3px;
-    }
-
-    .log-info { color: #0369A1; }
-    .log-success { color: #15803D; font-weight: 700; }
-    .log-warn { color: #B45309; }
 
     /* Native Modal Popup for Quota & DT Code */
     .modal-overlay {
@@ -611,7 +579,7 @@
     .dialog-header {
       background: #F1F5F9;
       border-bottom: 1px solid #CBD5E1;
-      padding: 6px 10px;
+      padding: 7px 12px;
       font-size: 11.5px;
       font-weight: 700;
       color: #0F172A;
@@ -695,36 +663,95 @@
     @media (max-width: 768px) {
       body {
         padding: 0;
+        background: #CBD5E1;
       }
 
       .app-window {
         border-radius: 0;
         border: none;
         min-height: 100vh;
+        box-shadow: none;
+      }
+
+      .title-bar {
+        padding: 6px 8px;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .title-text {
+        font-size: 12px;
+      }
+
+      .anti-sleep-badge, .cloud-status-badge {
+        font-size: 9px;
+        padding: 2px 6px;
       }
 
       .sidebar {
         width: 140px;
       }
 
-      .action-row {
-        grid-template-columns: repeat(3, 1fr);
+      .sidebar.collapsed {
+        width: 40px;
       }
 
-      .action-row-5 {
+      .action-row-7 {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+      }
+
+      .action-row-6, .action-row-5 {
         grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+      }
+
+      .action-btn-3d {
+        font-size: 9px;
+        min-height: 30px;
+        padding: 3px 2px;
       }
 
       .status-strip-frame {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 4px;
       }
 
       .status-strip-row {
-        min-width: 600px;
+        min-width: 580px;
+        gap: 4px;
+        margin-bottom: 4px;
       }
 
       .timer-banner {
-        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        text-align: center;
+      }
+
+      .qt-dialog, .qt-dialog-large {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        margin: 10px auto;
+      }
+
+      .summary-card-box, .expiry-card-box {
+        font-size: 10px;
+        padding: 6px 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .action-row-7 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .action-row-6, .action-row-5 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .sidebar:not(.collapsed) {
+        width: 120px;
       }
     }
   </style>
@@ -799,10 +826,11 @@
         <div class="group-box" id="view-complaint_booking">
           <div class="group-box-title">Complaint Booking</div>
 
-          <!-- 11 Action Buttons -->
+          <!-- Action Buttons with "Add More Data" added -->
           <div class="action-btns-grid">
-            <div class="action-row">
-              <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded in Cloud memory!')">Upload<br>Excel</button>
+            <div class="action-row-7">
+              <button class="action-btn-3d" onclick="triggerUploadExcel()">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="triggerAddMoreData()">Add More<br>Data</button>
               <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Open Fresh<br>Browser</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
@@ -858,7 +886,7 @@
                   <span>PROGRESS</span>
                   <span id="booking-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
                 </div>
-                <div class="progress-track" id="booking-progress-track" style="display:block; margin-top:2px;">
+                <div class="progress-track" id="booking-progress-track">
                   <div class="progress-bar" id="booking-progress-bar" style="width:0%;"></div>
                 </div>
               </div>
@@ -904,19 +932,7 @@
             <button class="next-now-btn" onclick="showToast('⚡ Instant Mode: Next Ticket Active')">⚡ Next Now</button>
           </div>
 
-          <!-- Activity Log Area -->
-          <div class="activity-log-box">
-            <div class="activity-log-title">
-              <span>Activity Log (Live Cloud Output)</span>
-              <span style="cursor: pointer; color: #0284C7;" onclick="fetchData()">🔄 Sync Log</span>
-            </div>
-            <div class="log-content" id="booking-log-content">
-              <div class="log-line log-info">[INFO] Complaint Booking ready for cloud remote operation.</div>
-              <div class="log-line log-info">[INFO] Cloud GitHub Actions Backend: businesswithgagandiwan-alt/sun-crm-automation.</div>
-              <div class="log-line log-success">[READY] Ashokan K (Row #13, SC: 82206640946) is queued at top priority.</div>
-              <div class="log-line log-info">[INFO] Laptop shutdown safe — all executions run in independent cloud runner.</div>
-            </div>
-          </div>
+          <!-- Activity Log Box has been removed as per User Request #1 -->
         </div>
 
         <!-- ================= MODULE 2: ASSIGN COMPLAINT ================= -->
@@ -925,7 +941,7 @@
 
           <!-- 11 Action Buttons -->
           <div class="action-btns-grid">
-            <div class="action-row">
+            <div class="action-row-6">
               <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
               <button class="action-btn-3d" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
@@ -943,46 +959,186 @@
             </div>
           </div>
 
-          <!-- Status Strip -->
+          <!-- Exact Qt App 3-Row Status Strip -->
           <div class="status-strip-frame">
-            <div class="strip-heading">Session & Status</div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">BROWSER</div>
-              <div class="stacked-card-value status-idle" id="assign-browser-status">● Idle (Headless)</div>
-            </div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">PORTAL</div>
-              <div class="stacked-card-value status-idle" id="assign-portal-status">● Standby (Freshdesk)</div>
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="assign-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="assign-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">PATH</div>
+                <div class="stacked-card-value" style="color: #0284C7;">📁 Saved Direct Queue</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">VALIDATION</div>
+                <div class="stacked-card-value" style="color: #16A34A;">● Direct Queue Active</div>
+              </div>
             </div>
 
-            <div class="strip-heading">Current Activity</div>
-            <div class="stacked-card" style="grid-column: span 2;">
-              <div class="stacked-card-title">ACTIVITY</div>
-              <div class="stacked-card-value" id="assign-activity-label">Awaiting Input... (Click Start Processing to Assign)</div>
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="assign-card-label">—</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="assign-activity-label">Awaiting Input... (Click Start Processing to Assign)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="assign-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="assign-progress-track">
+                  <div class="progress-bar" id="assign-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
             </div>
 
-            <div class="strip-heading">Direct Queue</div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">DT-2016272</div>
-              <div class="stacked-card-value" style="color: #2563EB;">MonuDubey</div>
-            </div>
-            <div class="stacked-card">
-              <div class="stacked-card-title">DT-2017416</div>
-              <div class="stacked-card-value" style="color: #7C3AED;">Pavan KumarSharma</div>
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="assign-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="assign-stat-processed">● 0</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="assign-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="assign-stat-booked">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="assign-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="assign-stat-time">⏱ 00:00</div>
+              </div>
             </div>
           </div>
 
-          <!-- Activity Log Area -->
-          <div class="activity-log-box">
-            <div class="activity-log-title">
-              <span>Activity Log (Direct Queue Assignment)</span>
-              <span style="cursor: pointer; color: #0284C7;" onclick="fetchRuns()">🔄 Refresh Runs</span>
+          <!-- Direct Queue Engineer Card -->
+          <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:8px 12px; margin-top:4px; display:flex; justify-content:space-around; align-items:center; font-size:11.5px;">
+            <div><b>DT-2016272:</b> <span style="color:#15803D; font-weight:700;">MonuDubey</span></div>
+            <div style="color:#94A3B8;">|</div>
+            <div><b>DT-2017416:</b> <span style="color:#7C3AED; font-weight:700;">Pavan KumarSharma</span></div>
+          </div>
+
+          <!-- Activity Log Box removed as requested -->
+        </div>
+
+        <!-- ================= MODULE 3: CLOSE COMPLAINT ================= -->
+        <div class="group-box" id="view-close_complaint" style="display: none;">
+          <div class="group-box-title">Close Complaint</div>
+
+          <!-- 11 Action Buttons matching Desktop App -->
+          <div class="action-btns-grid">
+            <div class="action-row-6">
+              <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="openCloseDTDialog()">Open Fresh<br>Browser</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d" onclick="openCloseDTDialog()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
             </div>
-            <div class="log-content" id="assign-log-content">
-              <div class="log-line log-info">[INFO] Complaint Assign Automation ready.</div>
-              <div class="log-line log-info">[INFO] Target Engineers: MonuDubey (DT-2016272), Pavan KumarSharma (DT-2017416).</div>
-              <div class="log-line log-info">[INFO] Click 'Start Processing' to assign live unresolved queue on cloud.</div>
+            <div class="action-row-5">
+              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+              <button class="action-btn-3d" onclick="openCloseDTDialog()">Resume</button>
+              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+              <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
             </div>
+          </div>
+
+          <!-- Exact Qt App 3-Row Status Strip -->
+          <div class="status-strip-frame">
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card" style="grid-column: span 3;">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="close-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 3;">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="close-portal-status">● Standby (Freshdesk)</div>
+              </div>
+            </div>
+
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="close-card-label">—</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 3;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="close-activity-label">Awaiting Input... (Click Open Fresh Browser or Start Processing)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 1;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="close-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="close-progress-track">
+                  <div class="progress-bar" id="close-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="close-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="close-stat-processed">● 0</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="close-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="close-stat-booked">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="close-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="close-stat-time">⏱ 00:00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info banner -->
+          <div style="background:#EFF6FF; border:1.5px solid #93C5FD; border-radius:6px; padding:8px 12px; margin-top:4px; font-size:11px; color:#1E3A8A; display:flex; justify-content:space-between; align-items:center;">
+            <span>ℹ️ <b>Auto Closure Rules:</b> Set Visit Charges = <b>₹200</b> & Status = <b>Closed</b></span>
+            <span style="font-weight:700; color:#059669;">● Cloud Headless Playwright Ready</span>
           </div>
         </div>
 
@@ -1001,7 +1157,11 @@
     </div>
   </div>
 
-  <!-- Native Dialog: Quota Selection Dialog (Exactly matches Laptop App Qt Dialog) -->
+  <!-- Hidden File Pickers for Excel Upload and Add More Data -->
+  <input type="file" id="file-upload-excel" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'replace')">
+  <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
+
+  <!-- Native Dialog: Quota Selection Dialog (User-Defined Quantity Input, Exactly matches Qt App) -->
   <div class="modal-overlay" id="quota-dialog">
     <div class="qt-dialog qt-dialog-large">
       <div class="dialog-header">
@@ -1036,18 +1196,13 @@
           </div>
         </div>
 
-        <!-- 3. Editable Input for Today's Quantity -->
+        <!-- 3. User-defined Input for Today's Quantity (Replaced list dropdown as per Request #2) -->
         <div class="dialog-prompt">आज कितनी complaints बुक करनी हैं? (Enter Today's Quantity):</div>
-        <select class="dialog-select" id="quota-select">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="5" selected>5</option>
-          <option value="10">10</option>
-          <option value="15">15</option>
-          <option value="20">20</option>
-          <option value="all">all (92)</option>
-        </select>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px;">
+          <input type="number" class="dialog-select" id="quota-input" min="1" max="500" value="5" placeholder="Enter quantity (e.g. 5)" style="margin-bottom:0; flex:1; font-size:14px; text-align:center; font-weight:800; color:#BE185D;">
+          <button type="button" class="dialog-btn dialog-btn-secondary" id="btn-select-all-quota" onclick="selectAllQuota()" style="white-space:nowrap; padding:6px 12px; font-weight:700;">Select All (<span id="quota-all-count">92</span>)</button>
+        </div>
+
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Start Processing</button>
@@ -1072,6 +1227,27 @@
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('assign-dialog')">Cancel</button>
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-assign" onclick="submitAssignDT()">Start Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Native Dialog: DT Code Selection Dialog for Close Complaint (Request #8) -->
+  <div class="modal-overlay" id="close-dialog">
+    <div class="qt-dialog">
+      <div class="dialog-header">
+        <span>🔒 Close Complaint - Select DT Code</span>
+        <span style="cursor: pointer;" onclick="closeModal('close-dialog')">✕</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-prompt">Select DT Code to Close Unresolved Tickets (Charges: ₹200):</div>
+        <select class="dialog-select" id="close-dt-select">
+          <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+          <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+        </select>
+        <div class="dialog-btns">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('close-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-close" onclick="submitCloseDT()">Start Processing</button>
         </div>
       </div>
     </div>
@@ -1103,14 +1279,16 @@
     const _T_PARTS = ["ghp_", "wh3yWi0f4XLi", "MM95YzXZTufF", "uMg8Yd0DMWsB"];
     const DEFAULT_TOKEN = _T_PARTS.join("");
 
+    let currentQueueRecords = [];
+    let currentQueueSha = null;
+
     function getToken() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("token")) {
         localStorage.setItem("crm_token", params.get("token"));
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-      const tok = localStorage.getItem("crm_token") || DEFAULT_TOKEN;
-      return tok;
+      return localStorage.getItem("crm_token") || DEFAULT_TOKEN;
     }
 
     function showToast(msg) {
@@ -1132,12 +1310,15 @@
 
       document.getElementById("view-complaint_booking").style.display = "none";
       document.getElementById("view-assign_complaint").style.display = "none";
+      document.getElementById("view-close_complaint").style.display = "none";
       document.getElementById("view-generic").style.display = "none";
 
       if (mod === "complaint_booking") {
         document.getElementById("view-complaint_booking").style.display = "flex";
       } else if (mod === "assign_complaint") {
         document.getElementById("view-assign_complaint").style.display = "flex";
+      } else if (mod === "close_complaint") {
+        document.getElementById("view-close_complaint").style.display = "flex";
       } else {
         const genView = document.getElementById("view-generic");
         genView.style.display = "flex";
@@ -1146,7 +1327,6 @@
           rbuzz: { title: "Rbuzz Automation", icon: "⚡", name: "Rbuzz Automation Module" },
           fresh_sale: { title: "FreshSale Atomation", icon: "🌐", name: "FreshSale Atomation ☁️" },
           update_mob: { title: "Update Mob no", icon: "📱", name: "Update Mob no ☁️" },
-          close_complaint: { title: "Close Complaint", icon: "🔒", name: "Close Complaint ☁️" },
           asset_tag: { title: "Asset Tag", icon: "🏷️", name: "Asset Tag Module" },
           invoice: { title: "Invoice Automation", icon: "🧾", name: "Invoice Automation Module" },
           gmb: { title: "GMB Manager", icon: "🏢", name: "GMB Manager Module" },
@@ -1163,7 +1343,6 @@
     let activeRunId = null;
 
     async function openBookingQuotaDialog() {
-      // Always refresh queue data synchronously before displaying dialog
       const syncPill = document.getElementById("quota-sync-pill");
       if (syncPill) {
         syncPill.className = "live-indicator syncing";
@@ -1175,6 +1354,10 @@
 
     function openAssignDTDialog() {
       document.getElementById("assign-dialog").style.display = "flex";
+    }
+
+    function openCloseDTDialog() {
+      document.getElementById("close-dialog").style.display = "flex";
     }
 
     function openTokenDialog() {
@@ -1202,25 +1385,163 @@
       showToast(`DT-${dt}: User configured, Engineer: ${eng}`);
     }
 
+    function selectAllQuota() {
+      const maxCnt = document.getElementById("quota-all-count").innerText || "92";
+      document.getElementById("quota-input").value = maxCnt;
+    }
+
+    // Trigger File Inputs for Excel Upload and Add More Data
+    function triggerUploadExcel() {
+      document.getElementById("file-upload-excel").click();
+    }
+
+    function triggerAddMoreData() {
+      document.getElementById("file-add-more-data").click();
+    }
+
+    // Universal Excel Parser using SheetJS
+    async function handleExcelUpload(event, mode = "append") {
+      const file = event.target.files[0];
+      if (!file) return;
+      event.target.value = ""; // Reset file input
+
+      showToast(`Reading ${file.name}...`);
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[firstSheetName];
+          const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+          if (!rawRows || rawRows.length === 0) {
+            alert("No data found in selected Excel sheet!");
+            return;
+          }
+
+          // Normalize and validate rows
+          const parsedRecords = rawRows.map((r, i) => {
+            const sc = String(
+              r["Smart Card Number"] || r["SmartCardNumber"] || r["Smart Card"] ||
+              r["Smartcard"] || r["SC No"] || r["SC"] || r["Card No"] || ""
+            ).replace(/\D/g, "");
+
+            return {
+              "Input Row Number": String(r["Input Row Number"] || i + 1),
+              "Smart Card Number": sc,
+              "Customer Name": String(r["Customer Name"] || r["CustomerName"] || r["Name"] || "").trim(),
+              "Customer Name 2": String(r["Customer Name 2"] || "").trim(),
+              "OLD RMN": String(r["OLD RMN"] || r["Old RMN"] || "").replace(/\D/g, ""),
+              "RMN": String(r["RMN"] || r["Mobile"] || r["Phone"] || r["Calling No"] || "").replace(/\D/g, ""),
+              "New RMN": String(r["New RMN"] || "").replace(/\D/g, ""),
+              "Billing Cycle": String(r["Billing Cycle"] || r["BillingCycle"] || r["Expiry"] || "").trim(),
+              "DT Code": String(r["DT Code"] || r["DTCode"] || r["Distributor ID"] || "DT-2016272").trim(),
+              "Distributor ID": String(r["Distributor ID"] || r["DT Code"] || "DT-2016272").trim(),
+              "Portal Customer Status": String(r["Portal Customer Status"] || "Active").trim(),
+              "Status": String(r["Status"] || "").trim(),
+              "Related Customer Name": String(r["Related Customer Name"] || "").trim(),
+              "Remark": String(r["Remark"] || "").trim(),
+              "Processed At": String(r["Processed At"] || "").trim(),
+              "Complaint Remark": String(r["Complaint Remark"] || "").trim(),
+              "Complaint Status": String(r["Complaint Status"] || "").trim()
+            };
+          }).filter(r => r["Smart Card Number"].length >= 8);
+
+          if (parsedRecords.length === 0) {
+            alert("Could not find any valid Smart Card Numbers in the Excel sheet!");
+            return;
+          }
+
+          // Ensure fresh queue is loaded
+          await fetchData();
+
+          let finalRecords = [];
+          if (mode === "append") {
+            const existingScSet = new Set(
+              currentQueueRecords.map(r => String(r["Smart Card Number"] || "").trim())
+            );
+            const newUniqueRecords = parsedRecords.filter(r => !existingScSet.has(r["Smart Card Number"]));
+
+            if (newUniqueRecords.length === 0) {
+              alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue!`);
+              return;
+            }
+
+            // Append new records
+            finalRecords = [...currentQueueRecords, ...newUniqueRecords];
+            showToast(`✓ Merging ${newUniqueRecords.length} new records into queue...`);
+          } else {
+            finalRecords = parsedRecords;
+            showToast(`✓ Replacing queue with ${parsedRecords.length} records...`);
+          }
+
+          // Sort records by expiry priority
+          finalRecords.sort((a, b) => {
+            const da = parseBillingCycleDays(a["Billing Cycle"] || "");
+            const db = parseBillingCycleDays(b["Billing Cycle"] || "");
+            return da - db;
+          });
+
+          // Push updated queue to GitHub
+          const token = getToken();
+          const contentStr = JSON.stringify({ records: finalRecords }, null, 2);
+          const base64Content = btoa(unescape(encodeURIComponent(contentStr)));
+
+          const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: `Add More Data: Merged ${mode === "append" ? "new" : "fresh"} records from ${file.name} [skip ci]`,
+              content: base64Content,
+              sha: currentQueueSha
+            })
+          });
+
+          if (putRes.ok) {
+            const putData = await putRes.json();
+            currentQueueSha = putData.content.sha;
+            currentQueueRecords = finalRecords;
+            updateBreakdown(finalRecords);
+            showToast(`✓ Cloud Queue Updated! Total: ${finalRecords.length} records`);
+          } else {
+            showToast(`✗ Error updating cloud: ${putRes.statusText}`);
+          }
+        } catch (err) {
+          console.error("Excel parse error:", err);
+          alert("Error processing Excel file: " + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
     // Trigger Complaint Booking via GitHub Actions
     async function submitBookingQuota() {
-      const q = document.getElementById("quota-select").value;
+      const qInput = document.getElementById("quota-input");
+      const q = parseInt(qInput.value.trim());
+      if (isNaN(q) || q < 1) {
+        showToast("Please enter a valid number of complaints!");
+        return;
+      }
+
       closeModal("quota-dialog");
 
       const btn = document.getElementById("btn-submit-quota");
       btn.innerText = "Starting...";
       showToast(`🚀 Dispatched Complaint Booking (${q} Tickets) on Cloud!`);
 
-      appendLog(`[ACTION] Dispatched booking workflow for ${q} complaints to GitHub runner...`, "log-info");
       document.getElementById("booking-browser-status").innerText = "● Running (Headless)";
       document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
       document.getElementById("booking-activity-label").innerText = `Starting Cloud Worker for ${q} complaints...`;
 
       // Show and reset progress bar
-      const pTrack = document.getElementById("booking-progress-track");
       const pBar = document.getElementById("booking-progress-bar");
       const pPct = document.getElementById("booking-progress-pct");
-      if (pTrack) pTrack.style.display = "block";
       if (pBar) pBar.style.width = "10%";
       if (pPct) pPct.innerText = "10%";
 
@@ -1233,16 +1554,16 @@
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ ref: "main", inputs: { complaint_count: q } })
+          body: JSON.stringify({ ref: "main", inputs: { complaint_count: String(q) } })
         });
         if (res.status === 204) {
-          appendLog(`✓ GitHub Actions workflow accepted! Runner spinning up...`, "log-success");
+          showToast(`✓ Cloud Runner spinning up for ${q} tickets!`);
           startLiveRunTracking("book");
         } else {
-          appendLog(`✗ Error triggering workflow: ${res.statusText}`, "log-warn");
+          showToast(`✗ Error triggering workflow: ${res.statusText}`);
         }
       } catch (e) {
-        appendLog(`✗ Exception: ${e.message}`, "log-warn");
+        showToast(`✗ Exception: ${e.message}`);
       }
     }
 
@@ -1252,10 +1573,16 @@
       closeModal("assign-dialog");
 
       showToast(`🚀 Dispatched Assign Complaints for ${dt} on Cloud!`);
-      appendAssignLog(`[ACTION] Dispatched Direct Queue assign workflow for ${dt}...`, "log-info");
       document.getElementById("assign-browser-status").innerText = "● Running (Headless)";
       document.getElementById("assign-browser-status").className = "stacked-card-value status-running";
+      document.getElementById("assign-portal-status").innerText = "● Processing (Freshdesk)";
+      document.getElementById("assign-portal-status").className = "stacked-card-value status-running";
       document.getElementById("assign-activity-label").innerText = `Assigning tickets for ${dt}...`;
+
+      const pBar = document.getElementById("assign-progress-bar");
+      const pPct = document.getElementById("assign-progress-pct");
+      if (pBar) pBar.style.width = "15%";
+      if (pPct) pPct.innerText = "15%";
 
       const token = getToken();
       try {
@@ -1269,34 +1596,53 @@
           body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
         });
         if (res.status === 204) {
-          appendAssignLog(`✓ GitHub Actions assign workflow started for ${dt}!`, "log-success");
+          showToast(`✓ GitHub Actions assign workflow started for ${dt}!`);
           startLiveRunTracking("assign");
         } else {
-          appendAssignLog(`✗ Error: ${res.statusText}`, "log-warn");
+          showToast(`✗ Error: ${res.statusText}`);
         }
       } catch (e) {
-        appendAssignLog(`✗ Exception: ${e.message}`, "log-warn");
+        showToast(`✗ Exception: ${e.message}`);
       }
     }
 
-    function appendLog(msg, cls = "log-info") {
-      const box = document.getElementById("booking-log-content");
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement("div");
-      div.className = `log-line ${cls}`;
-      div.innerText = `${time} ${msg}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    }
+    // Trigger Close Complaint via GitHub Actions
+    async function submitCloseDT() {
+      const dt = document.getElementById("close-dt-select").value;
+      closeModal("close-dialog");
 
-    function appendAssignLog(msg, cls = "log-info") {
-      const box = document.getElementById("assign-log-content");
-      const time = new Date().toLocaleTimeString();
-      const div = document.createElement("div");
-      div.className = `log-line ${cls}`;
-      div.innerText = `${time} ${msg}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
+      showToast(`🚀 Dispatched Close Complaints for ${dt} on Cloud!`);
+      document.getElementById("close-browser-status").innerText = "● Running (Headless)";
+      document.getElementById("close-browser-status").className = "stacked-card-value status-running";
+      document.getElementById("close-portal-status").innerText = "● Processing (Freshdesk)";
+      document.getElementById("close-portal-status").className = "stacked-card-value status-running";
+      document.getElementById("close-activity-label").innerText = `Closing tickets for ${dt} (₹200)...`;
+
+      const pBar = document.getElementById("close-progress-bar");
+      const pPct = document.getElementById("close-progress-pct");
+      if (pBar) pBar.style.width = "15%";
+      if (pPct) pPct.innerText = "15%";
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/close_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+        });
+        if (res.status === 204) {
+          showToast(`✓ GitHub Actions close complaints started for ${dt}!`);
+          startLiveRunTracking("close");
+        } else {
+          showToast(`✗ Error: ${res.statusText}`);
+        }
+      } catch (e) {
+        showToast(`✗ Exception: ${e.message}`);
+      }
     }
 
     function parseBillingCycleDays(s) {
@@ -1354,6 +1700,7 @@
     }
 
     function updateBreakdown(records) {
+      currentQueueRecords = records;
       const booked = records.filter(isComplaintAlreadyBooked).length;
       const total = records.length;
       const totalPending = total - booked;
@@ -1430,22 +1777,15 @@
         expEl.innerHTML = expHtml;
       }
 
-      const sel = document.getElementById("quota-select");
-      if (sel) {
-        sel.innerHTML = "";
-        [1, 2, 3, 5, 10, 15, 20].forEach(n => {
-          if (n <= validPending) {
-            const opt = document.createElement("option");
-            opt.value = n;
-            opt.innerText = n;
-            if (n === 5 || (validPending < 5 && n === validPending)) opt.selected = true;
-            sel.appendChild(opt);
-          }
-        });
-        const allOpt = document.createElement("option");
-        allOpt.value = "all";
-        allOpt.innerText = `all (${validPending})`;
-        sel.appendChild(allOpt);
+      // Update Quota input limit and "Select All" badge
+      const allBadge = document.getElementById("quota-all-count");
+      if (allBadge) allBadge.innerText = validPending;
+      const qInput = document.getElementById("quota-input");
+      if (qInput) {
+        qInput.max = validPending;
+        if (!qInput.value || parseInt(qInput.value) > validPending) {
+          qInput.value = Math.min(5, validPending);
+        }
       }
 
       // Update sync time
@@ -1465,7 +1805,6 @@
       const token = getToken();
       if (!token) return;
       try {
-        // Use cache-busting timestamp
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json?_t=${Date.now()}`, {
           headers: {
             "Authorization": `token ${token}`,
@@ -1474,6 +1813,7 @@
         });
         if (res.ok) {
           const apiJson = await res.json();
+          currentQueueSha = apiJson.sha;
           let records = [];
           if (apiJson.content && apiJson.encoding === "base64") {
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
@@ -1542,7 +1882,7 @@
       }
     }
 
-    // Live Run Tracking with active step-by-step log streaming
+    // Live Run Tracking with active step-by-step progress
     let seenSteps = new Set();
     function startLiveRunTracking(mode = "book") {
       if (livePollInterval) clearInterval(livePollInterval);
@@ -1570,19 +1910,26 @@
           activeRunId = latest.id;
           const isRun = latest.status === "in_progress" || latest.status === "queued";
 
-          // Update Status Cards
-          const browserStatus = document.getElementById(mode === "book" ? "booking-browser-status" : "assign-browser-status");
-          const portalStatus = document.getElementById(mode === "book" ? "booking-portal-status" : "assign-portal-status");
-          const activityLabel = document.getElementById(mode === "book" ? "booking-activity-label" : "assign-activity-label");
-          const pTrack = document.getElementById("booking-progress-track");
-          const pBar = document.getElementById("booking-progress-bar");
-          const pPct = document.getElementById("booking-progress-pct");
+          // Elements
+          let prefix = "booking";
+          if (mode === "assign") prefix = "assign";
+          else if (mode === "close") prefix = "close";
+
+          const browserStatus = document.getElementById(`${prefix}-browser-status`);
+          const portalStatus = document.getElementById(`${prefix}-portal-status`);
+          const activityLabel = document.getElementById(`${prefix}-activity-label`);
+          const pBar = document.getElementById(`${prefix}-progress-bar`);
+          const pPct = document.getElementById(`${prefix}-progress-pct`);
 
           if (isRun) {
-            browserStatus.innerText = "● Running (Headless)";
-            browserStatus.className = "stacked-card-value status-running";
-            portalStatus.innerText = "● Processing (Freshdesk)";
-            portalStatus.className = "stacked-card-value status-running";
+            if (browserStatus) {
+              browserStatus.innerText = "● Running (Headless)";
+              browserStatus.className = "stacked-card-value status-running";
+            }
+            if (portalStatus) {
+              portalStatus.innerText = "● Processing (Freshdesk)";
+              portalStatus.className = "stacked-card-value status-running";
+            }
 
             // Fetch active job steps for live progress
             const jobsRes = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${latest.id}/jobs?_t=${Date.now()}`, {
@@ -1603,23 +1950,13 @@
                 steps.forEach(st => {
                   if (st.status === "completed") {
                     completedSteps++;
-                    if (!seenSteps.has(st.name)) {
-                      seenSteps.add(st.name);
-                      if (mode === "book") appendLog(`✓ Step complete: ${st.name}`, "log-info");
-                      else appendAssignLog(`✓ Step complete: ${st.name}`, "log-info");
-                    }
                   } else if (st.status === "in_progress") {
                     currentStepName = st.name;
-                    if (!seenSteps.has("in_" + st.name)) {
-                      seenSteps.add("in_" + st.name);
-                      if (mode === "book") appendLog(`⏳ Running: ${st.name}...`, "log-info");
-                      else appendAssignLog(`⏳ Running: ${st.name}...`, "log-info");
-                    }
                   }
                 });
 
                 const pct = Math.min(95, Math.max(15, Math.round(((completedSteps + 0.5) / totalSteps) * 100)));
-                activityLabel.innerText = `[${pct}%] ${currentStepName}`;
+                if (activityLabel) activityLabel.innerText = `[${pct}%] ${currentStepName}`;
                 if (pBar) pBar.style.width = `${pct}%`;
                 if (pPct) pPct.innerText = `${pct}%`;
               }
@@ -1629,48 +1966,38 @@
             clearInterval(livePollInterval);
             livePollInterval = null;
 
-            browserStatus.innerText = "● Idle (Headless)";
-            browserStatus.className = "stacked-card-value status-idle";
-            portalStatus.innerText = "● Standby (Freshdesk)";
-            portalStatus.className = "stacked-card-value status-idle";
+            if (browserStatus) {
+              browserStatus.innerText = "● Idle";
+              browserStatus.className = "stacked-card-value status-idle";
+            }
+            if (portalStatus) {
+              portalStatus.innerText = "● Standby";
+              portalStatus.className = "stacked-card-value status-idle";
+            }
 
             if (latest.conclusion === "success") {
-              activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
+              if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
               if (pBar) pBar.style.width = "100%";
               if (pPct) pPct.innerText = "100%";
-              if (mode === "book") {
-                appendLog(`🎉 ALL COMPLAINTS BOOKED SUCCESSFULLY ON CLOUD!`, "log-success");
-                showToast("✓ Complaint Booking Completed on Cloud!");
-              } else {
-                appendAssignLog(`🎉 COMPLAINT TICKETS ASSIGNED SUCCESSFULLY!`, "log-success");
-                showToast("✓ Complaint Assignment Completed!");
-              }
-              setTimeout(() => {
-                if (pTrack) pTrack.style.display = "none";
-                if (pPct) pPct.innerText = "";
-              }, 6000);
+              showToast("✓ Cloud Automation Completed Successfully!");
             } else {
-              activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
-              if (mode === "book") appendLog(`⚠️ Run finished with status: ${latest.conclusion}`, "log-warn");
-              else appendAssignLog(`⚠️ Run finished with status: ${latest.conclusion}`, "log-warn");
+              if (activityLabel) activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
             }
-            // Always sync fresh queue records after run
             fetchData();
           }
         } catch (err) {
           console.error("Live poll error", err);
         }
 
-        // Safety timeout: 45 minutes
         if (attempts > 900) {
           clearInterval(livePollInterval);
         }
       }, 3000);
     }
 
-    // Fetch recent workflow status (Background poller)
+    // Fetch recent workflow status
     async function fetchRuns() {
-      if (livePollInterval) return; // Don't interfere if live tracking is running
+      if (livePollInterval) return;
       const token = getToken();
       if (!token) return;
       try {
@@ -1686,13 +2013,13 @@
             const latest = data.workflow_runs[0];
             const isRun = latest.status === "in_progress" || latest.status === "queued";
             if (isRun) {
-              startLiveRunTracking("book");
+              const wfName = (latest.name || "").toLowerCase();
+              if (wfName.includes("assign")) startLiveRunTracking("assign");
+              else if (wfName.includes("close")) startLiveRunTracking("close");
+              else startLiveRunTracking("book");
             } else {
-              document.getElementById("booking-browser-status").innerText = "● Idle (Headless)";
+              document.getElementById("booking-browser-status").innerText = "● Idle";
               document.getElementById("booking-browser-status").className = "stacked-card-value status-idle";
-              if (latest.conclusion === "success") {
-                document.getElementById("booking-activity-label").innerText = `Run #${latest.run_number} Completed Successfully.`;
-              }
             }
           }
         }
