@@ -1373,11 +1373,6 @@
             </div>
           </div>
 
-          <!-- Info banner -->
-          <div style="background:#EFF6FF; border:1.5px solid #93C5FD; border-radius:6px; padding:8px 12px; margin-top:4px; font-size:11px; color:#1E3A8A; display:flex; justify-content:space-between; align-items:center;">
-            <span>ℹ️ <b>Auto Closure Rules:</b> Set Visit Charges = <b>₹200</b> & Status = <b>Closed</b></span>
-            <span style="font-weight:700; color:#059669;">● Cloud Headless Playwright Ready</span>
-          </div>
         </div>
 
         <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
@@ -2136,11 +2131,101 @@
       }
     }
 
-    // Live Run Tracking with active step-by-step progress
+    // Live Run Tracking with active step-by-step progress and elapsed timer
     let seenSteps = new Set();
+    let runTimerInterval = null;
+    let runSecondsElapsed = 0;
+
+    async function fetchAssignHistory() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_history.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          let hist = [];
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            hist = JSON.parse(rawUtf8);
+          } else if (Array.isArray(apiJson)) {
+            hist = apiJson;
+          }
+          if (Array.isArray(hist) && hist.length > 0) {
+            const last = hist[0];
+            const tot = document.getElementById("assign-stat-total");
+            const prc = document.getElementById("assign-stat-processed");
+            const scs = document.getElementById("assign-stat-booked");
+            const fld = document.getElementById("assign-stat-failed");
+            const rem = document.getElementById("assign-stat-pending");
+            if (tot) tot.innerText = `● ${last.processed || 0}`;
+            if (prc) prc.innerText = `● ${last.processed || 0}`;
+            if (scs) scs.innerText = `● ${last.success || 0}`;
+            if (fld) fld.innerText = `● ${last.failed || 0}`;
+            if (rem) rem.innerText = `● 0`;
+          }
+        }
+      } catch (e) {
+        console.error("Assign history fetch error", e);
+      }
+    }
+
+    async function fetchCloseHistory() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/close_complaint_history.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          let hist = [];
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            hist = JSON.parse(rawUtf8);
+          } else if (Array.isArray(apiJson)) {
+            hist = apiJson;
+          }
+          if (Array.isArray(hist) && hist.length > 0) {
+            const last = hist[hist.length - 1];
+            const tot = document.getElementById("close-stat-total");
+            const prc = document.getElementById("close-stat-processed");
+            const scs = document.getElementById("close-stat-booked");
+            const fld = document.getElementById("close-stat-failed");
+            const rem = document.getElementById("close-stat-pending");
+            if (tot) tot.innerText = `● ${last.processed || 0}`;
+            if (prc) prc.innerText = `● ${last.processed || 0}`;
+            if (scs) scs.innerText = `● ${last.success || 0}`;
+            if (fld) fld.innerText = `● ${last.failed || 0}`;
+            if (rem) rem.innerText = `● 0`;
+          }
+        }
+      } catch (e) {
+        console.error("Close history fetch error", e);
+      }
+    }
+
     function startLiveRunTracking(mode = "book") {
       if (livePollInterval) clearInterval(livePollInterval);
+      if (runTimerInterval) clearInterval(runTimerInterval);
       seenSteps.clear();
+
+      let prefix = "booking";
+      if (mode === "assign") prefix = "assign";
+      else if (mode === "close") prefix = "close";
+
+      const timeEl = document.getElementById(`${prefix}-stat-time`);
+      runSecondsElapsed = 0;
+      if (timeEl) timeEl.innerText = "⏱ 00:00";
+
+      // Live 1-second elapsed timer
+      runTimerInterval = setInterval(() => {
+        runSecondsElapsed++;
+        const mins = String(Math.floor(runSecondsElapsed / 60)).padStart(2, '0');
+        const secs = String(runSecondsElapsed % 60).padStart(2, '0');
+        if (timeEl) timeEl.innerText = `⏱ ${mins}:${secs}`;
+      }, 1000);
 
       let attempts = 0;
       livePollInterval = setInterval(async () => {
@@ -2164,14 +2249,10 @@
           activeRunId = latest.id;
           const isRun = latest.status === "in_progress" || latest.status === "queued";
 
-          // Elements
-          let prefix = "booking";
-          if (mode === "assign") prefix = "assign";
-          else if (mode === "close") prefix = "close";
-
           const browserStatus = document.getElementById(`${prefix}-browser-status`);
           const portalStatus = document.getElementById(`${prefix}-portal-status`);
           const activityLabel = document.getElementById(`${prefix}-activity-label`);
+          const cardLabel = document.getElementById(`${prefix}-card-label`);
           const pBar = document.getElementById(`${prefix}-progress-bar`);
           const pPct = document.getElementById(`${prefix}-progress-pct`);
 
@@ -2183,6 +2264,9 @@
             if (portalStatus) {
               portalStatus.innerText = "● Processing (Freshdesk)";
               portalStatus.className = "stacked-card-value status-running";
+            }
+            if (cardLabel && cardLabel.innerText === "—") {
+              cardLabel.innerText = "Processing Queue...";
             }
 
             // Fetch active job steps for live progress
@@ -2219,6 +2303,10 @@
             // Finished!
             clearInterval(livePollInterval);
             livePollInterval = null;
+            if (runTimerInterval) {
+              clearInterval(runTimerInterval);
+              runTimerInterval = null;
+            }
 
             if (browserStatus) {
               browserStatus.innerText = "● Idle";
@@ -2233,11 +2321,20 @@
               if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
               if (pBar) pBar.style.width = "100%";
               if (pPct) pPct.innerText = "100%";
+              if (cardLabel) cardLabel.innerText = "Completed";
               showToast("✓ Cloud Automation Completed Successfully!");
             } else {
               if (activityLabel) activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
             }
-            fetchData();
+
+            // Sync data & statistics
+            if (mode === "assign") {
+              fetchAssignHistory();
+            } else if (mode === "close") {
+              fetchCloseHistory();
+            } else {
+              fetchData();
+            }
           }
         } catch (err) {
           console.error("Live poll error", err);
@@ -2245,6 +2342,7 @@
 
         if (attempts > 900) {
           clearInterval(livePollInterval);
+          if (runTimerInterval) clearInterval(runTimerInterval);
         }
       }, 3000);
     }
