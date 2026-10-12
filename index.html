@@ -2824,9 +2824,8 @@
         attempts++;
         const token = getToken();
         if (!token) return;
-
         try {
-          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=1&_t=${Date.now()}`, {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5&_t=${Date.now()}`, {
             headers: {
               "Authorization": `token ${token}`,
               "Accept": "application/vnd.github.v3+json"
@@ -2837,7 +2836,7 @@
           const data = await res.json();
           if (!data.workflow_runs || data.workflow_runs.length === 0) return;
 
-          const latest = data.workflow_runs[0];
+          const latest = data.workflow_runs.find(r => r.status === "in_progress" || r.status === "queued") || data.workflow_runs[0];
           activeRunId = latest.id;
           const isRun = latest.status === "in_progress" || latest.status === "queued";
 
@@ -2849,6 +2848,11 @@
           const pPct = document.getElementById(`${prefix}-progress-pct`);
 
           if (isRun) {
+            if (attempts % 3 === 0) {
+              if (mode === "assign") fetchAssignHistory();
+              else if (mode === "close") fetchCloseHistory();
+              else fetchData();
+            }
             if (browserStatus) {
               browserStatus.innerText = "● Running (Headless)";
               browserStatus.className = "stacked-card-value status-running";
@@ -2945,7 +2949,7 @@
       const token = getToken();
       if (!token) return;
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=1&_t=${Date.now()}`, {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5&_t=${Date.now()}`, {
           headers: {
             "Authorization": `token ${token}`,
             "Accept": "application/vnd.github.v3+json"
@@ -2954,7 +2958,7 @@
         if (res.ok) {
           const data = await res.json();
           if (data.workflow_runs && data.workflow_runs.length > 0) {
-            const latest = data.workflow_runs[0];
+            const latest = data.workflow_runs.find(r => r.status === "in_progress" || r.status === "queued") || data.workflow_runs[0];
             const isRun = latest.status === "in_progress" || latest.status === "queued";
             if (isRun) {
               const wfName = (latest.name || "").toLowerCase();
