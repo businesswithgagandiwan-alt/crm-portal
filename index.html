@@ -439,6 +439,147 @@
     .status-running { color: #059669; animation: pulse 1.5s infinite; }
     .status-booked { color: #16A34A; }
 
+    /* Auto-Schedule Card Styles */
+    .schedule-card {
+      background: #FFFFFF;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .schedule-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #E2E8F0;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .schedule-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1E293B;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #CBD5E1;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    input:checked + .slider {
+      background-color: #16A34A;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 480px) {
+      .schedule-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .schedule-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .schedule-input-group label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+    }
+    .schedule-input-group input {
+      padding: 6px 10px;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0F172A;
+      background: #F8FAFC;
+    }
+    .schedule-input-group input:focus {
+      outline: none;
+      border-color: #2563EB;
+      background: #FFFFFF;
+    }
+    .schedule-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    .schedule-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-active {
+      background: #DCFCE7;
+      color: #166534;
+      border: 1px solid #86EFAC;
+    }
+    .badge-paused {
+      background: #F1F5F9;
+      color: #475569;
+      border: 1px solid #CBD5E1;
+    }
+    .schedule-save-btn {
+      background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+      color: #FFFFFF;
+      border: 1px solid #1E40AF;
+      border-bottom: 2.5px solid #1E3A8A;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 6px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .schedule-save-btn:active {
+      transform: translateY(1px);
+    }
+
     /* Timer Delay Banner */
     .timer-banner {
       background: #EFF6FF;
@@ -1187,6 +1328,51 @@
                 <div class="stacked-card-title">TIME</div>
                 <div class="stacked-card-value" id="booking-stat-time">⏱ 00:00</div>
               </div>
+            </div>
+          </div>
+
+          <!-- Auto-Schedule Card (Dynamic Random Delay & Working Hours) -->
+          <div class="schedule-card">
+            <div class="schedule-header">
+              <div class="schedule-title">
+                <span>⏰ Auto-Schedule Complaint Booking</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="schedule-switch-label" style="font-size: 11px; font-weight: 800; color: #64748B;">OFF</span>
+                <label class="switch-toggle">
+                  <input type="checkbox" id="switch-auto-schedule" onchange="handleScheduleToggle(this.checked)">
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="schedule-grid">
+              <div class="schedule-input-group">
+                <label>🌅 Start Time (Morning)</label>
+                <input type="time" id="sched-start-time" value="09:00">
+              </div>
+              <div class="schedule-input-group">
+                <label>🌙 End Time (Night)</label>
+                <input type="time" id="sched-end-time" value="20:00">
+              </div>
+              <div class="schedule-input-group">
+                <label>🎲 Min Random Delay (Mins)</label>
+                <input type="number" id="sched-min-delay" value="30" min="1" max="180">
+              </div>
+              <div class="schedule-input-group">
+                <label>🎲 Max Random Delay (Mins)</label>
+                <input type="number" id="sched-max-delay" value="45" min="1" max="180">
+              </div>
+            </div>
+
+            <div class="schedule-footer">
+              <div class="schedule-status-badge badge-paused" id="sched-status-badge">
+                <span id="sched-status-dot">⚪</span>
+                <span id="sched-status-text">Schedule Paused</span>
+              </div>
+              <button class="schedule-save-btn" onclick="saveScheduleSettings()">
+                💾 Save Schedule
+              </button>
             </div>
           </div>
 
@@ -2186,6 +2372,9 @@
             ts = apiJson;
           }
           if (ts) {
+            currentTimeSettings = ts;
+            currentTimeSettingsSha = apiJson.sha;
+
             const cb = document.getElementById("cb-timer-delay");
             const lbl = document.getElementById("timer-status-label");
             const isEnabled = Boolean(ts.enabled);
@@ -2207,10 +2396,160 @@
                 lbl.style.color = "#059669";
               }
             }
+
+            // Sync Auto-Schedule Card Controls
+            const schedSw = document.getElementById("switch-auto-schedule");
+            const schedSwLbl = document.getElementById("schedule-switch-label");
+            const startInput = document.getElementById("sched-start-time");
+            const endInput = document.getElementById("sched-end-time");
+            const minInput = document.getElementById("sched-min-delay");
+            const maxInput = document.getElementById("sched-max-delay");
+            const badge = document.getElementById("sched-status-badge");
+            const badgeDot = document.getElementById("sched-status-dot");
+            const badgeTxt = document.getElementById("sched-status-text");
+
+            const isSchedOn = Boolean(ts.schedule_enabled);
+            if (schedSw) schedSw.checked = isSchedOn;
+            if (schedSwLbl) {
+              schedSwLbl.innerText = isSchedOn ? "ON" : "OFF";
+              schedSwLbl.style.color = isSchedOn ? "#16A34A" : "#64748B";
+            }
+            if (startInput) startInput.value = ts.start_time || "09:00";
+            if (endInput) endInput.value = ts.end_time || "20:00";
+            if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 30;
+            if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 45;
+
+            if (badge && badgeDot && badgeTxt) {
+              if (isSchedOn) {
+                badge.className = "schedule-status-badge badge-active";
+                badgeDot.innerText = "🟢";
+                const nextWait = ts.next_interval_minutes ? ` (Next: ~${ts.next_interval_minutes}m)` : "";
+                badgeTxt.innerText = `Active: ${ts.start_time || '09:00'} - ${ts.end_time || '20:00'} (${ts.min_minutes || 30}-${ts.max_minutes || 45}m dynamic delay)${nextWait}`;
+              } else {
+                badge.className = "schedule-status-badge badge-paused";
+                badgeDot.innerText = "⚪";
+                badgeTxt.innerText = "Schedule Paused / OFF";
+              }
+            }
           }
         }
       } catch (err) {
         console.error("Time settings fetch error", err);
+      }
+    }
+
+    let currentTimeSettings = null;
+    let currentTimeSettingsSha = null;
+
+    function handleScheduleToggle(isOn) {
+      const lbl = document.getElementById("schedule-switch-label");
+      const badge = document.getElementById("sched-status-badge");
+      const badgeDot = document.getElementById("sched-status-dot");
+      const badgeTxt = document.getElementById("sched-status-text");
+      const sT = document.getElementById("sched-start-time")?.value || "09:00";
+      const eT = document.getElementById("sched-end-time")?.value || "20:00";
+      const minD = document.getElementById("sched-min-delay")?.value || "30";
+      const maxD = document.getElementById("sched-max-delay")?.value || "45";
+
+      if (lbl) {
+        lbl.innerText = isOn ? "ON" : "OFF";
+        lbl.style.color = isOn ? "#16A34A" : "#64748B";
+      }
+
+      if (badge && badgeDot && badgeTxt) {
+        if (isOn) {
+          badge.className = "schedule-status-badge badge-active";
+          badgeDot.innerText = "🟢";
+          badgeTxt.innerText = `Active: ${sT} - ${eT} (${minD}-${maxD}m dynamic delay)`;
+        } else {
+          badge.className = "schedule-status-badge badge-paused";
+          badgeDot.innerText = "⚪";
+          badgeTxt.innerText = "Schedule Paused / OFF";
+        }
+      }
+    }
+
+    async function saveScheduleSettings() {
+      const token = getToken();
+      if (!token) {
+        showToast("❌ Device not authorized!");
+        return;
+      }
+
+      const isSchedOn = document.getElementById("switch-auto-schedule")?.checked ?? false;
+      const startTime = document.getElementById("sched-start-time")?.value || "09:00";
+      const endTime = document.getElementById("sched-end-time")?.value || "20:00";
+      const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+      const maxDelay = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+
+      if (minDelay <= 0 || maxDelay < minDelay) {
+        showToast("⚠️ Min Delay must be <= Max Delay and > 0!");
+        return;
+      }
+
+      // Generate a dynamic random next interval between min and max
+      const nextInterval = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+
+      const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
+        enabled: true,
+        mode: "random",
+        min_minutes: minDelay,
+        max_minutes: maxDelay,
+        start_time_enabled: true,
+        start_time: startTime,
+        end_time: endTime,
+        schedule_enabled: isSchedOn,
+        next_interval_minutes: nextInterval
+      });
+
+      showToast("⏳ Saving Schedule Settings to Cloud...");
+
+      try {
+        // Fetch current SHA if not present
+        if (!currentTimeSettingsSha) {
+          const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+            headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+          });
+          if (chk.ok) {
+            const j = await chk.json();
+            currentTimeSettingsSha = j.sha;
+          }
+        }
+
+        const jsonStr = JSON.stringify(updatedSettings, null, 2);
+        const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
+        const payload = {
+          message: `Update Auto-Schedule settings (ON: ${isSchedOn}, Window: ${startTime}-${endTime}, Delay: ${minDelay}-${maxDelay}m)`,
+          content: b64,
+          branch: "main"
+        };
+        if (currentTimeSettingsSha) {
+          payload.sha = currentTimeSettingsSha;
+        }
+
+        const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (putRes.ok) {
+          const respData = await putRes.json();
+          currentTimeSettingsSha = respData.content?.sha || currentTimeSettingsSha;
+          currentTimeSettings = updatedSettings;
+          showToast(`✓ Auto-Schedule Saved! (${isSchedOn ? "🟢 ACTIVE" : "⚪ PAUSED"})`);
+          fetchTimeSetting();
+        } else {
+          showToast(`❌ Failed to save: ${putRes.statusText}`);
+        }
+      } catch (err) {
+        console.error("Save schedule error", err);
+        showToast(`❌ Exception: ${err.message}`);
       }
     }
 
