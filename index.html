@@ -2128,10 +2128,11 @@
               if (scRaw.endsWith(".0") && !isNaN(scRaw)) sc = scRaw.slice(0, -2).replace(/\D/g, "");
 
               let dt = getVal("dtcode", "dt", "distributorid", "distributor");
-              if (!dt) {
-                if (sheetName.includes("2017416")) dt = "DT-2017416";
-                else dt = "DT-2016272";
-              }
+              if (dt.includes("2017416")) dt = "DT-2017416";
+              else if (dt.includes("2016272")) dt = "DT-2016272";
+              else if (sheetName.includes("2017416")) dt = "DT-2017416";
+              else if (sheetName.includes("2016272")) dt = "DT-2016272";
+              else dt = "DT-2016272";
 
               return {
                 "Input Row Number": String(getVal("inputrownumber") || i + 1),
