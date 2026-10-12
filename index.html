@@ -1591,6 +1591,114 @@
 
         </div>
 
+        <!-- ================= MODULE: RBUZZ AUTOMATION ================= -->
+        <div class="group-box" id="view-rbuzz" style="display: none;">
+          <div class="group-box-title">⚡ RBuzz Automation</div>
+
+          <!-- 11 Action Buttons -->
+          <div class="action-btns-grid">
+            <div class="action-row-6">
+              <button class="action-btn-3d" onclick="document.getElementById('file-upload-rbuzz').click()">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="openRbuzzCaptchaModal()">Open Live<br>Captcha 🔐</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d action-btn-green" onclick="openRbuzzCaptchaModal()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadRbuzzReport()">Select Existing<br>Output</button>
+            </div>
+            <div class="action-row-5">
+              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+              <button class="action-btn-3d" onclick="openRbuzzCaptchaModal()">Resume</button>
+              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadRbuzzReport()">Open<br>Output</button>
+              <button class="action-btn-3d action-btn-blue" onclick="syncRbuzzCloud()">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+            </div>
+          </div>
+
+          <!-- Session Alert Banner (Auto-detects session logout or captcha needed) -->
+          <div id="rbuzz-alert-banner" style="display: none; background: #FEF2F2; border: 1.5px solid #F87171; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; align-items: center; justify-content: space-between;">
+            <div style="font-size: 11px; font-weight: 800; color: #991B1B; display: flex; align-items: center; gap: 6px;">
+              <span>⚠️</span>
+              <span id="rbuzz-alert-msg">RBuzz Session Logged Out! Captcha required to continue.</span>
+            </div>
+            <button class="action-btn-3d action-btn-green" style="padding: 4px 10px; font-size: 10px;" onclick="openRbuzzCaptchaModal()">
+              Enter Captcha 🔑
+            </button>
+          </div>
+
+          <!-- Exact Qt App 3-Row Status Strip -->
+          <div class="status-strip-frame">
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row session-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="rbuzz-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="rbuzz-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">PATH</div>
+                <div class="stacked-card-value" id="rbuzz-path-label" style="color: #0284C7;">📁 Saved RBuzz Queue</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SESSION STATUS</div>
+                <div class="stacked-card-value" id="rbuzz-session-status-badge" style="color: #64748B;">● Standby</div>
+              </div>
+            </div>
+
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row proc-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">CURRENT SMART CARD</div>
+                <div class="stacked-card-value" id="rbuzz-current-card" style="color: #1E293B;">-</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 4;">
+                <div class="stacked-card-title">ACTIVITY & STATUS</div>
+                <div class="stacked-card-value" id="rbuzz-activity-label" style="color: #059669;">Ready for processing</div>
+              </div>
+            </div>
+
+            <!-- Progress Bar Frame -->
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="rbuzz-progress-bar" style="width: 0%;"></div>
+              <div class="progress-text-overlay" id="rbuzz-progress-pct">0%</div>
+            </div>
+
+            <!-- Row 2: Queue & Results Breakdown -->
+            <div class="status-strip-row stats-row">
+              <div class="strip-heading">Queue Breakdown</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="rbuzz-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">CHECKED</div>
+                <div class="stacked-card-value" id="rbuzz-stat-checked">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PENDING</div>
+                <div class="stacked-card-value status-running" id="rbuzz-stat-pending">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="rbuzz-stat-success">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">NOT FOUND</div>
+                <div class="stacked-card-value" id="rbuzz-stat-notfound">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="rbuzz-stat-time">⏱ 00:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
         <div class="group-box" id="view-generic" style="display: none;">
           <div class="group-box-title" id="generic-title">Module</div>
@@ -1609,6 +1717,45 @@
   <!-- Hidden File Pickers for Excel Upload and Add More Data -->
   <input type="file" id="file-upload-excel" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'replace')">
   <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
+  <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
+
+  <!-- Native Dialog: RBuzz Live Captcha Modal -->
+  <div class="modal-overlay" id="rbuzz-captcha-dialog">
+    <div class="qt-dialog" style="max-width: 400px;">
+      <div class="dialog-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #0369A1; font-weight: 700;">🔐 RBuzz Live Captcha Login</span>
+        </div>
+        <span style="cursor: pointer;" onclick="closeModal('rbuzz-captcha-dialog')">✕</span>
+      </div>
+      <div class="dialog-body" style="text-align: center;">
+        <p style="font-size: 11px; color: #475569; margin-bottom: 12px;">
+          Sun Direct RBuzz portal se live Captcha code neeche load hua hai. Code dekhkar fill karein aur <b>Submit & Start</b> dabayein:
+        </p>
+
+        <!-- Captcha Image Display Container -->
+        <div style="background: #F1F5F9; border: 1.5px dashed #94A3B8; border-radius: 8px; padding: 12px; margin-bottom: 12px; min-height: 70px; display: flex; align-items: center; justify-content: center; position: relative;">
+          <img id="rbuzz-captcha-img" src="" alt="Loading Captcha..." style="max-height: 50px; border-radius: 4px; display: none;">
+          <div id="rbuzz-captcha-loading" style="font-size: 12px; font-weight: 700; color: #64748B;">
+            ⏳ Fetching Live Captcha from RBuzz...
+          </div>
+          <button style="position: absolute; right: 8px; top: 8px; background: none; border: none; cursor: pointer; font-size: 14px;" title="Refresh Captcha" onclick="requestFreshRbuzzCaptcha()">
+            🔄
+          </button>
+        </div>
+
+        <!-- Captcha Input Field -->
+        <div style="margin-bottom: 14px;">
+          <input type="text" id="rbuzz-captcha-input" placeholder="Type Captcha Here" maxlength="10" autocomplete="off" style="width: 100%; text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; padding: 8px; border: 2px solid #2563EB; border-radius: 6px; outline: none;">
+        </div>
+
+        <div class="dialog-btns" style="justify-content: space-between;">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('rbuzz-captcha-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" onclick="submitRbuzzCaptchaAndStart()">🚀 Login & Start Processing</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Native Dialog: Quota Selection Dialog (User-Defined Quantity Input, Exactly matches Qt App) -->
   <div class="modal-overlay" id="quota-dialog">
@@ -1829,6 +1976,7 @@
       document.getElementById("view-complaint_booking").style.display = "none";
       document.getElementById("view-assign_complaint").style.display = "none";
       document.getElementById("view-close_complaint").style.display = "none";
+      document.getElementById("view-rbuzz").style.display = "none";
       document.getElementById("view-generic").style.display = "none";
 
       if (mod === "complaint_booking") {
@@ -1837,12 +1985,15 @@
         document.getElementById("view-assign_complaint").style.display = "flex";
       } else if (mod === "close_complaint") {
         document.getElementById("view-close_complaint").style.display = "flex";
+      } else if (mod === "rbuzz") {
+        document.getElementById("view-rbuzz").style.display = "flex";
+        fetchRbuzzQueue();
+        checkRbuzzSession();
       } else {
         const genView = document.getElementById("view-generic");
         genView.style.display = "flex";
         const meta = {
           fetch_data: { title: "Fatch Data", icon: "📥", name: "Fatch Data Module" },
-          rbuzz: { title: "Rbuzz Automation", icon: "⚡", name: "Rbuzz Automation Module" },
           fresh_sale: { title: "FreshSale Atomation", icon: "🌐", name: "FreshSale Atomation ☁️" },
           update_mob: { title: "Update Mob no", icon: "📱", name: "Update Mob no ☁️" },
           asset_tag: { title: "Asset Tag", icon: "🏷️", name: "Asset Tag Module" },
@@ -2807,6 +2958,8 @@
       fetchData();
       fetchTimeSetting();
       fetchRuns();
+      fetchRbuzzQueue();
+      checkRbuzzSession();
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
 
@@ -2814,6 +2967,381 @@
       const token = getToken();
       showToast("Downloading latest Booked Report from Cloud...");
       window.open(`https://raw.githubusercontent.com/${REPO}/main/Complaint_Automation_Booked_Report.xlsx?token=${token}`, "_blank");
+    }
+
+    // ================= RBuzz Automation Logic =================
+    let currentRbuzzQueueSha = null;
+    let currentRbuzzSessionSha = null;
+    let rbuzzSessionPollInterval = null;
+
+    async function fetchRbuzzQueue() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_queue.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          currentRbuzzQueueSha = apiJson.sha;
+          let q = null;
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            q = JSON.parse(rawUtf8);
+          } else if (apiJson.records) {
+            q = apiJson;
+          }
+          if (q) {
+            updateRbuzzUI(q);
+          }
+        }
+      } catch (err) {
+        console.error("RBuzz queue fetch error", err);
+      }
+    }
+
+    function updateRbuzzUI(queueData) {
+      const recs = queueData.records || [];
+      const total = recs.length;
+      const checked = recs.filter(r => ["checked", "success", "not found", "completed"].includes(String(r.Status || "").toLowerCase())).length;
+      const success = recs.filter(r => String(r.Status || "").toLowerCase() === "success").length;
+      const notFound = recs.filter(r => String(r.Status || "").toLowerCase() === "not found").length;
+      const pending = Math.max(0, total - checked);
+
+      const elTotal = document.getElementById("rbuzz-stat-total");
+      const elChecked = document.getElementById("rbuzz-stat-checked");
+      const elPending = document.getElementById("rbuzz-stat-pending");
+      const elSuccess = document.getElementById("rbuzz-stat-success");
+      const elNotFound = document.getElementById("rbuzz-stat-notfound");
+      const pBar = document.getElementById("rbuzz-progress-bar");
+      const pPct = document.getElementById("rbuzz-progress-pct");
+      const pLabel = document.getElementById("rbuzz-path-label");
+
+      if (elTotal) elTotal.innerText = `● ${total}`;
+      if (elChecked) elChecked.innerText = `● ${checked}`;
+      if (elPending) elPending.innerText = `● ${pending}`;
+      if (elSuccess) elSuccess.innerText = `● ${success}`;
+      if (elNotFound) elNotFound.innerText = `● ${notFound}`;
+      if (pLabel) pLabel.innerText = `📁 Saved Queue (${pending} Pending)`;
+
+      const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+      if (pBar) pBar.style.width = `${pct}%`;
+      if (pPct) pPct.innerText = `${pct}%`;
+
+      const lastProc = recs.slice().reverse().find(r => r["Processed At"]);
+      if (lastProc) {
+        const curCard = document.getElementById("rbuzz-current-card");
+        if (curCard) curCard.innerText = lastProc["Smart Card Number"] || "-";
+      }
+    }
+
+    async function checkRbuzzSession() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          currentRbuzzSessionSha = apiJson.sha;
+          let sess = null;
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            sess = JSON.parse(rawUtf8);
+          }
+          if (sess) {
+            const banner = document.getElementById("rbuzz-alert-banner");
+            const alertMsg = document.getElementById("rbuzz-alert-msg");
+            const sessBadge = document.getElementById("rbuzz-session-status-badge");
+            const actLabel = document.getElementById("rbuzz-activity-label");
+            const bStatus = document.getElementById("rbuzz-browser-status");
+            const pStatus = document.getElementById("rbuzz-portal-status");
+
+            if (sess.status === "waiting_captcha" || sess.captcha_needed) {
+              if (banner) banner.style.display = "flex";
+              if (alertMsg) alertMsg.innerText = sess.last_error || "⚠️ RBuzz Captcha Required to Login!";
+              if (sessBadge) {
+                sessBadge.innerText = "🟡 Captcha Needed";
+                sessBadge.style.color = "#D97706";
+              }
+              if (actLabel) actLabel.innerText = "Paused: Waiting for Captcha code...";
+              if (bStatus) { bStatus.innerText = "● Paused"; bStatus.className = "stacked-card-value"; }
+              if (pStatus) { pStatus.innerText = "● Re-login Required"; pStatus.className = "stacked-card-value"; }
+
+              // Update image in modal if open
+              const img = document.getElementById("rbuzz-captcha-img");
+              const loading = document.getElementById("rbuzz-captcha-loading");
+              if (sess.captcha_image && img && loading) {
+                img.src = sess.captcha_image;
+                img.style.display = "block";
+                loading.style.display = "none";
+              }
+            } else if (sess.status === "running") {
+              if (banner) banner.style.display = "none";
+              if (sessBadge) { sessBadge.innerText = "🟢 Logged In & Running"; sessBadge.style.color = "#16A34A"; }
+              if (bStatus) { bStatus.innerText = "● Running (Headless)"; bStatus.className = "stacked-card-value status-running"; }
+              if (pStatus) { pStatus.innerText = "● Active (RBuzz)"; pStatus.className = "stacked-card-value status-running"; }
+            } else {
+              if (banner) banner.style.display = "none";
+              if (sessBadge) { sessBadge.innerText = "● Standby"; sessBadge.style.color = "#64748B"; }
+              if (bStatus) { bStatus.innerText = "● Idle"; bStatus.className = "stacked-card-value status-idle"; }
+              if (pStatus) { pStatus.innerText = "● Standby"; pStatus.className = "stacked-card-value status-idle"; }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Session check error", err);
+      }
+    }
+
+    async function openRbuzzCaptchaModal() {
+      openModal("rbuzz-captcha-dialog");
+      const img = document.getElementById("rbuzz-captcha-img");
+      const loading = document.getElementById("rbuzz-captcha-loading");
+      const input = document.getElementById("rbuzz-captcha-input");
+      if (input) { input.value = ""; input.focus(); }
+
+      // Check if we already have a recent captcha
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          if (apiJson.content) {
+            const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+            if (s.captcha_image && s.status === "waiting_captcha") {
+              if (img && loading) {
+                img.src = s.captcha_image;
+                img.style.display = "block";
+                loading.style.display = "none";
+                return;
+              }
+            }
+          }
+        }
+      } catch (e) {}
+
+      // Otherwise request fresh captcha
+      requestFreshRbuzzCaptcha();
+    }
+
+    async function requestFreshRbuzzCaptcha() {
+      const token = getToken();
+      if (!token) { showToast("❌ Unauthorized device"); return; }
+      const img = document.getElementById("rbuzz-captcha-img");
+      const loading = document.getElementById("rbuzz-captcha-loading");
+      if (img) img.style.display = "none";
+      if (loading) { loading.style.display = "block"; loading.innerText = "⏳ Requesting fresh Captcha from RBuzz..."; }
+
+      showToast("⏳ Requesting fresh Captcha from RBuzz server...");
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/rbuzz_automation.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { action: "fetch_captcha", captcha_code: "" } })
+        });
+
+        if (res.ok || res.status === 204) {
+          showToast("✓ Captcha request sent! Waiting for image...");
+          // Poll for captcha_image in rbuzz_session.json
+          let attempts = 0;
+          const poll = setInterval(async () => {
+            attempts++;
+            if (attempts > 30) { clearInterval(poll); return; }
+            const cRes = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            });
+            if (cRes.ok) {
+              const apiJson = await cRes.json();
+              if (apiJson.content) {
+                const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+                if (s.captcha_image && s.status === "waiting_captcha") {
+                  clearInterval(poll);
+                  if (img && loading) {
+                    img.src = s.captcha_image;
+                    img.style.display = "block";
+                    loading.style.display = "none";
+                    showToast("✓ Captcha Loaded! Type the code.");
+                  }
+                }
+              }
+            }
+          }, 3000);
+        } else {
+          showToast(`❌ Error requesting captcha: ${res.statusText}`);
+        }
+      } catch (err) {
+        showToast(`❌ Exception: ${err.message}`);
+      }
+    }
+
+    async function submitRbuzzCaptchaAndStart() {
+      const code = (document.getElementById("rbuzz-captcha-input")?.value || "").trim();
+      if (!code) {
+        showToast("⚠️ Please enter the Captcha code!");
+        return;
+      }
+
+      closeModal("rbuzz-captcha-dialog");
+      showToast(`🚀 Submitting Captcha '${code}' & Starting RBuzz Processing...`);
+
+      const bStatus = document.getElementById("rbuzz-browser-status");
+      const pStatus = document.getElementById("rbuzz-portal-status");
+      const actLabel = document.getElementById("rbuzz-activity-label");
+      if (bStatus) { bStatus.innerText = "● Logging In..."; bStatus.className = "stacked-card-value status-running"; }
+      if (pStatus) { pStatus.innerText = "● Connecting..."; pStatus.className = "stacked-card-value status-running"; }
+      if (actLabel) actLabel.innerText = "Logging into RBuzz and verifying Captcha...";
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/rbuzz_automation.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { action: "process_queue", captcha_code: code } })
+        });
+
+        if (res.ok || res.status === 204) {
+          showToast("✓ RBuzz Automation Started in Cloud!");
+          // Poll queue & session
+          if (rbuzzSessionPollInterval) clearInterval(rbuzzSessionPollInterval);
+          rbuzzSessionPollInterval = setInterval(() => {
+            fetchRbuzzQueue();
+            checkRbuzzSession();
+          }, 6000);
+        } else {
+          showToast(`❌ Dispatch failed: ${res.statusText}`);
+        }
+      } catch (e) {
+        showToast(`❌ Exception: ${e.message}`);
+      }
+    }
+
+    function syncRbuzzCloud() {
+      showToast("☁️ Syncing RBuzz Queue & Session...");
+      fetchRbuzzQueue();
+      checkRbuzzSession();
+      setTimeout(() => showToast("✓ RBuzz Queue Synced!"), 1200);
+    }
+
+    function downloadRbuzzReport() {
+      const token = getToken();
+      showToast("Downloading RBuzz Checked Report...");
+      window.open(`https://raw.githubusercontent.com/${REPO}/main/RBuzz_Checked_Report.xlsx?token=${token}`, "_blank");
+    }
+
+    async function handleRbuzzExcelUpload(evt) {
+      const file = evt.target.files[0];
+      if (!file) return;
+      showToast(`Uploading '${file.name}' to RBuzz Cloud Queue...`);
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (!rawRows || rawRows.length < 2) {
+            showToast("❌ Excel file is empty or missing data!");
+            return;
+          }
+
+          let smcCol = 0;
+          const headers = rawRows[0];
+          for (let i = 0; i < headers.length; i++) {
+            const h = String(headers[i] || "").toLowerCase();
+            if (h.includes("smart card") || h === "smc" || h === "smartcard") {
+              smcCol = i;
+              break;
+            }
+          }
+
+          const records = [];
+          for (let r = 1; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || row[smcCol] === undefined || String(row[smcCol]).trim() === "") continue;
+            let val = String(row[smcCol]).trim();
+            if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
+            records.push({
+              "Input Row Number": r,
+              "Smart Card Number": val,
+              "Customer Name": "",
+              "Customer Name 2": "",
+              "OLD RMN": "",
+              "New RMN": "",
+              "Billing Cycle": "",
+              "DT Code": "",
+              "Distributor ID": "",
+              "Portal Customer Status": "",
+              "Status": "Pending",
+              "Related Customer Name": "",
+              "Remark": "",
+              "Processed At": ""
+            });
+          }
+
+          if (records.length === 0) {
+            showToast("❌ No valid Smart Card Numbers found in Excel!");
+            return;
+          }
+
+          const queuePayload = {
+            records: records,
+            status: "idle",
+            total: records.length,
+            checked: 0,
+            pending: records.length,
+            updated_at: new Date().toISOString()
+          };
+
+          const token = getToken();
+          const jsonStr = JSON.stringify(queuePayload, null, 2);
+          const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_queue.json`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Content-Type": "application/json",
+              "Accept": "application/vnd.github.v3+json"
+            },
+            body: JSON.stringify({
+              message: `Upload ${records.length} Smart Cards to RBuzz Queue via Mobile Web [skip ci]`,
+              content: b64,
+              branch: "main",
+              sha: currentRbuzzQueueSha
+            })
+          });
+
+          if (res.ok) {
+            const respJson = await res.json();
+            currentRbuzzQueueSha = respJson.content?.sha;
+            showToast(`✓ Uploaded ${records.length} Smart Cards to RBuzz Queue!`);
+            updateRbuzzUI(queuePayload);
+          } else {
+            showToast(`❌ Upload failed: ${res.statusText}`);
+          }
+        } catch (err) {
+          console.error("Upload error", err);
+          showToast(`❌ Error reading file: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     // Init
@@ -2827,6 +3355,8 @@
       if (isDeviceAuthorized()) {
         fetchData();
         fetchTimeSetting();
+        fetchRbuzzQueue();
+        checkRbuzzSession();
       }
     }, 30000);
   </script>
