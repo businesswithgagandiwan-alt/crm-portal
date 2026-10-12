@@ -1599,7 +1599,7 @@
           <div class="action-btns-grid">
             <div class="action-row-6">
               <button class="action-btn-3d" onclick="document.getElementById('file-upload-rbuzz').click()">Upload<br>Excel</button>
-              <button class="action-btn-3d" onclick="openRbuzzCaptchaModal()">Open Live<br>Captcha 🔐</button>
+              <button class="action-btn-3d" onclick="openRbuzzBrowser()">Open<br>Browser</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
               <button class="action-btn-3d action-btn-green" onclick="openRbuzzCaptchaModal()">Start<br>Processing</button>
@@ -1719,18 +1719,28 @@
   <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
   <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
 
-  <!-- Native Dialog: RBuzz Live Captcha Modal -->
+  <!-- Native Dialog: RBuzz Browser & Live Captcha Modal -->
   <div class="modal-overlay" id="rbuzz-captcha-dialog">
-    <div class="qt-dialog" style="max-width: 400px;">
+    <div class="qt-dialog" style="max-width: 440px;">
       <div class="dialog-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="color: #0369A1; font-weight: 700;">🔐 RBuzz Live Captcha Login</span>
+          <span style="color: #0369A1; font-weight: 700;">🌐 RBuzz Browser & Live Captcha</span>
         </div>
         <span style="cursor: pointer;" onclick="closeModal('rbuzz-captcha-dialog')">✕</span>
       </div>
       <div class="dialog-body" style="text-align: center;">
+        <!-- Quick Browser Direct Link Banner -->
+        <div style="background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 11px; color: #0369A1; text-align: left; line-height: 1.3;">
+            <b>RBuzz Portal:</b><br><span style="color: #64748B;">rbuzz.sundirect.in</span>
+          </div>
+          <button class="action-btn-3d action-btn-blue" style="padding: 6px 12px; font-size: 11px; white-space: nowrap;" onclick="window.open('https://rbuzz.sundirect.in/', '_blank')">
+            🌐 Open Site in New Tab ↗
+          </button>
+        </div>
+
         <p style="font-size: 11px; color: #475569; margin-bottom: 12px;">
-          Sun Direct RBuzz portal se live Captcha code neeche load hua hai. Code dekhkar fill karein aur <b>Submit & Start</b> dabayein:
+          Cloud Automation session ke liye neeche live Captcha load hua hai. Code fill karke <b>Submit & Start</b> dabayein:
         </p>
 
         <!-- Captcha Image Display Container -->
@@ -2034,8 +2044,14 @@
       document.getElementById("token-dialog").style.display = "flex";
     }
 
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "flex";
+    }
+
     function closeModal(id) {
-      document.getElementById(id).style.display = "none";
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
     }
 
     function saveToken() {
@@ -3095,7 +3111,8 @@
       }
     }
 
-    async function openRbuzzCaptchaModal() {
+    async function openRbuzzBrowser() {
+      showToast("🌐 Opening RBuzz Browser / Live Captcha Dialog...");
       openModal("rbuzz-captcha-dialog");
       const img = document.getElementById("rbuzz-captcha-img");
       const loading = document.getElementById("rbuzz-captcha-loading");
@@ -3129,6 +3146,8 @@
       // Otherwise request fresh captcha
       requestFreshRbuzzCaptcha();
     }
+
+    const openRbuzzCaptchaModal = openRbuzzBrowser;
 
     async function requestFreshRbuzzCaptcha() {
       const token = getToken();
