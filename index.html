@@ -3126,6 +3126,7 @@
       const token = getToken();
       if (!token) return;
 
+      // Check if we have a fresh captcha (< 90 seconds old)
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
@@ -3134,11 +3135,16 @@
           const apiJson = await res.json();
           if (apiJson.content) {
             const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
-            if (s.captcha_image && s.status === "waiting_captcha") {
+            const captchaTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
+            const ageMs = Date.now() - captchaTime;
+            // Only reuse if fresh (< 90 seconds old)
+            if (s.captcha_image && s.status === "waiting_captcha" && ageMs < 90000) {
               if (img && loading) {
                 img.src = s.captcha_image;
                 img.style.display = "block";
                 loading.style.display = "none";
+                const ageSec = Math.max(1, Math.round(ageMs / 1000));
+                showToast(`✓ Fresh Captcha ready (${ageSec}s ago).`);
                 return;
               }
             }
@@ -3146,7 +3152,7 @@
         }
       } catch (e) {}
 
-      // Otherwise request fresh captcha
+      // If old or missing, request fresh captcha from RBuzz portal
       requestFreshRbuzzCaptcha();
     }
 
@@ -3158,9 +3164,10 @@
       const img = document.getElementById("rbuzz-captcha-img");
       const loading = document.getElementById("rbuzz-captcha-loading");
       if (img) img.style.display = "none";
-      if (loading) { loading.style.display = "block"; loading.innerText = "⏳ Requesting fresh Captcha from RBuzz..."; }
+      if (loading) { loading.style.display = "block"; loading.innerText = "⏳ Opening fresh RBuzz browser session in cloud..."; }
 
-      showToast("⏳ Requesting fresh Captcha from RBuzz server...");
+      showToast("⏳ Opening fresh RBuzz browser session in cloud...");
+      const requestTimestamp = Date.now();
 
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/rbuzz_automation.yml/dispatches`, {
@@ -3174,36 +3181,46 @@
         });
 
         if (res.ok || res.status === 204) {
-          showToast("✓ Captcha request sent! Waiting for image...");
-          // Poll for captcha_image in rbuzz_session.json
+          showToast("✓ Fresh session started! Loading fresh captcha...");
+          // Poll for fresh captcha_image in rbuzz_session.json
           let attempts = 0;
           const poll = setInterval(async () => {
             attempts++;
-            if (attempts > 30) { clearInterval(poll); return; }
-            const cRes = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
-              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
-            });
-            if (cRes.ok) {
-              const apiJson = await cRes.json();
-              if (apiJson.content) {
-                const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
-                if (s.captcha_image && s.status === "waiting_captcha") {
-                  clearInterval(poll);
-                  if (img && loading) {
-                    img.src = s.captcha_image;
-                    img.style.display = "block";
-                    loading.style.display = "none";
-                    showToast("✓ Captcha Loaded! Type the code.");
+            if (attempts > 30) {
+              clearInterval(poll);
+              if (loading) loading.innerText = "⚠️ Timed out waiting for fresh captcha. Click 🔄 to retry.";
+              return;
+            }
+            try {
+              const cRes = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+                headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+              });
+              if (cRes.ok) {
+                const apiJson = await cRes.json();
+                if (apiJson.content) {
+                  const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+                  const cTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
+                  // Ensure captcha was generated AFTER this request was sent!
+                  if (s.captcha_image && s.status === "waiting_captcha" && cTime >= requestTimestamp - 10000) {
+                    clearInterval(poll);
+                    if (img && loading) {
+                      img.src = s.captcha_image;
+                      img.style.display = "block";
+                      loading.style.display = "none";
+                      showToast("✓ New Live Captcha Loaded! Type the code.");
+                    }
                   }
                 }
               }
-            }
+            } catch (pErr) {}
           }, 3000);
         } else {
           showToast(`❌ Error requesting captcha: ${res.statusText}`);
+          if (loading) loading.innerText = `❌ Error: ${res.statusText}`;
         }
       } catch (err) {
         showToast(`❌ Exception: ${err.message}`);
+        if (loading) loading.innerText = `❌ ${err.message}`;
       }
     }
 
