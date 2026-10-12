@@ -2100,45 +2100,71 @@
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[firstSheetName];
-          const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          // Extract across all sheets with flexible normalized header matching
+          const parsedRecords = [];
 
-          if (!rawRows || rawRows.length === 0) {
-            alert("No data found in selected Excel sheet!");
-            return;
+          function extractRowsFromSheet(sheet, sheetName = "") {
+            const raw = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+            if (!raw || raw.length === 0) return [];
+
+            return raw.map((r, i) => {
+              const normMap = {};
+              for (const k of Object.keys(r)) {
+                normMap[k.toLowerCase().replace(/[^a-z0-9]/g, "")] = r[k];
+              }
+
+              const getVal = (...keys) => {
+                for (const k of keys) {
+                  const cleaned = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+                  if (normMap[cleaned] !== undefined && String(normMap[cleaned]).trim() !== "") {
+                    return String(normMap[cleaned]).trim();
+                  }
+                }
+                return "";
+              };
+
+              const scRaw = getVal("smartcardnumber", "smartcardno", "smartcard", "smc", "smcno", "cardno", "scno", "sc", "vcnumber", "vcno", "subscriberid", "accountno");
+              let sc = scRaw.replace(/\D/g, "");
+              if (scRaw.endsWith(".0") && !isNaN(scRaw)) sc = scRaw.slice(0, -2).replace(/\D/g, "");
+
+              let dt = getVal("dtcode", "dt", "distributorid", "distributor");
+              if (!dt) {
+                if (sheetName.includes("2017416")) dt = "DT-2017416";
+                else dt = "DT-2016272";
+              }
+
+              return {
+                "Input Row Number": String(getVal("inputrownumber") || i + 1),
+                "Smart Card Number": sc,
+                "Customer Name": getVal("customername", "customer", "name", "clientname"),
+                "Customer Name 2": getVal("customername2"),
+                "OLD RMN": getVal("oldrmn", "rmn", "mobile", "phone").replace(/\D/g, ""),
+                "RMN": getVal("rmn", "mobile", "phone", "callingno", "oldrmn").replace(/\D/g, ""),
+                "New RMN": getVal("newrmn").replace(/\D/g, ""),
+                "Billing Cycle": getVal("billingcycle", "expiry", "expirydate", "validity", "cycle"),
+                "DT Code": dt,
+                "Distributor ID": dt,
+                "Portal Customer Status": getVal("portalcustomerstatus") || "Active",
+                "Status": getVal("status") || "Pending",
+                "Related Customer Name": getVal("relatedcustomername"),
+                "Remark": getVal("remark"),
+                "Processed At": getVal("processedat"),
+                "Complaint Remark": getVal("complaintremark"),
+                "Complaint Status": getVal("complaintstatus")
+              };
+            }).filter(r => r["Smart Card Number"] && r["Smart Card Number"].length >= 8);
           }
 
-          // Normalize and validate rows
-          const parsedRecords = rawRows.map((r, i) => {
-            const sc = String(
-              r["Smart Card Number"] || r["SmartCardNumber"] || r["Smart Card"] ||
-              r["Smartcard"] || r["SC No"] || r["SC"] || r["Card No"] || ""
-            ).replace(/\D/g, "");
-
-            return {
-              "Input Row Number": String(r["Input Row Number"] || i + 1),
-              "Smart Card Number": sc,
-              "Customer Name": String(r["Customer Name"] || r["CustomerName"] || r["Name"] || "").trim(),
-              "Customer Name 2": String(r["Customer Name 2"] || "").trim(),
-              "OLD RMN": String(r["OLD RMN"] || r["Old RMN"] || "").replace(/\D/g, ""),
-              "RMN": String(r["RMN"] || r["Mobile"] || r["Phone"] || r["Calling No"] || "").replace(/\D/g, ""),
-              "New RMN": String(r["New RMN"] || "").replace(/\D/g, ""),
-              "Billing Cycle": String(r["Billing Cycle"] || r["BillingCycle"] || r["Expiry"] || "").trim(),
-              "DT Code": String(r["DT Code"] || r["DTCode"] || r["Distributor ID"] || "DT-2016272").trim(),
-              "Distributor ID": String(r["Distributor ID"] || r["DT Code"] || "DT-2016272").trim(),
-              "Portal Customer Status": String(r["Portal Customer Status"] || "Active").trim(),
-              "Status": String(r["Status"] || "").trim(),
-              "Related Customer Name": String(r["Related Customer Name"] || "").trim(),
-              "Remark": String(r["Remark"] || "").trim(),
-              "Processed At": String(r["Processed At"] || "").trim(),
-              "Complaint Remark": String(r["Complaint Remark"] || "").trim(),
-              "Complaint Status": String(r["Complaint Status"] || "").trim()
-            };
-          }).filter(r => r["Smart Card Number"].length >= 8);
+          for (const sName of workbook.SheetNames) {
+            const s = workbook.Sheets[sName];
+            const rows = extractRowsFromSheet(s, sName);
+            if (rows.length > 0) {
+              parsedRecords.push(...rows);
+            }
+          }
 
           if (parsedRecords.length === 0) {
-            alert("Could not find any valid Smart Card Numbers in the Excel sheet!");
+            alert("Could not find any valid Smart Card Numbers in any sheet of the Excel file!\nPlease ensure your sheet has a 'Smart Card Number' or 'SMC' column.");
             return;
           }
 
