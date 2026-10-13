@@ -1363,6 +1363,10 @@
                 <label>🎲 Max Random Delay (Mins)</label>
                 <input type="number" id="sched-max-delay" value="45" min="1" max="180">
               </div>
+              <div class="schedule-input-group" style="grid-column: span 2; background: #FFF1F2; padding: 6px 10px; border-radius: 6px; border: 1px solid #FECDD3;">
+                <label style="color: #9F1239; font-weight: 800;">🎯 Schedule Target Quantity (आज कुल कितनी Complaints बुक करनी हैं?)</label>
+                <input type="number" id="sched-target-qty" value="2" min="1" max="500" placeholder="e.g. 2" style="font-weight: 800; font-size: 15px; color: #BE185D;">
+              </div>
             </div>
 
             <div class="schedule-footer">
@@ -1812,9 +1816,27 @@
           <button type="button" class="dialog-btn dialog-btn-secondary" id="btn-select-all-quota" onclick="selectAllQuota()" style="white-space:nowrap; padding:6px 12px; font-weight:700;">Select All (<span id="quota-all-count">92</span>)</button>
         </div>
 
+        <div style="margin-bottom: 14px; padding: 10px 12px; background: #FFF1F2; border-radius: 8px; border: 1px solid #FECDD3; text-align: left;">
+          <div style="font-size: 12px; font-weight: 800; color: #9F1239; margin-bottom: 8px;">बुकिंग का तरीका चुनें (Select Execution Mode):</div>
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #831843; cursor: pointer; margin-bottom: 8px;">
+            <input type="radio" name="booking-mode" id="mode-schedule" value="schedule" checked style="margin-top: 3px;">
+            <div>
+              <div>⏰ Schedule Mode (सुरक्षित 30-45m गैप)</div>
+              <div style="font-size: 11px; font-weight: 500; color: #64748B;">दी गई संख्या के अनुसार एक-एक करके 30-45 मिनट के अंतराल में बुक होंगी।</div>
+            </div>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer;">
+            <input type="radio" name="booking-mode" id="mode-instant" value="instant" style="margin-top: 3px;">
+            <div>
+              <div>⚡ Instant Mode (अभी तुरंत)</div>
+              <div style="font-size: 11px; font-weight: 500; color: #64748B;">सारी कंप्लेंट्स अभी एक साथ 10 सेकंड के गैप में बुक कर दी जाएंगी।</div>
+            </div>
+          </label>
+        </div>
+
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
-          <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Start Processing</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Confirm & Start</button>
         </div>
       </div>
     </div>
@@ -2235,32 +2257,106 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Trigger Complaint Booking via GitHub Actions
+    // Trigger Complaint Booking via GitHub Actions (Supports Schedule Mode with Qty & Instant Mode)
     async function submitBookingQuota() {
       const qInput = document.getElementById("quota-input");
-      const q = parseInt(qInput.value.trim());
+      const q = parseInt(qInput.value.trim(), 10);
       if (isNaN(q) || q < 1) {
         showToast("Please enter a valid number of complaints!");
         return;
       }
 
+      const isScheduleMode = document.getElementById("mode-schedule")?.checked ?? true;
       closeModal("quota-dialog");
 
+      const token = getToken();
+      if (!token) {
+        showToast("❌ Device not authorized!");
+        return;
+      }
+
+      if (isScheduleMode) {
+        showToast(`⏰ Setting Schedule Target to ${q} complaints (30-45m gap)...`);
+        try {
+          const sT = document.getElementById("sched-start-time")?.value || "08:30";
+          const eT = document.getElementById("sched-end-time")?.value || "20:00";
+          const minD = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+          const maxD = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+          const nextInterval = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
+
+          const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
+            enabled: true,
+            mode: "random",
+            min_minutes: minD,
+            max_minutes: maxD,
+            start_time_enabled: true,
+            start_time: sT,
+            end_time: eT,
+            schedule_enabled: true,
+            target_qty: q,
+            next_interval_minutes: nextInterval
+          });
+
+          if (!currentTimeSettingsSha) {
+            const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            });
+            if (chk.ok) {
+              const j = await chk.json();
+              currentTimeSettingsSha = j.sha;
+            }
+          }
+
+          const jsonStr = JSON.stringify(updatedSettings, null, 2);
+          const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+          const payload = {
+            message: `Set Schedule Target Qty to ${q} complaints (Delay: ${minD}-${maxD}m) [skip ci]`,
+            content: b64,
+            branch: "main"
+          };
+          if (currentTimeSettingsSha) payload.sha = currentTimeSettingsSha;
+
+          const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Content-Type": "application/json",
+              "Accept": "application/vnd.github.v3+json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (putRes.ok) {
+            const respData = await putRes.json();
+            currentTimeSettingsSha = respData.content?.sha || currentTimeSettingsSha;
+            currentTimeSettings = updatedSettings;
+            fetchTimeSetting();
+            showToast(`✓ Auto-Schedule Set: Target ${q} complaints (${minD}-${maxD}m gap)!`);
+            alert(`✓ Auto-Schedule Activated!\n\n🎯 Target Quantity: ${q} Complaints\n⏰ Working Hours: ${sT} to ${eT}\n⏱️ Delay: ${minD} to ${maxD} Minutes\n\nबैकग्राउंड में सुरक्षित अंतराल (30-45m) के साथ एक-एक करके कुल ${q} कंप्लेंट्स ही बुक होंगी।`);
+          } else {
+            showToast(`❌ Failed to update schedule settings: ${putRes.statusText}`);
+          }
+        } catch (err) {
+          console.error("Schedule mode trigger error", err);
+          showToast(`❌ Exception: ${err.message}`);
+        }
+        return;
+      }
+
+      // Instant Mode:
       const btn = document.getElementById("btn-submit-quota");
-      btn.innerText = "Starting...";
-      showToast(`🚀 Dispatched Complaint Booking (${q} Tickets) on Cloud!`);
+      if (btn) btn.innerText = "Starting...";
+      showToast(`⚡ Instant Mode: Dispatched ${q} Tickets immediately!`);
 
       document.getElementById("booking-browser-status").innerText = "● Running (Headless)";
       document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
       document.getElementById("booking-activity-label").innerText = `Starting Cloud Worker for ${q} complaints...`;
 
-      // Show and reset progress bar
       const pBar = document.getElementById("booking-progress-bar");
       const pPct = document.getElementById("booking-progress-pct");
       if (pBar) pBar.style.width = "10%";
       if (pPct) pPct.innerText = "10%";
 
-      const token = getToken();
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/dispatches`, {
           method: "POST",
@@ -2601,6 +2697,7 @@
             const endInput = document.getElementById("sched-end-time");
             const minInput = document.getElementById("sched-min-delay");
             const maxInput = document.getElementById("sched-max-delay");
+            const targetQtyInput = document.getElementById("sched-target-qty");
             const badge = document.getElementById("sched-status-badge");
             const badgeDot = document.getElementById("sched-status-dot");
             const badgeTxt = document.getElementById("sched-status-text");
@@ -2611,17 +2708,19 @@
               schedSwLbl.innerText = isSchedOn ? "ON" : "OFF";
               schedSwLbl.style.color = isSchedOn ? "#16A34A" : "#64748B";
             }
-            if (startInput) startInput.value = ts.start_time || "09:00";
+            if (startInput) startInput.value = ts.start_time || "08:30";
             if (endInput) endInput.value = ts.end_time || "20:00";
             if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 30;
             if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 45;
+            if (targetQtyInput) targetQtyInput.value = ts.target_qty !== undefined ? ts.target_qty : 2;
 
             if (badge && badgeDot && badgeTxt) {
               if (isSchedOn) {
                 badge.className = "schedule-status-badge badge-active";
                 badgeDot.innerText = "🟢";
-                const nextWait = ts.next_interval_minutes ? ` (Next: ~${ts.next_interval_minutes}m)` : "";
-                badgeTxt.innerText = `Active: ${ts.start_time || '09:00'} - ${ts.end_time || '20:00'} (${ts.min_minutes || 30}-${ts.max_minutes || 45}m dynamic delay)${nextWait}`;
+                const nextWait = ts.next_interval_minutes ? ` (Next in ~${ts.next_interval_minutes}m)` : "";
+                const targetStr = ts.target_qty ? ` | Target: ${ts.target_qty} complaints` : "";
+                badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (${ts.min_minutes || 30}-${ts.max_minutes || 45}m delay)${nextWait}`;
               } else {
                 badge.className = "schedule-status-badge badge-paused";
                 badgeDot.innerText = "⚪";
@@ -2643,10 +2742,11 @@
       const badge = document.getElementById("sched-status-badge");
       const badgeDot = document.getElementById("sched-status-dot");
       const badgeTxt = document.getElementById("sched-status-text");
-      const sT = document.getElementById("sched-start-time")?.value || "09:00";
+      const sT = document.getElementById("sched-start-time")?.value || "08:30";
       const eT = document.getElementById("sched-end-time")?.value || "20:00";
       const minD = document.getElementById("sched-min-delay")?.value || "30";
       const maxD = document.getElementById("sched-max-delay")?.value || "45";
+      const targetQty = document.getElementById("sched-target-qty")?.value || "2";
 
       if (lbl) {
         lbl.innerText = isOn ? "ON" : "OFF";
@@ -2657,7 +2757,7 @@
         if (isOn) {
           badge.className = "schedule-status-badge badge-active";
           badgeDot.innerText = "🟢";
-          badgeTxt.innerText = `Active: ${sT} - ${eT} (${minD}-${maxD}m dynamic delay)`;
+          badgeTxt.innerText = `Active: ${sT} - ${eT} | Target: ${targetQty} (${minD}-${maxD}m delay)`;
         } else {
           badge.className = "schedule-status-badge badge-paused";
           badgeDot.innerText = "⚪";
@@ -2674,17 +2774,17 @@
       }
 
       const isSchedOn = document.getElementById("switch-auto-schedule")?.checked ?? false;
-      const startTime = document.getElementById("sched-start-time")?.value || "09:00";
+      const startTime = document.getElementById("sched-start-time")?.value || "08:30";
       const endTime = document.getElementById("sched-end-time")?.value || "20:00";
       const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
       const maxDelay = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+      const targetQty = parseInt(document.getElementById("sched-target-qty")?.value || "2", 10);
 
       if (minDelay <= 0 || maxDelay < minDelay) {
         showToast("⚠️ Min Delay must be <= Max Delay and > 0!");
         return;
       }
 
-      // Generate a dynamic random next interval between min and max
       const nextInterval = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
       const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
@@ -2696,13 +2796,13 @@
         start_time: startTime,
         end_time: endTime,
         schedule_enabled: isSchedOn,
+        target_qty: targetQty,
         next_interval_minutes: nextInterval
       });
 
       showToast("⏳ Saving Schedule Settings to Cloud...");
 
       try {
-        // Fetch current SHA if not present
         if (!currentTimeSettingsSha) {
           const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
             headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
@@ -2717,7 +2817,7 @@
         const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
 
         const payload = {
-          message: `Update Auto-Schedule settings (ON: ${isSchedOn}, Window: ${startTime}-${endTime}, Delay: ${minDelay}-${maxDelay}m)`,
+          message: `Update Auto-Schedule settings (ON: ${isSchedOn}, Target: ${targetQty}, Window: ${startTime}-${endTime}, Delay: ${minDelay}-${maxDelay}m)`,
           content: b64,
           branch: "main"
         };
