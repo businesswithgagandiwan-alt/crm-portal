@@ -2714,19 +2714,7 @@
             if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 45;
             if (targetQtyInput) targetQtyInput.value = ts.target_qty !== undefined ? ts.target_qty : 2;
 
-            if (badge && badgeDot && badgeTxt) {
-              if (isSchedOn) {
-                badge.className = "schedule-status-badge badge-active";
-                badgeDot.innerText = "🟢";
-                const nextWait = ts.next_interval_minutes ? ` (Next in ~${ts.next_interval_minutes}m)` : "";
-                const targetStr = ts.target_qty ? ` | Target: ${ts.target_qty} complaints` : "";
-                badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (${ts.min_minutes || 30}-${ts.max_minutes || 45}m delay)${nextWait}`;
-              } else {
-                badge.className = "schedule-status-badge badge-paused";
-                badgeDot.innerText = "⚪";
-                badgeTxt.innerText = "Schedule Paused / OFF";
-              }
-            }
+            updateScheduleCountdown();
           }
         }
       } catch (err) {
@@ -2736,34 +2724,84 @@
 
     let currentTimeSettings = null;
     let currentTimeSettingsSha = null;
+    let scheduleCountdownInterval = null;
 
-    function handleScheduleToggle(isOn) {
-      const lbl = document.getElementById("schedule-switch-label");
+    function startScheduleCountdown() {
+      if (scheduleCountdownInterval) clearInterval(scheduleCountdownInterval);
+      scheduleCountdownInterval = setInterval(updateScheduleCountdown, 1000);
+      updateScheduleCountdown();
+    }
+
+    function updateScheduleCountdown() {
       const badge = document.getElementById("sched-status-badge");
       const badgeDot = document.getElementById("sched-status-dot");
       const badgeTxt = document.getElementById("sched-status-text");
-      const sT = document.getElementById("sched-start-time")?.value || "08:30";
-      const eT = document.getElementById("sched-end-time")?.value || "20:00";
-      const minD = document.getElementById("sched-min-delay")?.value || "30";
-      const maxD = document.getElementById("sched-max-delay")?.value || "45";
-      const targetQty = document.getElementById("sched-target-qty")?.value || "2";
+      if (!badge || !badgeDot || !badgeTxt) return;
 
+      if (!currentTimeSettings || !currentTimeSettings.schedule_enabled) {
+        badge.className = "schedule-status-badge badge-paused";
+        badgeDot.innerText = "⚪";
+        badgeTxt.innerText = "Schedule Paused / OFF";
+        return;
+      }
+
+      const ts = currentTimeSettings;
+      const todayDateStr = new Date().toISOString().slice(0, 10);
+      const bookedToday = (currentQueueRecords || []).filter(r => {
+        const pt = String(r["Processed At"] || "");
+        const st = String(r["Complaint Status"] || "").toLowerCase();
+        return pt.includes(todayDateStr) && (st.includes("submitted") || st.includes("success") || st.includes("booked"));
+      }).length;
+
+      const targetQty = ts.target_qty ? parseInt(ts.target_qty, 10) : null;
+      if (targetQty !== null && bookedToday >= targetQty) {
+        badge.className = "schedule-status-badge badge-paused";
+        badgeDot.innerText = "🛑";
+        badgeTxt.innerText = `Target Reached: ${bookedToday}/${targetQty} Booked Today (Auto-Schedule Paused)`;
+        return;
+      }
+
+      // Compute dynamic real-time Countdown
+      let targetMs = null;
+      if (ts.next_run_timestamp) {
+        targetMs = new Date(ts.next_run_timestamp).getTime();
+      } else if (ts.updated_at && ts.next_interval_minutes) {
+        targetMs = new Date(ts.updated_at).getTime() + (ts.next_interval_minutes * 60000);
+      } else if (ts.next_interval_minutes) {
+        targetMs = Date.now() + (ts.next_interval_minutes * 60000);
+      }
+
+      let countdownStr = "";
+      if (targetMs) {
+        const diffMs = targetMs - Date.now();
+        if (diffMs > 0) {
+          const totalSecs = Math.floor(diffMs / 1000);
+          const m = Math.floor(totalSecs / 60);
+          const s = totalSecs % 60;
+          countdownStr = `${m}m ${s < 10 ? '0' : ''}${s}s`;
+        } else {
+          countdownStr = "Ready to book now";
+        }
+      } else {
+        countdownStr = `~${ts.next_interval_minutes || 30}m`;
+      }
+
+      const targetStr = targetQty ? ` | Target: ${bookedToday}/${targetQty}` : "";
+      badge.className = "schedule-status-badge badge-active";
+      badgeDot.innerText = "🟢";
+      badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
+    }
+
+    function handleScheduleToggle(isOn) {
+      const lbl = document.getElementById("schedule-switch-label");
       if (lbl) {
         lbl.innerText = isOn ? "ON" : "OFF";
         lbl.style.color = isOn ? "#16A34A" : "#64748B";
       }
-
-      if (badge && badgeDot && badgeTxt) {
-        if (isOn) {
-          badge.className = "schedule-status-badge badge-active";
-          badgeDot.innerText = "🟢";
-          badgeTxt.innerText = `Active: ${sT} - ${eT} | Target: ${targetQty} (${minD}-${maxD}m delay)`;
-        } else {
-          badge.className = "schedule-status-badge badge-paused";
-          badgeDot.innerText = "⚪";
-          badgeTxt.innerText = "Schedule Paused / OFF";
-        }
+      if (currentTimeSettings) {
+        currentTimeSettings.schedule_enabled = isOn;
       }
+      updateScheduleCountdown();
     }
 
     async function saveScheduleSettings() {
@@ -3516,6 +3554,7 @@
 
     // Init
     checkDeviceAuthOnLoad();
+    startScheduleCountdown();
     setInterval(() => {
       if (isDeviceAuthorized()) {
         fetchRuns();
