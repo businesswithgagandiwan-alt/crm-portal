@@ -2540,9 +2540,23 @@
       if (valPending) valPending.innerText = totalPending;
       if (valBooked) valBooked.innerText = booked;
 
+      // Update Smart Card label if not actively in live booking
+      const cardLabel = document.getElementById("booking-card-label");
+      const bookedRecords = records.filter(isComplaintAlreadyBooked);
+      const pendingRecs = records.filter(r => !isComplaintAlreadyBooked(r));
+      const nextPending = pendingRecs[0];
+      const lastBooked = bookedRecords[bookedRecords.length - 1];
+      if (cardLabel && (!cardLabel.innerText.includes("Booking:") || cardLabel.innerText === "—")) {
+        if (nextPending) {
+          cardLabel.innerText = `Next: ${nextPending['Smart Card Number']} (${nextPending['Customer Name'] || ''})`;
+        } else if (lastBooked) {
+          cardLabel.innerText = `Done: ${lastBooked['Smart Card Number']} (${lastBooked['Customer Name'] || ''})`;
+        }
+      }
+
       // Update Activity label if idle
       const actLbl = document.getElementById("booking-activity-label");
-      if (actLbl && !actLbl.innerText.includes("Running") && !actLbl.innerText.includes("%")) {
+      if (actLbl && !actLbl.innerText.includes("Running") && !actLbl.innerText.includes("%") && !actLbl.innerText.includes("Sched:")) {
         actLbl.innerText = `Synced! ${totalPending} Pending`;
       }
 
@@ -2760,6 +2774,10 @@
         badge.className = "schedule-status-badge badge-paused";
         badgeDot.innerText = "🛑";
         badgeTxt.innerText = `Batch Complete: ${batchDone}/${batchTarget} Booked (Auto-Schedule Paused)`;
+        const actLbl = document.getElementById("booking-activity-label");
+        if (actLbl && !livePollInterval) {
+          actLbl.innerText = `✅ Batch Complete: ${batchDone}/${batchTarget} Booked`;
+        }
         return;
       }
 
@@ -2792,6 +2810,17 @@
       badge.className = "schedule-status-badge badge-active";
       badgeDot.innerText = "🟢";
       badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
+
+      // Also keep Status Strip in sync
+      const actLbl = document.getElementById("booking-activity-label");
+      const browserStatus = document.getElementById("booking-browser-status");
+      if (!livePollInterval) {
+        if (actLbl) actLbl.innerText = `⏰ Sched: ${batchDone}/${batchTarget || '?'} (Next: ${countdownStr})`;
+        if (browserStatus && browserStatus.innerText.includes("Idle")) {
+          browserStatus.innerText = "⏳ Standby (Timer)";
+          browserStatus.className = "stacked-card-value status-idle";
+        }
+      }
     }
 
     function handleScheduleToggle(isOn) {
@@ -3034,8 +3063,17 @@
               portalStatus.innerText = "● Processing (Freshdesk)";
               portalStatus.className = "stacked-card-value status-running";
             }
-            if (cardLabel && cardLabel.innerText === "—") {
-              cardLabel.innerText = "Processing Queue...";
+            if (cardLabel) {
+              if (currentQueueRecords && currentQueueRecords.length > 0) {
+                const pendingRec = currentQueueRecords.find(r => !isComplaintAlreadyBooked(r));
+                if (pendingRec) {
+                  cardLabel.innerText = `● Booking: ${pendingRec['Smart Card Number']} (${pendingRec['Customer Name'] || ''})`;
+                } else {
+                  cardLabel.innerText = "Processing Queue...";
+                }
+              } else {
+                cardLabel.innerText = "Processing Queue...";
+              }
             }
 
             // Fetch active job steps for live progress
@@ -3090,7 +3128,19 @@
               if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
               if (pBar) pBar.style.width = "100%";
               if (pPct) pPct.innerText = "100%";
-              if (cardLabel) cardLabel.innerText = "Completed";
+              if (cardLabel) {
+                if (currentQueueRecords && currentQueueRecords.length > 0) {
+                  const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
+                  const lastRec = bookedRecs[bookedRecs.length - 1];
+                  if (lastRec) {
+                    cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
+                  } else {
+                    cardLabel.innerText = "Completed";
+                  }
+                } else {
+                  cardLabel.innerText = "Completed";
+                }
+              }
               showToast("✓ Cloud Automation Completed Successfully!");
             } else {
               if (activityLabel) activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
