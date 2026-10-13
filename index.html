@@ -2494,14 +2494,9 @@
     }
 
     function isComplaintAlreadyBooked(rec) {
-      const st = String(rec["Complaint Status"] || "").toLowerCase().trim();
+      const st = String(rec["Complaint Status"] || "").trim();
       const rem = String(rec["Complaint Remark"] || "").trim();
-      const isOkStatus = ["submitted", "success", "booked", "done", "complete"].some(w => st.includes(w))
-        && !st.includes("fail")
-        && !st.includes("not found")
-        && !st.includes("not submitted");
-      const isOkRemark = Boolean(rem) && rem.length >= 15 && !rem.toLowerCase().startsWith("fail");
-      return isOkStatus || isOkRemark;
+      return (st !== "" || rem !== "");
     }
 
     function toggleTimerDelay(isOn) {
@@ -3064,15 +3059,21 @@
               portalStatus.className = "stacked-card-value status-running";
             }
             if (cardLabel) {
-              if (currentQueueRecords && currentQueueRecords.length > 0) {
-                const pendingRec = currentQueueRecords.find(r => !isComplaintAlreadyBooked(r));
-                if (pendingRec) {
-                  cardLabel.innerText = `● Booking: ${pendingRec['Smart Card Number']} (${pendingRec['Customer Name'] || ''})`;
+              if (mode === "assign") {
+                cardLabel.innerText = "● Assigning: Freshdesk Open Complaints Queue";
+              } else if (mode === "close") {
+                cardLabel.innerText = "● Closing: Freshdesk Resolved Complaints Queue";
+              } else {
+                if (currentQueueRecords && currentQueueRecords.length > 0) {
+                  const pendingRec = currentQueueRecords.find(r => !isComplaintAlreadyBooked(r));
+                  if (pendingRec) {
+                    cardLabel.innerText = `● Booking: ${pendingRec['Smart Card Number']} (${pendingRec['Customer Name'] || ''})`;
+                  } else {
+                    cardLabel.innerText = "All Complaints Booked";
+                  }
                 } else {
                   cardLabel.innerText = "Processing Queue...";
                 }
-              } else {
-                cardLabel.innerText = "Processing Queue...";
               }
             }
 
@@ -3129,16 +3130,22 @@
               if (pBar) pBar.style.width = "100%";
               if (pPct) pPct.innerText = "100%";
               if (cardLabel) {
-                if (currentQueueRecords && currentQueueRecords.length > 0) {
-                  const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
-                  const lastRec = bookedRecs[bookedRecs.length - 1];
-                  if (lastRec) {
-                    cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
+                if (mode === "assign") {
+                  cardLabel.innerText = "✓ Assign Completed";
+                } else if (mode === "close") {
+                  cardLabel.innerText = "✓ Closure Completed";
+                } else {
+                  if (currentQueueRecords && currentQueueRecords.length > 0) {
+                    const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
+                    const lastRec = bookedRecs[bookedRecs.length - 1];
+                    if (lastRec) {
+                      cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
+                    } else {
+                      cardLabel.innerText = "Completed";
+                    }
                   } else {
                     cardLabel.innerText = "Completed";
                   }
-                } else {
-                  cardLabel.innerText = "Completed";
                 }
               }
               showToast("✓ Cloud Automation Completed Successfully!");
