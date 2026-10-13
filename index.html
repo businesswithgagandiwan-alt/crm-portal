@@ -2284,6 +2284,9 @@
           const maxD = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
           const nextInterval = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
 
+          const nowMs = Date.now();
+          const nextRunTime = new Date(nowMs + nextInterval * 60000).toISOString();
+
           const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
             enabled: true,
             mode: "random",
@@ -2293,8 +2296,12 @@
             start_time: sT,
             end_time: eT,
             schedule_enabled: true,
+            batch_target_qty: q,
+            batch_booked_count: 0,
             target_qty: q,
-            next_interval_minutes: nextInterval
+            next_interval_minutes: nextInterval,
+            updated_at: new Date(nowMs).toISOString(),
+            next_run_timestamp: nextRunTime
           });
 
           if (!currentTimeSettingsSha) {
@@ -2746,18 +2753,13 @@
       }
 
       const ts = currentTimeSettings;
-      const todayDateStr = new Date().toISOString().slice(0, 10);
-      const bookedToday = (currentQueueRecords || []).filter(r => {
-        const pt = String(r["Processed At"] || "");
-        const st = String(r["Complaint Status"] || "").toLowerCase();
-        return pt.includes(todayDateStr) && (st.includes("submitted") || st.includes("success") || st.includes("booked"));
-      }).length;
+      const batchTarget = ts.batch_target_qty !== undefined ? parseInt(ts.batch_target_qty, 10) : (ts.target_qty ? parseInt(ts.target_qty, 10) : null);
+      const batchDone = parseInt(ts.batch_booked_count || 0, 10);
 
-      const targetQty = ts.target_qty ? parseInt(ts.target_qty, 10) : null;
-      if (targetQty !== null && bookedToday >= targetQty) {
+      if (batchTarget !== null && batchDone >= batchTarget) {
         badge.className = "schedule-status-badge badge-paused";
         badgeDot.innerText = "🛑";
-        badgeTxt.innerText = `Target Reached: ${bookedToday}/${targetQty} Booked Today (Auto-Schedule Paused)`;
+        badgeTxt.innerText = `Batch Complete: ${batchDone}/${batchTarget} Booked (Auto-Schedule Paused)`;
         return;
       }
 
@@ -2786,7 +2788,7 @@
         countdownStr = `~${ts.next_interval_minutes || 30}m`;
       }
 
-      const targetStr = targetQty ? ` | Target: ${bookedToday}/${targetQty}` : "";
+      const targetStr = batchTarget ? ` | Target: ${batchDone}/${batchTarget}` : "";
       badge.className = "schedule-status-badge badge-active";
       badgeDot.innerText = "🟢";
       badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
@@ -2824,6 +2826,8 @@
       }
 
       const nextInterval = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+      const nowMs = Date.now();
+      const nextRunTime = new Date(nowMs + nextInterval * 60000).toISOString();
 
       const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
         enabled: true,
@@ -2834,8 +2838,12 @@
         start_time: startTime,
         end_time: endTime,
         schedule_enabled: isSchedOn,
+        batch_target_qty: targetQty,
+        batch_booked_count: 0,
         target_qty: targetQty,
-        next_interval_minutes: nextInterval
+        next_interval_minutes: nextInterval,
+        updated_at: new Date(nowMs).toISOString(),
+        next_run_timestamp: nextRunTime
       });
 
       showToast("⏳ Saving Schedule Settings to Cloud...");
