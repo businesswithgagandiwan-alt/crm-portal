@@ -3216,10 +3216,45 @@
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
 
-    function downloadReport() {
-      const token = getToken();
-      showToast("Downloading latest Booked Report from Cloud...");
-      window.open(`https://raw.githubusercontent.com/${REPO}/main/Complaint_Automation_Booked_Report.xlsx?token=${token}`, "_blank");
+    async function downloadReport() {
+      try {
+        showToast("Generating latest Booked Report...");
+        if (!currentQueueRecords || currentQueueRecords.length === 0) {
+          await fetchData();
+        }
+        const recs = currentQueueRecords || [];
+        const booked = recs.filter(isComplaintAlreadyBooked);
+        const recordsToExport = booked.length > 0 ? booked : recs;
+
+        if (recordsToExport.length === 0) {
+          showToast("No records available to download!");
+          return;
+        }
+
+        const rows = recordsToExport.map((r, idx) => ({
+          "S.No": idx + 1,
+          "Input Row Number": r["Input Row Number"] || "",
+          "Smart Card Number": String(r["Smart Card Number"] || ""),
+          "Customer Name": r["Customer Name"] || "",
+          "RMN": r["RMN"] || "",
+          "DT Code": r["DT Code"] || "",
+          "Complaint Status": r["Complaint Status"] || "",
+          "Processed At": r["Processed At"] || "",
+          "Complaint Remark": r["Complaint Remark"] || ""
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Booked Complaints");
+
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `Complaint_Booked_Report_${dateStr}.xlsx`);
+        showToast("✓ Excel file downloaded successfully!");
+      } catch (err) {
+        console.error("Export error:", err);
+        showToast("Export failed: " + err.message);
+      }
     }
 
     // ================= RBuzz Automation Logic =================
@@ -3510,10 +3545,28 @@
       setTimeout(() => showToast("✓ RBuzz Queue Synced!"), 1200);
     }
 
-    function downloadRbuzzReport() {
-      const token = getToken();
-      showToast("Downloading RBuzz Checked Report...");
-      window.open(`https://raw.githubusercontent.com/${REPO}/main/RBuzz_Checked_Report.xlsx?token=${token}`, "_blank");
+    async function downloadRbuzzReport() {
+      try {
+        showToast("Generating RBuzz Checked Report...");
+        if (!currentRbuzzQueueRecords || !currentRbuzzQueueRecords.records) {
+          await fetchRbuzzQueue();
+        }
+        const recs = (currentRbuzzQueueRecords && currentRbuzzQueueRecords.records) ? currentRbuzzQueueRecords.records : [];
+        if (recs.length === 0) {
+          showToast("No RBuzz records available to download!");
+          return;
+        }
+
+        const ws = XLSX.utils.json_to_sheet(recs);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "RBuzz Report");
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `RBuzz_Checked_Report_${dateStr}.xlsx`);
+        showToast("✓ RBuzz Excel file downloaded successfully!");
+      } catch (err) {
+        console.error("RBuzz export error:", err);
+        showToast("Export failed: " + err.message);
+      }
     }
 
     async function handleRbuzzExcelUpload(evt) {
