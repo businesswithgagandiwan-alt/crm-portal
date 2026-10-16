@@ -1902,6 +1902,49 @@
     </div>
   </div>
 
+  <!-- Native Dialog: Output Report Modal -->
+  <div class="modal-overlay" id="output-dialog" style="display:none;">
+    <div class="qt-dialog qt-dialog-large" style="max-width:760px; width:95%; max-height:90vh; display:flex; flex-direction:column;">
+      <div class="dialog-header">
+        <span>📊 Complaints Booked Reports</span>
+        <span style="cursor:pointer;" onclick="closeModal('output-dialog')">✕</span>
+      </div>
+      <div class="dialog-body" style="overflow-y:auto; flex:1;">
+        <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+          <button class="dialog-btn dialog-btn-primary" onclick="exportTodayBookedExcel()" style="flex:1; min-width:180px;">
+            📅 Download Today's Data (<span id="out-modal-today-count">0</span>)
+          </button>
+          <button class="dialog-btn dialog-btn-secondary" onclick="exportAllBookedExcel()" style="flex:1; min-width:180px;">
+            📁 Download All Booked (<span id="out-modal-all-count">0</span>)
+          </button>
+          <button class="dialog-btn" onclick="copyTodayTableData()" style="background:#475569; color:#fff; font-weight:700;">
+            📋 Copy Table
+          </button>
+        </div>
+        <div style="max-height:360px; overflow-y:auto; border:1px solid #CBD5E1; border-radius:6px; background:#FFFFFF;">
+          <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+            <thead>
+              <tr style="background:#0F172A; color:#FFFFFF; position:sticky; top:0; z-index:10;">
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">#</th>
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">Smart Card</th>
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">Customer Name</th>
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">Mobile</th>
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">Time (IST)</th>
+                <th style="padding:6px 8px; border-bottom:1px solid #334155;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="today-booked-table-body">
+              <tr><td colspan="6" style="padding:16px; text-align:center; color:#64748B;">Loading records from cloud database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dialog-btns" style="margin-top:12px;">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('output-dialog')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast">✓ Done!</div>
 
   <script>
@@ -1961,6 +2004,7 @@
 
     function checkDeviceAuthOnLoad() {
       if (isDeviceAuthorized()) {
+        localStorage.setItem("crm_token", VALID_TOKEN);
         unlockAppInterface();
       } else {
         const lockScreen = document.getElementById("device-lock-screen");
@@ -1972,7 +2016,11 @@
 
     function getToken() {
       if (!isDeviceAuthorized()) return "";
-      return localStorage.getItem("crm_token") || VALID_TOKEN;
+      // Always enforce active VALID_TOKEN so old expired tokens in localStorage never break portal
+      if (localStorage.getItem("crm_token") !== VALID_TOKEN) {
+        localStorage.setItem("crm_token", VALID_TOKEN);
+      }
+      return VALID_TOKEN;
     }
 
     function showToast(msg) {
@@ -3216,45 +3264,160 @@
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
 
-    async function downloadReport() {
-      try {
-        showToast("Generating latest Booked Report...");
-        if (!currentQueueRecords || currentQueueRecords.length === 0) {
-          await fetchData();
-        }
-        const recs = currentQueueRecords || [];
-        const booked = recs.filter(isComplaintAlreadyBooked);
-        const recordsToExport = booked.length > 0 ? booked : recs;
+    function getTodayBookedRecords(recs) {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      return (recs || []).filter(r => {
+        const proc = String(r["Processed At"] || r["processed_at"] || "");
+        const st = String(r["Complaint Status"] || r["status"] || "");
+        return (st.includes("Submitted Successfully") || st.includes("Booked")) && proc.startsWith(todayIso);
+      });
+    }
 
-        if (recordsToExport.length === 0) {
-          showToast("No records available to download!");
+    function formatISTTime(utcStr) {
+      if (!utcStr) return "—";
+      try {
+        const d = new Date(utcStr.includes("Z") ? utcStr : (utcStr.replace(" ", "T") + "Z"));
+        if (isNaN(d.getTime())) return utcStr;
+        return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+      } catch (e) {
+        return utcStr;
+      }
+    }
+
+    async function downloadReport() {
+      openOutputDialog();
+    }
+
+    async function openOutputDialog() {
+      openModal("output-dialog");
+      if (!currentQueueRecords || currentQueueRecords.length === 0) {
+        await fetchData();
+      }
+      renderOutputModalTable();
+    }
+
+    function renderOutputModalTable() {
+      const recs = currentQueueRecords || [];
+      const booked = recs.filter(isComplaintAlreadyBooked);
+      const todayBooked = getTodayBookedRecords(recs);
+
+      const allCountEl = document.getElementById("out-modal-all-count");
+      const todayCountEl = document.getElementById("out-modal-today-count");
+      if (allCountEl) allCountEl.innerText = booked.length;
+      if (todayCountEl) todayCountEl.innerText = todayBooked.length;
+
+      const tbody = document.getElementById("today-booked-table-body");
+      if (!tbody) return;
+
+      const listToRender = todayBooked.length > 0 ? todayBooked : booked;
+
+      if (listToRender.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="padding:16px; text-align:center; color:#94A3B8;">No booked complaints found in queue.</td></tr>';
+        return;
+      }
+
+      let htmlRows = "";
+      listToRender.forEach((r, idx) => {
+        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+        const istTime = formatISTTime(r["Processed At"] || r["processed_at"] || "");
+        htmlRows += `<tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+          <td style="padding:6px 8px; font-weight:700; color:#475569;">${idx + 1}</td>
+          <td style="padding:6px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
+          <td style="padding:6px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
+          <td style="padding:6px 8px; color:#475569;">${r["OLD RMN"] || r["RMN"] || "—"}</td>
+          <td style="padding:6px 8px; color:#0284C7; font-weight:600;">${istTime}</td>
+          <td style="padding:6px 8px; color:#16A34A; font-weight:700;">✅ Submitted</td>
+        </tr>`;
+      });
+      tbody.innerHTML = htmlRows;
+    }
+
+    function exportTodayBookedExcel() {
+      try {
+        const recs = currentQueueRecords || [];
+        const todayBooked = getTodayBookedRecords(recs);
+        const dataToExport = todayBooked.length > 0 ? todayBooked : recs.filter(isComplaintAlreadyBooked);
+
+        if (dataToExport.length === 0) {
+          showToast("No complaints to download!");
           return;
         }
 
-        const rows = recordsToExport.map((r, idx) => ({
+        const rows = dataToExport.map((r, idx) => ({
           "S.No": idx + 1,
           "Input Row Number": r["Input Row Number"] || "",
           "Smart Card Number": String(r["Smart Card Number"] || ""),
           "Customer Name": r["Customer Name"] || "",
-          "RMN": r["RMN"] || "",
+          "Mobile": r["OLD RMN"] || r["RMN"] || "",
           "DT Code": r["DT Code"] || "",
-          "Complaint Status": r["Complaint Status"] || "",
-          "Processed At": r["Processed At"] || "",
+          "Booking Time (IST)": formatISTTime(r["Processed At"] || r["processed_at"] || ""),
+          "Processed At (UTC)": r["Processed At"] || r["processed_at"] || "",
+          "Complaint Status": r["Complaint Status"] || r["status"] || "",
           "Complaint Remark": r["Complaint Remark"] || ""
         }));
 
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Booked Complaints");
-
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-        XLSX.writeFile(wb, `Complaint_Booked_Report_${dateStr}.xlsx`);
-        showToast("✓ Excel file downloaded successfully!");
+        XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `Today_Complaints_Booked_${dateStr}.xlsx`);
+        showToast("✓ Today's Booked Excel downloaded!");
       } catch (err) {
         console.error("Export error:", err);
         showToast("Export failed: " + err.message);
       }
+    }
+
+    function exportAllBookedExcel() {
+      try {
+        const recs = currentQueueRecords || [];
+        const booked = recs.filter(isComplaintAlreadyBooked);
+        if (booked.length === 0) {
+          showToast("No booked records found!");
+          return;
+        }
+
+        const rows = booked.map((r, idx) => ({
+          "S.No": idx + 1,
+          "Input Row Number": r["Input Row Number"] || "",
+          "Smart Card Number": String(r["Smart Card Number"] || ""),
+          "Customer Name": r["Customer Name"] || "",
+          "Mobile": r["OLD RMN"] || r["RMN"] || "",
+          "DT Code": r["DT Code"] || "",
+          "Booking Time (IST)": formatISTTime(r["Processed At"] || r["processed_at"] || ""),
+          "Complaint Status": r["Complaint Status"] || r["status"] || "",
+          "Processed At": r["Processed At"] || r["processed_at"] || "",
+          "Complaint Remark": r["Complaint Remark"] || ""
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "All Booked Complaints");
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `All_Booked_Complaints_${dateStr}.xlsx`);
+        showToast("✓ All Booked Excel downloaded!");
+      } catch (err) {
+        showToast("Export failed: " + err.message);
+      }
+    }
+
+    function copyTodayTableData() {
+      const recs = currentQueueRecords || [];
+      const todayBooked = getTodayBookedRecords(recs);
+      const listToCopy = todayBooked.length > 0 ? todayBooked : recs.filter(isComplaintAlreadyBooked);
+      if (listToCopy.length === 0) {
+        showToast("No records to copy!");
+        return;
+      }
+      let text = "S.No\tSmart Card\tCustomer Name\tMobile\tTime (IST)\tStatus\n";
+      listToCopy.forEach((r, idx) => {
+        text += `${idx + 1}\t${r["Smart Card Number"] || ""}\t${r["Customer Name"] || ""}\t${r["OLD RMN"] || r["RMN"] || ""}\t${formatISTTime(r["Processed At"] || "")}\tSubmitted\n`;
+      });
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("✓ Table copied to clipboard!");
+      }).catch(() => {
+        showToast("Copy failed, please select and copy manually");
+      });
     }
 
     // ================= RBuzz Automation Logic =================
