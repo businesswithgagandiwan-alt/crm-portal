@@ -2957,6 +2957,14 @@
           const respData = await putRes.json();
           currentTimeSettingsSha = respData.content?.sha || currentTimeSettingsSha;
           currentTimeSettings = updatedSettings;
+          // Synchronize workflow state (wake up or sleep)
+          try {
+            const wfAction = isSchedOn ? "enable" : "disable";
+            fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/${wfAction}`, {
+              method: "PUT",
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            }).catch(() => {});
+          } catch(e) {}
           showToast(`✓ Auto-Schedule Saved! (${isSchedOn ? "🟢 ACTIVE" : "⚪ PAUSED"})`);
           fetchTimeSetting();
         } else {
