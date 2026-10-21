@@ -1961,14 +1961,14 @@
         <span style="cursor: pointer;" onclick="closeModal('transfer-dialog')">✕</span>
       </div>
       <div class="dialog-body">
-        <div class="dialog-prompt">Select DT Code to Transfer Complaints in Freshdesk:</div>
+        <div class="dialog-prompt">Please choose which DT account to log into Freshdesk Portal:</div>
         <select class="dialog-select" id="transfer-dt-select">
           <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
           <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
         </select>
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('transfer-dialog')">Cancel</button>
-          <button class="dialog-btn dialog-btn-primary" id="btn-submit-transfer" onclick="submitTransferDT()">Start Processing</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-transfer" onclick="submitTransferDT()">Open Freshdesk Browser</button>
         </div>
       </div>
     </div>
@@ -2272,14 +2272,14 @@
         bStat.className = "stacked-card-value status-booked";
       }
       if (pStat) {
-        pStat.innerText = "● " + sel;
+        pStat.innerText = "● Ready (" + sel + ")";
         pStat.className = "stacked-card-value status-booked";
       }
       if (aStat) {
-        aStat.innerText = "Freshdesk portal open for " + sel;
+        aStat.innerText = "Freshdesk Portal Open & Logged in (" + sel + ")";
       }
       showToast("✓ DT Chosen: " + sel + " - Opening Freshdesk Portal...");
-      window.open("https://sundirect.freshdesk.com/", "_blank");
+      window.open("https://sundirect-606378453475310199.myfreshworks.com/login?client_id=451980303908285122&redirect_uri=https%3A%2F%2Fsundirect.freshdesk.com%2Ffreshid%2Fauthorize_callback%3Fhd%3Dhttps%3A%2F%2Fsundirect.freshdesk.com", "_blank");
     }
 
     function openAssignDTDialog() {
