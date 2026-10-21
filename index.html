@@ -1208,6 +1208,9 @@
         <button class="modern-nav-btn active" data-module="complaint_booking" onclick="selectModule('complaint_booking')">
           <span>🎫</span><span class="label">Complaint Booking ☁️</span>
         </button>
+        <button class="modern-nav-btn" data-module="complaint_transfer" onclick="selectModule('complaint_transfer')">
+          <span>🔀</span><span class="label">Complaint Transfer</span>
+        </button>
         <button class="modern-nav-btn" data-module="assign_complaint" onclick="selectModule('assign_complaint')">
           <span>📋</span><span class="label">Assign Complaint ☁️</span>
         </button>
@@ -1391,6 +1394,113 @@
           </div>
 
           <!-- Activity Log Box has been removed as per User Request #1 -->
+        </div>
+
+        <!-- ================= MODULE: COMPLAINT TRANSFER ================= -->
+        <div class="group-box" id="view-complaint_transfer" style="display: none;">
+          <div class="group-box-title">Complaint Transfer</div>
+
+          <!-- 11 Action Buttons matching Desktop App -->
+          <div class="action-btns-grid">
+            <div class="action-row-6">
+              <button class="action-btn-3d" onclick="triggerTransferUploadExcel()">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="openTransferDTDialog()">Open Fresh<br>Browser</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d" onclick="openTransferDTDialog()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+            </div>
+            <div class="action-row-5">
+              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+              <button class="action-btn-3d" onclick="openTransferDTDialog()">Resume</button>
+              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+              <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+            </div>
+          </div>
+
+          <!-- Exact Qt App 3-Row Status Strip -->
+          <div class="status-strip-frame">
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row session-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="transfer-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="transfer-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">PATH</div>
+                <div class="stacked-card-value" id="transfer-path-label" style="color: #0284C7;">📁 (Upload Excel)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">VALIDATION</div>
+                <div class="stacked-card-value" id="transfer-validation-label" style="color: #64748B;">● Not Run</div>
+              </div>
+            </div>
+
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row proc-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="transfer-card-label">—</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="transfer-activity-label">Awaiting Input...</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="transfer-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="transfer-progress-track">
+                  <div class="progress-bar" id="transfer-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row stats-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="transfer-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="transfer-stat-processed">● 0</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="transfer-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="transfer-stat-booked">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="transfer-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="transfer-stat-time">⏱ 00:00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Queue Engineer Card -->
+          <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:8px 12px; margin-top:4px; display:flex; justify-content:space-around; align-items:center; font-size:11.5px;">
+            <div><b>DT-2016272:</b> <span style="color:#15803D; font-weight:700;">MonuDubey</span></div>
+            <div style="color:#94A3B8;">|</div>
+            <div><b>DT-2017416:</b> <span style="color:#7C3AED; font-weight:700;">Pavan KumarSharma</span></div>
+          </div>
         </div>
 
         <!-- ================= MODULE 2: ASSIGN COMPLAINT ================= -->
@@ -1720,6 +1830,7 @@
 
   <!-- Hidden File Pickers for Excel Upload and Add More Data -->
   <input type="file" id="file-upload-excel" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'replace')">
+  <input type="file" id="file-upload-transfer" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleTransferExcelUpload(event)">
   <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
   <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
 
@@ -1837,6 +1948,27 @@
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Confirm & Start</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Native Dialog: DT Code Selection Dialog for Complaint Transfer -->
+  <div class="modal-overlay" id="transfer-dialog">
+    <div class="qt-dialog">
+      <div class="dialog-header">
+        <span>🔀 Complaint Transfer - Select DT Code</span>
+        <span style="cursor: pointer;" onclick="closeModal('transfer-dialog')">✕</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-prompt">Select DT Code to Transfer Complaints in Freshdesk:</div>
+        <select class="dialog-select" id="transfer-dt-select">
+          <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+          <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+        </select>
+        <div class="dialog-btns">
+          <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('transfer-dialog')">Cancel</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-transfer" onclick="submitTransferDT()">Start Processing</button>
         </div>
       </div>
     </div>
@@ -2057,6 +2189,8 @@
       if (targetBtn) targetBtn.classList.add("active");
 
       document.getElementById("view-complaint_booking").style.display = "none";
+      const transView = document.getElementById("view-complaint_transfer");
+      if (transView) transView.style.display = "none";
       document.getElementById("view-assign_complaint").style.display = "none";
       document.getElementById("view-close_complaint").style.display = "none";
       document.getElementById("view-rbuzz").style.display = "none";
@@ -2064,6 +2198,8 @@
 
       if (mod === "complaint_booking") {
         document.getElementById("view-complaint_booking").style.display = "flex";
+      } else if (mod === "complaint_transfer") {
+        if (transView) transView.style.display = "flex";
       } else if (mod === "assign_complaint") {
         document.getElementById("view-assign_complaint").style.display = "flex";
       } else if (mod === "close_complaint") {
@@ -2102,6 +2238,48 @@
       }
       document.getElementById("quota-dialog").style.display = "flex";
       await fetchData();
+    }
+
+    function openTransferDTDialog() {
+      document.getElementById("transfer-dialog").style.display = "flex";
+    }
+
+    function triggerTransferUploadExcel() {
+      document.getElementById("file-upload-transfer").click();
+    }
+
+    function handleTransferExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const pathLbl = document.getElementById("transfer-path-label");
+      const valLbl = document.getElementById("transfer-validation-label");
+      if (pathLbl) pathLbl.innerText = "📁 " + file.name;
+      if (valLbl) {
+        valLbl.innerText = "● Validated (" + file.name + ")";
+        valLbl.style.color = "#16A34A";
+      }
+      showToast("✓ Excel Loaded for Complaint Transfer: " + file.name);
+    }
+
+    function submitTransferDT() {
+      const sel = document.getElementById("transfer-dt-select").value;
+      closeModal("transfer-dialog");
+      const bStat = document.getElementById("transfer-browser-status");
+      const pStat = document.getElementById("transfer-portal-status");
+      const aStat = document.getElementById("transfer-activity-label");
+      if (bStat) {
+        bStat.innerText = "● Open";
+        bStat.className = "stacked-card-value status-booked";
+      }
+      if (pStat) {
+        pStat.innerText = "● " + sel;
+        pStat.className = "stacked-card-value status-booked";
+      }
+      if (aStat) {
+        aStat.innerText = "Freshdesk portal open for " + sel;
+      }
+      showToast("✓ DT Chosen: " + sel + " - Opening Freshdesk Portal...");
+      window.open("https://sundirect.freshdesk.com/", "_blank");
     }
 
     function openAssignDTDialog() {
