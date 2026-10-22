@@ -2261,25 +2261,51 @@
       showToast("✓ Excel Loaded for Complaint Transfer: " + file.name);
     }
 
-    function submitTransferDT() {
-      const sel = document.getElementById("transfer-dt-select").value;
+    async function submitTransferDT() {
+      const dt = document.getElementById("transfer-dt-select").value;
       closeModal("transfer-dialog");
+
+      showToast(`🚀 Dispatched Complaint Transfer for ${dt} on Cloud!`);
       const bStat = document.getElementById("transfer-browser-status");
       const pStat = document.getElementById("transfer-portal-status");
       const aStat = document.getElementById("transfer-activity-label");
       if (bStat) {
-        bStat.innerText = "● Open";
-        bStat.className = "stacked-card-value status-booked";
+        bStat.innerText = "● Running (Headless)";
+        bStat.className = "stacked-card-value status-running";
       }
       if (pStat) {
-        pStat.innerText = "● Ready (" + sel + ")";
-        pStat.className = "stacked-card-value status-booked";
+        pStat.innerText = "● Processing (Freshdesk)";
+        pStat.className = "stacked-card-value status-running";
       }
       if (aStat) {
-        aStat.innerText = "Freshdesk Portal Open & Logged in (" + sel + ")";
+        aStat.innerText = `Transferring open complaints for ${dt}...`;
       }
-      showToast("✓ DT Chosen: " + sel + " - Opening Freshdesk Portal...");
-      window.open("https://sundirect-606378453475310199.myfreshworks.com/login?client_id=451980303908285122&redirect_uri=https%3A%2F%2Fsundirect.freshdesk.com%2Ffreshid%2Fauthorize_callback%3Fhd%3Dhttps%3A%2F%2Fsundirect.freshdesk.com", "_blank");
+
+      const pBar = document.getElementById("transfer-progress-bar");
+      const pPct = document.getElementById("transfer-progress-pct");
+      if (pBar) pBar.style.width = "15%";
+      if (pPct) pPct.innerText = "15%";
+
+      const token = getToken();
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/transfer_complaints.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+        });
+        if (res.status === 204) {
+          showToast(`✓ GitHub Actions transfer workflow started for ${dt}!`);
+          startLiveRunTracking("transfer");
+        } else {
+          showToast(`✗ Error: ${res.statusText}`);
+        }
+      } catch (e) {
+        showToast(`✗ Exception: ${e.message}`);
+      }
     }
 
     function openAssignDTDialog() {
@@ -3237,6 +3263,7 @@
       let prefix = "booking";
       if (mode === "assign") prefix = "assign";
       else if (mode === "close") prefix = "close";
+      else if (mode === "transfer") prefix = "transfer";
 
       const timeEl = document.getElementById(`${prefix}-stat-time`);
       runSecondsElapsed = 0;
@@ -3368,6 +3395,8 @@
                   cardLabel.innerText = "✓ Assign Completed";
                 } else if (mode === "close") {
                   cardLabel.innerText = "✓ Closure Completed";
+                } else if (mode === "transfer") {
+                  cardLabel.innerText = "✓ Transfer Completed";
                 } else {
                   if (currentQueueRecords && currentQueueRecords.length > 0) {
                     const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
@@ -3428,6 +3457,7 @@
               const wfName = (latest.name || "").toLowerCase();
               if (wfName.includes("assign")) startLiveRunTracking("assign");
               else if (wfName.includes("close")) startLiveRunTracking("close");
+              else if (wfName.includes("transfer")) startLiveRunTracking("transfer");
               else startLiveRunTracking("book");
             } else {
               document.getElementById("booking-browser-status").innerText = "● Idle";
