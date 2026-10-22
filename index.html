@@ -3279,6 +3279,50 @@
       }
     }
 
+    async function fetchTransferHistory() {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/transfer_history.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const apiJson = await res.json();
+          let hist = [];
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            hist = JSON.parse(rawUtf8);
+          } else if (Array.isArray(apiJson)) {
+            hist = apiJson;
+          }
+          if (Array.isArray(hist) && hist.length > 0) {
+            const totSuccess = hist.filter(h => h.status === "Success").length;
+            const totFailed = hist.filter(h => h.status === "Failed").length;
+            const totProcessed = hist.length;
+            const last = hist[hist.length - 1];
+
+            const tot = document.getElementById("transfer-stat-total");
+            const prc = document.getElementById("transfer-stat-processed");
+            const scs = document.getElementById("transfer-stat-booked");
+            const fld = document.getElementById("transfer-stat-failed");
+            const rem = document.getElementById("transfer-stat-pending");
+            const card = document.getElementById("transfer-card-label");
+
+            if (tot) tot.innerText = `● ${totProcessed}`;
+            if (prc) prc.innerText = `● ${totProcessed}`;
+            if (scs) scs.innerText = `● ${totSuccess}`;
+            if (fld) fld.innerText = `● ${totFailed}`;
+            if (rem) rem.innerText = `● 0`;
+            if (card && last) {
+              card.innerText = `✓ #${last.ticket_id} (${last.status}) -> ${last.target_dt || ''}`;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Transfer history fetch error", e);
+      }
+    }
+
     function startLiveRunTracking(mode = "book") {
       if (livePollInterval) clearInterval(livePollInterval);
       if (runTimerInterval) clearInterval(runTimerInterval);
@@ -3330,9 +3374,10 @@
           const pPct = document.getElementById(`${prefix}-progress-pct`);
 
           if (isRun) {
-            if (attempts % 3 === 0) {
+            if (attempts % 2 === 0) {
               if (mode === "assign") fetchAssignHistory();
               else if (mode === "close") fetchCloseHistory();
+              else if (mode === "transfer") fetchTransferHistory();
               else fetchData();
             }
             if (browserStatus) {
@@ -3348,6 +3393,8 @@
                 cardLabel.innerText = "● Assigning: Freshdesk Open Complaints Queue";
               } else if (mode === "close") {
                 cardLabel.innerText = "● Closing: Freshdesk Resolved Complaints Queue";
+              } else if (mode === "transfer") {
+                cardLabel.innerText = "● Transferring: Freshdesk Complaints Queue";
               } else {
                 if (currentQueueRecords && currentQueueRecords.length > 0) {
                   const pendingRec = currentQueueRecords.find(r => !isComplaintAlreadyBooked(r));
@@ -3393,7 +3440,7 @@
               }
             }
           } else {
-            // Finished!
+            // Finished -> Immediately Sleep and Stop!
             clearInterval(livePollInterval);
             livePollInterval = null;
             if (runTimerInterval) {
@@ -3402,25 +3449,25 @@
             }
 
             if (browserStatus) {
-              browserStatus.innerText = "● Idle";
+              browserStatus.innerText = "● Sleeping (Idle)";
               browserStatus.className = "stacked-card-value status-idle";
             }
             if (portalStatus) {
-              portalStatus.innerText = "● Standby";
+              portalStatus.innerText = "● Sleeping (Standby)";
               portalStatus.className = "stacked-card-value status-idle";
             }
 
             if (latest.conclusion === "success") {
-              if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Successfully Completed!`;
+              if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Complete! Automation is Sleeping.`;
               if (pBar) pBar.style.width = "100%";
               if (pPct) pPct.innerText = "100%";
               if (cardLabel) {
                 if (mode === "assign") {
-                  cardLabel.innerText = "✓ Assign Completed";
+                  cardLabel.innerText = "✓ Assign Completed & Sleeping";
                 } else if (mode === "close") {
-                  cardLabel.innerText = "✓ Closure Completed";
+                  cardLabel.innerText = "✓ Closure Completed & Sleeping";
                 } else if (mode === "transfer") {
-                  cardLabel.innerText = "✓ Transfer Completed";
+                  cardLabel.innerText = "✓ Transfer Completed & Sleeping";
                 } else {
                   if (currentQueueRecords && currentQueueRecords.length > 0) {
                     const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
@@ -3428,14 +3475,14 @@
                     if (lastRec) {
                       cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
                     } else {
-                      cardLabel.innerText = "Completed";
+                      cardLabel.innerText = "Completed & Sleeping";
                     }
                   } else {
-                    cardLabel.innerText = "Completed";
+                    cardLabel.innerText = "Completed & Sleeping";
                   }
                 }
               }
-              showToast("✓ Cloud Automation Completed Successfully!");
+              showToast("✓ Cloud Automation Finished & Sleeping Immediately!");
             } else {
               if (activityLabel) activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
             }
@@ -3445,6 +3492,8 @@
               fetchAssignHistory();
             } else if (mode === "close") {
               fetchCloseHistory();
+            } else if (mode === "transfer") {
+              fetchTransferHistory();
             } else {
               fetchData();
             }
@@ -3501,6 +3550,9 @@
       fetchRuns();
       fetchRbuzzQueue();
       checkRbuzzSession();
+      fetchAssignHistory();
+      fetchCloseHistory();
+      fetchTransferHistory();
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
     }
 
@@ -4087,6 +4139,9 @@
         fetchTimeSetting();
         fetchRbuzzQueue();
         checkRbuzzSession();
+        fetchAssignHistory();
+        fetchCloseHistory();
+        fetchTransferHistory();
       }
     }, 30000);
   </script>
