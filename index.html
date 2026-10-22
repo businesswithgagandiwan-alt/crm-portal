@@ -1966,6 +1966,11 @@
           <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
           <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
         </select>
+        <div class="dialog-prompt" style="margin-top: 10px;">Select Transfer Mode:</div>
+        <select class="dialog-select" id="transfer-mode-select">
+          <option value="1" selected>🧪 Test Mode: Only 1 Complaint (केवल 1 टेस्ट)</option>
+          <option value="100">🚀 Full Mode: Transfer All (सभी कम्प्लेंट्स)</option>
+        </select>
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('transfer-dialog')">Cancel</button>
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-transfer" onclick="submitTransferDT()">Open Freshdesk Browser</button>
@@ -2263,6 +2268,7 @@
 
     async function submitTransferDT() {
       const dt = document.getElementById("transfer-dt-select").value;
+      const maxTickets = document.getElementById("transfer-mode-select") ? document.getElementById("transfer-mode-select").value : "1";
       closeModal("transfer-dialog");
 
       showToast(`🚀 Dispatched Complaint Transfer for ${dt} on Cloud!`);
@@ -2295,7 +2301,7 @@
             "Accept": "application/vnd.github.v3+json",
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+          body: JSON.stringify({ ref: "main", inputs: { dt_code: dt, max_tickets: maxTickets } })
         });
         if (res.status === 204) {
           showToast(`✓ GitHub Actions transfer workflow started for ${dt}!`);
