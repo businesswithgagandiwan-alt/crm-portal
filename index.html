@@ -2763,9 +2763,25 @@
         }
       }
 
-      const mExp = s.match(/expires\s*in\s*(\d+)\s*days?/i);
+      const mDate = s.match(/([0-9]{1,2})[-/ ]([A-Za-z]{3,9})[-/ ]([0-9]{2,4})/);
+      if (mDate) {
+        const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+        const monStr = mDate[2].substring(0, 3).toLowerCase();
+        const mIdx = monthNames.indexOf(monStr);
+        let yr = parseInt(mDate[3]);
+        if (yr < 100) yr += 2000;
+        const day = parseInt(mDate[1]);
+        if (mIdx !== -1) {
+          const d = new Date(yr, mIdx, day);
+          return Math.round((d - today) / (1000 * 60 * 60 * 24));
+        }
+      }
+
+      if (s.toLowerCase().includes("expired") && !s.toLowerCase().includes("expires in")) return -999999;
+
+      const mExp = s.match(/expires?\s+in\s+(\d+)\s*days?/i) || s.match(/(\d+)\s*days?\s*(?:left|remaining)/i);
       if (mExp) return parseInt(mExp[1]);
-      if (s.toLowerCase().includes("expired")) return -999999;
+
       return 999999;
     }
 
@@ -2773,6 +2789,15 @@
       const st = String(rec["Complaint Status"] || "").trim();
       const rem = String(rec["Complaint Remark"] || "").trim();
       return (st !== "" || rem !== "");
+    }
+
+    function getSortedPendingRecords(records) {
+      if (!records || !records.length) return [];
+      const unbooked = records.filter(r => !isComplaintAlreadyBooked(r));
+      const activeValid = unbooked.filter(r => parseBillingCycleDays(r["Billing Cycle"] || "") >= 0);
+      activeValid.sort((a, b) => parseBillingCycleDays(a["Billing Cycle"] || "") - parseBillingCycleDays(b["Billing Cycle"] || ""));
+      const otherPending = unbooked.filter(r => parseBillingCycleDays(r["Billing Cycle"] || "") < 0);
+      return activeValid.concat(otherPending);
     }
 
     function toggleTimerDelay(isOn) {
@@ -2814,7 +2839,8 @@
       // Update Smart Card label if not actively in live booking
       const cardLabel = document.getElementById("booking-card-label");
       const bookedRecords = records.filter(isComplaintAlreadyBooked);
-      const pendingRecs = records.filter(r => !isComplaintAlreadyBooked(r));
+      bookedRecords.sort((a, b) => String(a["Processed At"] || "").localeCompare(String(b["Processed At"] || "")));
+      const pendingRecs = getSortedPendingRecords(records);
       const nextPending = pendingRecs[0];
       const lastBooked = bookedRecords[bookedRecords.length - 1];
       if (cardLabel && (!cardLabel.innerText.includes("Booking:") || cardLabel.innerText === "—")) {
@@ -3397,7 +3423,7 @@
                 cardLabel.innerText = "● Transferring: Freshdesk Complaints Queue";
               } else {
                 if (currentQueueRecords && currentQueueRecords.length > 0) {
-                  const pendingRec = currentQueueRecords.find(r => !isComplaintAlreadyBooked(r));
+                  const pendingRec = getSortedPendingRecords(currentQueueRecords)[0];
                   if (pendingRec) {
                     cardLabel.innerText = `● Booking: ${pendingRec['Smart Card Number']} (${pendingRec['Customer Name'] || ''})`;
                   } else {
@@ -3470,7 +3496,8 @@
                   cardLabel.innerText = "✓ Transfer Completed & Sleeping";
                 } else {
                   if (currentQueueRecords && currentQueueRecords.length > 0) {
-                    const bookedRecs = currentQueueRecords.filter(isComplaintAlreadyBooked);
+                    const bookedRecs = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
+                    bookedRecs.sort((a, b) => String(a["Processed At"] || "").localeCompare(String(b["Processed At"] || "")));
                     const lastRec = bookedRecs[bookedRecs.length - 1];
                     if (lastRec) {
                       cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
