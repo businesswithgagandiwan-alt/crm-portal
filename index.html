@@ -2585,6 +2585,14 @@
         return;
       }
 
+      // Always wake up/enable workflow on GitHub so runs are never blocked
+      try {
+        await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/enable`, {
+          method: "PUT",
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+      } catch (e) {}
+
       if (isScheduleMode) {
         showToast(`⏰ Setting Schedule Target to ${q} complaints (30-45m gap)...`);
         try {
