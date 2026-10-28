@@ -1886,12 +1886,12 @@
   </div>
 
   <!-- Native Dialog: Quota Selection Dialog (User-Defined Quantity Input, Exactly matches Qt App) -->
-  <div class="modal-overlay" id="quota-dialog">
+    <div class="modal-overlay" id="quota-dialog">
     <div class="qt-dialog qt-dialog-large">
       <div class="dialog-header">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="color: #0369A1; font-weight: 700;">📋 Complaint Booking - Select Quota</span>
-          <span class="live-indicator" id="quota-sync-pill">🟢 Live Synced</span>
+          <span style="color: #0369A1; font-weight: 700;">Complaint Booking - Data Expiry & Quota</span>
+          <span class="live-indicator" id="quota-sync-pill">Live Synced</span>
         </div>
         <span style="cursor: pointer;" onclick="closeModal('quota-dialog')">✕</span>
       </div>
@@ -1899,55 +1899,68 @@
         <!-- 1. Summary box: DT-Wise Record Summary (Non-Editable / Pure Info) -->
         <div class="summary-card-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="font-weight: 700; color: #334155;">📊 DT-Wise Record Summary (Read-Only):</span>
+            <span style="font-weight: 700; color: #334155;">DT-Wise Record Summary (Read-Only):</span>
             <span id="quota-sync-time" style="font-size:10px; color:#64748B;">Synced: --:--:--</span>
           </div>
           <div id="dt-breakdown-container">
-            • <b>DT-2016272</b>: 51 records<br>
-            • <b>DT-2017416</b>: 44 records<br>
-            • <b>Total Available</b>: <span style="color:#0284C7; font-weight:bold; font-size:12px;">95 records</span>
+            <span style="color:#64748B; font-size:11px;">Loading queue data...</span>
           </div>
         </div>
 
         <!-- 2. Expiry Status box: ID Expire Status -->
-        <div class="expiry-card-box">
-          <div style="font-weight: 700; color: #92400E; margin-bottom: 4px;">⏳ Expiry Status (आज की तारीख के अनुसार):</div>
-          <div id="exp-breakdown-container">
-            • 🚫 <b>Already Expired</b>: <span style="color:#DC2626; font-weight:bold;">3 IDs</span> (❌ इनकी Complaint नहीं डाली जाएगी - Auto-Skip)<br>
-            • 🔴 <b>0-3 Days Left (Expiring Soon)</b>: <span style="color:#EA580C; font-weight:bold;">0 IDs</span> (High Priority)<br>
-            • 🟡 <b>4-7 Days Left</b>: <span style="color:#D97706; font-weight:bold;">0 IDs</span><br>
-            • 🟢 <b>More than 7 Days Left</b>: <span style="color:#16A34A; font-weight:bold;">92 IDs</span>
+        <div class="expiry-card-box" style="background:#FFFBEB; border:1.5px solid #FCD34D; border-radius:6px; padding:10px 12px; margin-bottom:12px;">
+          <div style="font-weight: 700; color: #92400E; margin-bottom: 6px;">Expiry Status (आज की तारीख के अनुसार):</div>
+          <div id="exp-breakdown-container" style="font-size:11.5px; line-height:1.5; color:#1E293B;">
+            <span style="color:#64748B; font-size:11px;">Calculating expiry breakdown...</span>
+          </div>
+          <div style="margin-top:6px; font-size:10.5px; color:#78350F; background:#FEF3C7; padding:4px 8px; border-radius:4px;">
+            नोट: जो आईडी सबसे पहले खत्म होने वाली हैं (0-3 दिन बची हुई), सिस्टम प्राथमिकता से पहले उन्हीं की कम्प्लेंट बुक करेगा।
           </div>
         </div>
 
-        <!-- 3. User-defined Input for Today's Quantity (Replaced list dropdown as per Request #2) -->
-        <div class="dialog-prompt">आज कितनी complaints बुक करनी हैं? (Enter Today's Quantity):</div>
-        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px;">
-          <input type="number" class="dialog-select" id="quota-input" min="1" max="500" value="5" placeholder="Enter quantity (e.g. 5)" style="margin-bottom:0; flex:1; font-size:14px; text-align:center; font-weight:800; color:#BE185D;">
-          <button type="button" class="dialog-btn dialog-btn-secondary" id="btn-select-all-quota" onclick="selectAllQuota()" style="white-space:nowrap; padding:6px 12px; font-weight:700;">Select All (<span id="quota-all-count">92</span>)</button>
+        <!-- 3. User-defined Input for Today's Quantity & Quick Preset Chips -->
+        <div class="dialog-prompt" style="font-weight:700; color:#0F172A; margin-bottom:6px;">
+          आज कितनी complaints बुक करनी हैं? (Enter Today's Quantity):
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <input type="number" class="dialog-select" id="quota-input" min="1" max="500" value="15" placeholder="Enter quantity" style="margin-bottom:0; flex:1; font-size:15px; text-align:center; font-weight:800; color:#BE185D; border:2px solid #0284C7;">
         </div>
 
-        <div style="margin-bottom: 14px; padding: 10px 12px; background: #FFF1F2; border-radius: 8px; border: 1px solid #FECDD3; text-align: left;">
+        <!-- Quick Preset Selection Chips -->
+        <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;">
+          <button type="button" class="preset-chip" id="btn-select-urgent-quota" onclick="selectUrgentQuota()" style="background: #FFF7ED; border: 1.5px solid #F97316; color: #C2410C; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 800; cursor: pointer;">
+            Expiring Soon (<span id="quota-urgent-count">0</span> IDs)
+          </button>
+          <button type="button" class="preset-chip" onclick="setQuotaValue(5)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">5</button>
+          <button type="button" class="preset-chip" onclick="setQuotaValue(10)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">10</button>
+          <button type="button" class="preset-chip" onclick="setQuotaValue(16)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">16</button>
+          <button type="button" class="preset-chip" id="btn-select-all-quota" onclick="selectAllQuota()" style="background: #EFF6FF; border: 1.5px solid #93C5FD; color: #1D4ED8; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">
+            Select All Available (<span id="quota-all-count">0</span>)
+          </button>
+        </div>
+
+        <!-- Execution Mode Selection: Instant vs Schedule -->
+        <div style="margin-bottom: 14px; padding: 10px 12px; background: #FFF1F2; border-radius: 8px; border: 1.5px solid #FECDD3; text-align: left;">
           <div style="font-size: 12px; font-weight: 800; color: #9F1239; margin-bottom: 8px;">बुकिंग का तरीका चुनें (Select Execution Mode):</div>
           <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #831843; cursor: pointer; margin-bottom: 8px;">
             <input type="radio" name="booking-mode" id="mode-schedule" value="schedule" checked style="margin-top: 3px;">
             <div>
-              <div>⏰ Schedule Mode (सुरक्षित 30-45m गैप)</div>
-              <div style="font-size: 11px; font-weight: 500; color: #64748B;">दी गई संख्या के अनुसार एक-एक करके 30-45 मिनट के अंतराल में बुक होंगी।</div>
+              <div>Schedule Mode (सुरक्षित 30-45m गैप)</div>
+              <div style="font-size: 11px; font-weight: 500; color: #64748B;">दी गई संख्या के अनुसार एक-एक करके 30-45 मिनट के अंतराल में अपने आप बुक होंगी।</div>
             </div>
           </label>
-          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer;">
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #047857; cursor: pointer;">
             <input type="radio" name="booking-mode" id="mode-instant" value="instant" style="margin-top: 3px;">
             <div>
-              <div>⚡ Instant Mode (अभी तुरंत)</div>
-              <div style="font-size: 11px; font-weight: 500; color: #64748B;">सारी कंप्लेंट्स अभी एक साथ 10 सेकंड के गैप में बुक कर दी जाएंगी।</div>
+              <div>Instant Mode (अभी तुरंत ब्राउज़र खोलकर बुक करें)</div>
+              <div style="font-size: 11px; font-weight: 500; color: #64748B;">तुरंत ब्राउज़र खुलेगा और चुनी हुई संख्या की कंप्लेंट्स बिना किसी इंतजार के सीधे बुक हो जाएंगी।</div>
             </div>
           </label>
         </div>
 
         <div class="dialog-btns">
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
-          <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()">Confirm & Start</button>
+          <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()" style="background:linear-gradient(180deg, #0284C7 0%, #0369A1 100%); color:#FFFFFF; font-weight:800; padding:8px 18px; border-radius:6px; border:none; cursor:pointer;">Confirm & Start</button>
         </div>
       </div>
     </div>
@@ -2244,11 +2257,32 @@
     let livePollInterval = null;
     let activeRunId = null;
 
+    function selectUrgentQuota() {
+      const urgentBadge = document.getElementById("quota-urgent-count");
+      const count = parseInt(urgentBadge?.innerText || "0", 10);
+      const qInput = document.getElementById("quota-input");
+      if (qInput) {
+        qInput.value = count > 0 ? count : 1;
+      }
+    }
+
+    function setQuotaValue(val) {
+      const qInput = document.getElementById("quota-input");
+      const allCountEl = document.getElementById("quota-all-count");
+      const maxVal = parseInt(allCountEl?.innerText || "999", 10);
+      if (qInput) {
+        qInput.value = Math.min(val, maxVal > 0 ? maxVal : val);
+      }
+    }
+
     async function openBookingQuotaDialog() {
       const syncPill = document.getElementById("quota-sync-pill");
       if (syncPill) {
         syncPill.className = "live-indicator syncing";
-        syncPill.innerText = "🔄 Syncing...";
+        syncPill.innerText = "Syncing...";
+      }
+      if (currentQueueRecords && currentQueueRecords.length > 0) {
+        updateBreakdown(currentQueueRecords);
       }
       document.getElementById("quota-dialog").style.display = "flex";
       await fetchData();
@@ -2891,29 +2925,34 @@
         `;
       }
 
-      const expEl = document.getElementById("exp-breakdown-container");
+            const expEl = document.getElementById("exp-breakdown-container");
       if (expEl) {
         let expHtml = "";
         if (expired > 0) {
-          expHtml += `• 🚫 <b>Already Expired</b>: <span style="color:#DC2626; font-weight:bold;">${expired} IDs</span> (❌ इनकी Complaint नहीं डाली जाएगी - Auto-Skip)<br>`;
+          expHtml += `• <b>Already Expired</b>: <span style="color:#DC2626; font-weight:bold;">${expired} IDs</span> (इनकी Complaint नहीं डाली जाएगी - Auto-Skip)<br>`;
         }
-        expHtml += `• 🔴 <b>0-3 Days Left (Expiring Soon)</b>: <span style="color:#EA580C; font-weight:bold;">${urgent} IDs</span> (High Priority)<br>`;
-        expHtml += `• 🟡 <b>4-7 Days Left</b>: <span style="color:#D97706; font-weight:bold;">${upcoming} IDs</span><br>`;
-        expHtml += `• 🟢 <b>More than 7 Days Left</b>: <span style="color:#16A34A; font-weight:bold;">${normal} IDs</span>`;
+        expHtml += `• <b>0-3 Days Left (Expiring Soon)</b>: <span style="color:#EA580C; font-weight:bold;">${urgent} IDs</span> (High Priority - सबसे पहले खत्म होने वाली)<br>`;
+        expHtml += `• <b>4-7 Days Left</b>: <span style="color:#D97706; font-weight:bold;">${upcoming} IDs</span><br>`;
+        expHtml += `• <b>More than 7 Days Left</b>: <span style="color:#16A34A; font-weight:bold;">${normal} IDs</span>`;
         if (unknown > 0) {
-          expHtml += `<br>• ⚪ <i>Date not specified</i>: ${unknown} IDs`;
+          expHtml += `<br>• <i>Date not specified</i>: ${unknown} IDs`;
         }
         expEl.innerHTML = expHtml;
       }
 
-      // Update Quota input limit and "Select All" badge
+      // Update urgent badge and all badge
+      const urgentBadge = document.getElementById("quota-urgent-count");
+      if (urgentBadge) urgentBadge.innerText = urgent;
       const allBadge = document.getElementById("quota-all-count");
       if (allBadge) allBadge.innerText = validPending;
+
       const qInput = document.getElementById("quota-input");
       if (qInput) {
         qInput.max = validPending;
-        if (!qInput.value || parseInt(qInput.value) > validPending) {
-          qInput.value = Math.min(5, validPending);
+        // Default intelligently to urgent (soonest expiring) count so user can book expiring IDs first
+        const curVal = parseInt(qInput.value || "0", 10);
+        if (curVal === 0 || curVal === 5 || curVal > validPending) {
+          qInput.value = urgent > 0 ? urgent : Math.min(10, validPending);
         }
       }
 
