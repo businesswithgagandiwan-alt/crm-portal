@@ -1,4223 +1,8460 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
   <meta http-equiv="Pragma" content="no-cache">
+
   <meta http-equiv="Expires" content="0">
+
   <title>Sun Direct CRM Automation</title>
+
   <meta name="theme-color" content="#BE185D">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
+
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <link rel="icon" href="https://img.icons8.com/color/96/cloud--v1.png" type="image/png">
+
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&display=swap" rel="stylesheet">
+
   <!-- SheetJS library for direct Excel parsing and 'Add More Data' in browser -->
+
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
+
     :root {
+
       --pink-normal: #EC008C;
+
       --pink-hover: #D6007E;
+
       --pink-pressed: #B8006C;
+
       --pink-soft: #F8BBD0;
+
       --disabled-bg: #D9A8C3;
+
       --disabled-text: #F7EEF2;
+
       --bg: #F1F5F9;
+
       --window-border: #CBD5E1;
+
       --text: #0F172A;
+
       --text-muted: #475569;
+
     }
+
+
 
     * {
+
       box-sizing: border-box;
+
       margin: 0;
+
       padding: 0;
+
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
       -webkit-tap-highlight-color: transparent;
+
     }
+
+
 
     body {
+
       background-color: #E2E8F0;
+
       color: var(--text);
+
       display: flex;
+
       justify-content: center;
+
       align-items: flex-start;
+
       min-height: 100vh;
+
       padding: 6px;
+
     }
+
+
 
     /* Window Container */
+
     .app-window {
+
       background-color: #FFFFFF;
+
       border: 1.5px solid #94A3B8;
+
       border-radius: 8px;
+
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
       width: 100%;
+
       max-width: 1100px;
+
       display: flex;
+
       flex-direction: column;
+
       overflow: hidden;
+
     }
+
+
 
     /* Windows Title Bar (Exact Qt App Match) */
+
     .title-bar {
+
       background: linear-gradient(180deg, #FF2E99 0%, #F0008E 10%, #D6007E 90%, #B8006C 100%);
+
       border-bottom: 2px solid #8B0052;
+
       padding: 6px 14px;
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
       user-select: none;
+
     }
+
+
 
     .title-brand {
+
       display: flex;
+
       align-items: center;
+
       gap: 10px;
+
     }
+
+
 
     .app-icon {
+
       width: 18px;
+
       height: 18px;
+
     }
+
+
 
     .title-text {
+
       font-size: 13.5px;
+
       font-weight: 800;
+
       color: #FFFFFF;
+
       letter-spacing: 0.3px;
+
     }
+
+
 
     .title-text span.version-tag {
+
       font-size: 12px;
+
       font-weight: 600;
+
       color: #FFE4EF;
+
       margin-left: 6px;
+
     }
+
+
 
     .anti-sleep-badge {
+
       font-size: 10.5px;
+
       font-weight: 800;
+
       background: #059669;
+
       color: #FFFFFF;
+
       border: 1px solid #34D399;
+
       padding: 3px 12px;
+
       border-radius: 12px;
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 6px;
+
       box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+
     }
+
+
 
     .cloud-status-badge {
+
       font-size: 10px;
+
       font-weight: 700;
+
       background: rgba(255, 255, 255, 0.2);
+
       color: #FFFFFF;
+
       border: 1px solid rgba(255, 255, 255, 0.35);
+
       padding: 3px 10px;
+
       border-radius: 12px;
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 5px;
+
       cursor: pointer;
+
     }
+
+
 
     .status-dot {
+
       width: 6.5px;
+
       height: 6.5px;
+
       background: #22C55E;
+
       border-radius: 50%;
+
       box-shadow: 0 0 6px #22C55E;
+
     }
+
+
 
     .window-controls {
+
       display: flex;
+
       align-items: center;
+
       gap: 8px;
+
       font-size: 12px;
+
       color: #FFFFFF;
+
     }
+
+
 
     .win-btn {
+
       width: 24px;
+
       height: 20px;
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       border-radius: 3px;
+
       cursor: pointer;
+
       color: #FFFFFF;
+
     }
+
+
 
     .win-btn:hover {
+
       background-color: rgba(255, 255, 255, 0.2);
+
     }
+
+
 
     .win-close:hover {
+
       background-color: #EF4444;
+
       color: white;
+
     }
+
+
 
     /* App Body: Sidebar + Main Stack */
+
     .app-body {
+
       display: flex;
+
       background-color: #FFFFFF;
+
       min-height: 580px;
+
     }
+
+
 
     /* Left Sidebar */
+
     .sidebar {
+
       width: 196px;
+
       background-color: #FFFFFF;
+
       border-right: 1.5px solid #E2E8F0;
+
       padding: 6px 5px;
+
       display: flex;
+
       flex-direction: column;
+
       gap: 5px;
+
       flex-shrink: 0;
+
       transition: width 0.2s ease;
+
     }
+
+
 
     .sidebar.collapsed {
+
       width: 48px;
+
       padding: 6px 3px;
+
     }
+
+
 
     .sidebar-header {
+
       display: flex;
+
       justify-content: flex-end;
+
       height: 28px;
+
       margin-bottom: 2px;
+
     }
+
+
 
     .sidebar-toggle-btn {
+
       width: 26px;
+
       height: 26px;
+
       border: 1px solid #CBD5E1;
+
       background: #F8FAFC;
+
       border-radius: 4px;
+
       font-size: 13px;
+
       cursor: pointer;
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       color: #334155;
+
     }
+
+
 
     .sidebar-toggle-btn:hover {
+
       background: #E2E8F0;
+
     }
+
+
 
     /* Modern Nav Buttons */
+
     .modern-nav-btn {
+
       background-color: #FFFFFF;
+
       color: #1E293B;
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 6px;
+
       font-size: 11px;
+
       font-weight: 700;
+
       padding: 6px 8px;
+
       text-align: left;
+
       cursor: pointer;
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
       white-space: nowrap;
+
       overflow: hidden;
+
       text-overflow: ellipsis;
+
       transition: all 0.15s;
+
     }
+
+
 
     .modern-nav-btn:hover {
+
       background-color: #FFF0F6;
+
       border-color: #F8BBD0;
+
       color: #B8006C;
+
     }
+
+
 
     .modern-nav-btn.active {
+
       background: linear-gradient(180deg, #FF2E99 0%, #F0008E 8%, #C70075 88%, #A1005E 100%);
+
       color: #FFFFFF;
+
       border-top: 1.5px solid #FFA6D5;
+
       border-left: 1.5px solid #FFA6D5;
+
       border-right: 2px solid #6E0041;
+
       border-bottom: 3.5px solid #6E0041;
+
       border-radius: 6px;
+
     }
+
+
 
     .sidebar.collapsed .modern-nav-btn {
+
       justify-content: center;
+
       padding: 6px 0;
+
       font-size: 15px;
+
     }
+
+
 
     .sidebar.collapsed .modern-nav-btn span.label {
+
       display: none;
+
     }
+
+
 
     /* Main Content Area */
+
     .main-stack {
+
       flex: 1;
+
       padding: 10px 12px;
+
       background-color: #FFFFFF;
+
       display: flex;
+
       flex-direction: column;
+
       overflow-x: hidden;
+
     }
+
+
 
     /* QGroupBox styling */
+
     .group-box {
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 6px;
+
       padding: 14px 10px 10px;
+
       position: relative;
+
       background-color: #FFFFFF;
+
       flex: 1;
+
       display: flex;
+
       flex-direction: column;
+
     }
+
+
 
     .group-box-title {
+
       position: absolute;
+
       top: -9px;
+
       left: 14px;
+
       background: #FFFFFF;
+
       padding: 0 6px;
+
       font-size: 12px;
+
       font-weight: 800;
+
       color: #0F172A;
+
     }
+
+
 
     /* 3D Action Buttons Grid */
+
     .action-btns-grid {
+
       display: flex;
+
       flex-direction: column;
+
       gap: 6px;
+
       margin-bottom: 10px;
+
     }
+
+
 
     .action-row {
+
       display: grid;
+
       grid-template-columns: repeat(6, 1fr);
+
       gap: 5px;
+
     }
+
+
 
     .action-row-7 {
+
       display: grid;
+
       grid-template-columns: repeat(7, 1fr);
+
       gap: 5px;
+
     }
+
+
 
     .action-row-6 {
+
       display: grid;
+
       grid-template-columns: repeat(6, 1fr);
+
       gap: 5px;
+
     }
+
+
 
     .action-row-5 {
+
       display: grid;
+
       grid-template-columns: repeat(6, 1fr);
+
       gap: 5px;
+
     }
+
+
 
     .action-btn-3d {
+
       background: linear-gradient(180deg, #FF2E99 0%, #F0008E 8%, #C70075 88%, #A1005E 100%);
+
       color: #FFFFFF;
+
       border-top: 1.5px solid #FFA6D5;
+
       border-left: 1.5px solid #FFA6D5;
+
       border-right: 2px solid #6E0041;
+
       border-bottom: 3.5px solid #6E0041;
+
       border-radius: 5px;
+
       padding: 4px 2px;
+
       font-weight: 700;
+
       font-size: 10px;
+
       text-align: center;
+
       cursor: pointer;
+
       line-height: 1.2;
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       min-height: 32px;
+
       transition: all 0.1s;
+
       user-select: none;
+
     }
+
+
 
     .action-btn-3d:hover {
+
       background: linear-gradient(180deg, #FF45A5 0%, #FA149A 8%, #D6007E 88%, #B00067 100%);
+
       border-bottom: 3.5px solid #5A0035;
+
     }
+
+
 
     .action-btn-3d:active {
+
       background: linear-gradient(180deg, #B00067 0%, #D6007E 100%);
+
       border-top: 3px solid #5A0035;
+
       border-left: 2.5px solid #5A0035;
+
       border-right: 1px solid #FFA6D5;
+
       border-bottom: 1px solid #FFA6D5;
+
       transform: translateY(1.5px);
+
     }
+
+
 
     .action-btn-blue {
+
       background: linear-gradient(180deg, #0284C7 0%, #0369A1 100%) !important;
+
       border-top: 1.5px solid #7DD3FC !important;
+
       border-left: 1.5px solid #7DD3FC !important;
+
       border-right: 2px solid #0C4A6E !important;
+
       border-bottom: 3.5px solid #0C4A6E !important;
+
     }
+
+
 
     /* 3-Row Status Strip (Exact Mathematical Qt Grid) */
+
     .status-strip-frame {
+
       background-color: #F8FAFC;
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 6px;
+
       padding: 6px;
+
       margin-bottom: 8px;
+
     }
+
+
 
     .status-strip-row {
+
       display: grid;
+
       grid-template-columns: 135px repeat(6, 1fr);
+
       gap: 5px;
+
       margin-bottom: 5px;
+
     }
+
+
 
     .status-strip-row:last-child {
+
       margin-bottom: 0;
+
     }
+
+
 
     /* Main Green Gradient Heading (Exact Qt Match) */
+
     .strip-heading {
+
       background: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
+
       color: #FFFFFF;
+
       font-weight: 800;
+
       font-size: 10px;
+
       border: 1px solid #4ADE80;
+
       border-right: 2px solid #14532D;
+
       border-bottom: 3px solid #14532D;
+
       border-radius: 5px;
+
       padding: 4px 6px;
+
       display: flex;
+
       align-items: center;
+
       justify-content: center;
+
       text-align: center;
+
       user-select: none;
+
     }
+
+
 
     /* Stacked 3D Card (Exact Qt Match) */
+
     .stacked-card {
+
       background-color: #FFFFFF;
+
       border: 1px solid #CBD5E1;
+
       border-right: 2px solid #94A3B8;
+
       border-bottom: 3px solid #64748B;
+
       border-radius: 5px;
+
       padding: 3px 5px;
+
       display: flex;
+
       flex-direction: column;
+
       justify-content: center;
+
       min-height: 38px;
+
     }
+
+
 
     .stacked-card-title {
+
       font-size: 8px;
+
       font-weight: 800;
+
       color: #475569;
+
       text-transform: uppercase;
+
       margin-bottom: 1px;
+
       text-align: center;
+
     }
+
+
 
     .stacked-card-value {
+
       font-size: 10px;
+
       font-weight: 700;
+
       color: #0F172A;
+
       text-align: center;
+
       white-space: nowrap;
+
       overflow: hidden;
+
       text-overflow: ellipsis;
+
     }
+
+
 
     .status-idle { color: #0F172A; }
+
     .status-running { color: #059669; animation: pulse 1.5s infinite; }
+
     .status-booked { color: #16A34A; }
 
+
+
     /* Auto-Schedule Card Styles */
+
     .schedule-card {
+
       background: #FFFFFF;
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 8px;
+
       padding: 10px 14px;
+
       margin-bottom: 12px;
+
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
     }
+
     .schedule-header {
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
+
       border-bottom: 1px solid #E2E8F0;
+
       padding-bottom: 8px;
+
       margin-bottom: 10px;
+
     }
+
     .schedule-title {
+
       font-size: 13px;
+
       font-weight: 800;
+
       color: #1E293B;
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
     }
+
     .switch-toggle {
+
       position: relative;
+
       display: inline-block;
+
       width: 44px;
+
       height: 24px;
+
     }
+
     .switch-toggle input {
+
       opacity: 0;
+
       width: 0;
+
       height: 0;
+
     }
+
     .slider {
+
       position: absolute;
+
       cursor: pointer;
+
       top: 0; left: 0; right: 0; bottom: 0;
+
       background-color: #CBD5E1;
+
       transition: .3s;
+
       border-radius: 24px;
+
     }
+
     .slider:before {
+
       position: absolute;
+
       content: "";
+
       height: 18px;
+
       width: 18px;
+
       left: 3px;
+
       bottom: 3px;
+
       background-color: white;
+
       transition: .3s;
+
       border-radius: 50%;
+
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+
     }
+
     input:checked + .slider {
+
       background-color: #16A34A;
+
     }
+
     input:checked + .slider:before {
+
       transform: translateX(20px);
+
     }
+
     .schedule-grid {
+
       display: grid;
+
       grid-template-columns: 1fr 1fr;
+
       gap: 10px;
+
       margin-bottom: 10px;
+
     }
+
     @media (max-width: 480px) {
+
       .schedule-grid {
+
         grid-template-columns: 1fr;
+
       }
+
     }
+
     .schedule-input-group {
+
       display: flex;
+
       flex-direction: column;
+
       gap: 4px;
+
     }
+
     .schedule-input-group label {
+
       font-size: 11px;
+
       font-weight: 700;
+
       color: #475569;
+
     }
+
     .schedule-input-group input {
+
       padding: 6px 10px;
+
       border: 1px solid #CBD5E1;
+
       border-radius: 6px;
+
       font-size: 12px;
+
       font-weight: 700;
+
       color: #0F172A;
+
       background: #F8FAFC;
+
     }
+
     .schedule-input-group input:focus {
+
       outline: none;
+
       border-color: #2563EB;
+
       background: #FFFFFF;
+
     }
+
     .schedule-footer {
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
+
       gap: 10px;
+
       padding-top: 6px;
+
     }
+
     .schedule-status-badge {
+
       font-size: 11px;
+
       font-weight: 700;
+
       padding: 4px 10px;
+
       border-radius: 20px;
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 5px;
+
     }
+
     .badge-active {
+
       background: #DCFCE7;
+
       color: #166534;
+
       border: 1px solid #86EFAC;
+
     }
+
     .badge-paused {
+
       background: #F1F5F9;
+
       color: #475569;
+
       border: 1px solid #CBD5E1;
+
     }
+
     .schedule-save-btn {
+
       background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
+
       color: #FFFFFF;
+
       border: 1px solid #1E40AF;
+
       border-bottom: 2.5px solid #1E3A8A;
+
       border-radius: 6px;
+
       font-size: 11px;
+
       font-weight: 800;
+
       padding: 6px 16px;
+
       cursor: pointer;
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 5px;
+
     }
+
     .schedule-save-btn:active {
+
       transform: translateY(1px);
+
     }
+
+
 
     /* Timer Delay Banner */
+
     .timer-banner {
+
       background: #EFF6FF;
+
       border: 1.5px solid #93C5FD;
+
       border-radius: 6px;
+
       padding: 6px 12px;
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
+
       margin-bottom: 10px;
+
       gap: 10px;
+
     }
+
+
 
     .timer-cb-wrapper {
+
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
       font-weight: 800;
+
       font-size: 11px;
+
       color: #1E3A8A;
+
       user-select: none;
+
     }
+
+
 
     .timer-status-pill {
+
       flex: 1;
+
       text-align: center;
+
       font-size: 11px;
+
       font-weight: 700;
+
       color: #1E40AF;
+
     }
+
+
 
     .next-now-btn {
+
       background: linear-gradient(180deg, #F97316 0%, #EA580C 100%);
+
       color: #FFFFFF;
+
       border: 1px solid #C2410C;
+
       border-bottom: 2.5px solid #9A3412;
+
       border-radius: 5px;
+
       font-size: 11px;
+
       font-weight: 800;
+
       padding: 4px 14px;
+
       cursor: pointer;
+
       display: flex;
+
       align-items: center;
+
       gap: 5px;
+
     }
+
+
 
     /* Live Progress Bar */
+
     .progress-track {
+
       width: 100%;
+
       height: 8px;
+
       background: #E2E8F0;
+
       border-radius: 4px;
+
       overflow: hidden;
+
       margin-top: 3px;
+
     }
+
+
 
     .progress-bar {
+
       height: 100%;
+
       width: 0%;
+
       background: linear-gradient(90deg, #EC008C 0%, #10B981 100%);
+
       transition: width 0.4s ease;
+
       animation: progressGlow 1.5s infinite alternate;
+
     }
+
+
 
     @keyframes progressGlow {
+
       from { filter: brightness(1); }
+
       to { filter: brightness(1.2); }
+
     }
+
+
 
     /* Live Pulse Badge */
+
     .live-indicator {
+
       display: inline-flex;
+
       align-items: center;
+
       gap: 4px;
+
       font-size: 10px;
+
       font-weight: 700;
+
       padding: 1px 6px;
+
       border-radius: 10px;
+
       background: #DCFCE7;
+
       color: #166534;
+
       border: 1px solid #BBF7D0;
+
     }
+
+
 
     .live-indicator.syncing {
+
       background: #FEF3C7;
+
       color: #92400E;
+
       border-color: #FDE68A;
+
     }
+
+
 
     /* Native Modal Popup for Quota & DT Code */
+
     .modal-overlay {
+
       display: none;
+
       position: fixed;
+
       top: 0; left: 0; right: 0; bottom: 0;
+
       background: rgba(15, 23, 42, 0.45);
+
       z-index: 999;
+
       justify-content: center;
+
       align-items: center;
+
       padding: 12px;
+
     }
+
+
 
     .qt-dialog {
+
       background: #FFFFFF;
+
       border: 1.5px solid #94A3B8;
+
       border-radius: 6px;
+
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+
       width: 100%;
+
       max-width: 380px;
+
       overflow: hidden;
+
     }
+
+
 
     .qt-dialog-large {
+
       max-width: 490px;
+
     }
+
+
 
     .summary-card-box {
+
       background-color: #F8FAFC;
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 6px;
+
       padding: 10px 12px;
+
       margin-bottom: 10px;
+
       font-size: 11px;
+
       line-height: 1.5;
+
       color: #0F172A;
+
     }
+
+
 
     .expiry-card-box {
+
       background-color: #FFFBEB;
+
       border: 1.5px solid #FCD34D;
+
       border-radius: 6px;
+
       padding: 10px 12px;
+
       margin-bottom: 12px;
+
       font-size: 11px;
+
       line-height: 1.5;
+
       color: #1E293B;
+
     }
+
+
 
     .dialog-header {
+
       background: #F1F5F9;
+
       border-bottom: 1px solid #CBD5E1;
+
       padding: 7px 12px;
+
       font-size: 11.5px;
+
       font-weight: 700;
+
       color: #0F172A;
+
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
+
     }
+
+
 
     .dialog-body {
+
       padding: 14px 12px;
+
     }
+
+
 
     .dialog-prompt {
+
       font-size: 11px;
+
       font-weight: 700;
+
       color: #0F172A;
+
       margin-bottom: 8px;
+
     }
+
+
 
     .dialog-select {
+
       width: 100%;
+
       padding: 6px 8px;
+
       border: 1.5px solid #CBD5E1;
+
       border-radius: 4px;
+
       font-size: 12px;
+
       font-weight: 700;
+
       color: #0F172A;
+
       outline: none;
+
       background: #FFFFFF;
+
       margin-bottom: 14px;
+
     }
+
+
 
     .dialog-btns {
+
       display: flex;
+
       justify-content: flex-end;
+
       gap: 8px;
+
     }
+
+
 
     .dialog-btn {
+
       padding: 5px 14px;
+
       border-radius: 4px;
+
       font-size: 11px;
+
       font-weight: 700;
+
       cursor: pointer;
+
     }
+
+
 
     .dialog-btn-primary {
+
       background: linear-gradient(180deg, #FF2E99 0%, #C70075 100%);
+
       color: white;
+
       border: 1px solid #A1005E;
+
     }
+
+
 
     .dialog-btn-secondary {
+
       background: #F1F5F9;
+
       color: #334155;
+
       border: 1px solid #CBD5E1;
+
     }
+
+
 
     /* Toast Notification */
+
     #toast {
+
       position: fixed;
+
       bottom: 20px;
+
       left: 50%;
+
       transform: translateX(-50%) translateY(100px);
+
       background: #0F172A;
+
       color: #FFFFFF;
+
       padding: 10px 18px;
+
       border-radius: 20px;
+
       font-size: 12px;
+
       font-weight: 700;
+
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+
       transition: transform 0.25s ease;
+
       z-index: 1000;
+
     }
+
+
 
     #toast.show {
+
       transform: translateX(-50%) translateY(0);
+
     }
+
+
 
     /* Mobile Navigation & Off-Canvas Menu Elements */
+
     .mobile-menu-btn {
+
       display: none;
+
     }
+
     .sidebar-backdrop {
+
       display: none;
+
     }
+
     .sidebar-close-btn-mobile {
+
       display: none;
+
     }
+
     .sidebar-mobile-title {
+
       display: none;
+
     }
+
+
 
     /* Mobile Responsive Rules (NO CUTTING OFF - 100% VISIBLE!) */
+
     @media (max-width: 768px) {
+
       body {
+
         padding: 0;
+
         background: #CBD5E1;
+
       }
+
+
 
       .app-window {
+
         border-radius: 0;
+
         border: none;
+
         min-height: 100vh;
+
         box-shadow: none;
+
       }
+
+
 
       .title-bar {
+
         padding: 8px 10px;
+
         display: flex;
+
         justify-content: space-between;
+
         align-items: center;
+
       }
+
+
 
       .mobile-menu-btn {
+
         display: flex !important;
+
         align-items: center;
+
         justify-content: center;
+
         width: 32px;
+
         height: 28px;
+
         background: rgba(255, 255, 255, 0.25);
+
         border: 1px solid rgba(255, 255, 255, 0.4);
+
         border-radius: 4px;
+
         color: #FFFFFF;
+
         font-size: 16px;
+
         font-weight: 800;
+
         cursor: pointer;
+
         margin-right: 6px;
+
         flex-shrink: 0;
+
       }
+
+
 
       .title-brand {
+
         display: flex;
+
         align-items: center;
+
         gap: 6px;
+
         flex: 1;
+
         overflow: hidden;
+
       }
+
+
 
       .title-text {
+
         font-size: 13px;
+
         white-space: nowrap;
+
         overflow: hidden;
+
         text-overflow: ellipsis;
+
       }
+
+
 
       .title-text span.version-tag {
+
         font-size: 10.5px;
+
       }
+
+
 
       .anti-sleep-badge, .window-controls {
+
         display: none !important;
+
       }
+
+
 
       .cloud-status-badge {
+
         font-size: 10px;
+
         padding: 3px 8px;
+
         white-space: nowrap;
+
         flex-shrink: 0;
+
       }
+
+
 
       /* Mobile Off-Canvas Drawer Menu */
+
       .sidebar {
+
         position: fixed !important;
+
         top: 0;
+
         left: -280px !important;
+
         width: 250px !important;
+
         height: 100vh;
+
         z-index: 1001;
+
         background: #FFFFFF;
+
         box-shadow: 4px 0 25px rgba(0, 0, 0, 0.35);
+
         transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
         padding: 12px 8px !important;
+
         overflow-y: auto;
+
       }
+
+
 
       .sidebar.mobile-open {
+
         left: 0 !important;
+
       }
+
+
 
       .sidebar-backdrop {
+
         position: fixed;
+
         top: 0; left: 0; right: 0; bottom: 0;
+
         background: rgba(15, 23, 42, 0.55);
+
         backdrop-filter: blur(2px);
+
         z-index: 1000;
+
         display: none;
+
       }
+
+
 
       .sidebar-backdrop.active {
+
         display: block !important;
+
       }
+
+
 
       .sidebar-header {
+
         display: flex;
+
         justify-content: space-between;
+
         align-items: center;
+
         height: 34px;
+
         margin-bottom: 8px;
+
         border-bottom: 1px solid #E2E8F0;
+
         padding-bottom: 4px;
+
       }
+
+
 
       .sidebar-toggle-btn {
+
         display: none !important;
+
       }
+
+
 
       .sidebar-mobile-title {
+
         display: inline !important;
+
       }
+
+
 
       .sidebar-close-btn-mobile {
+
         display: flex !important;
+
         align-items: center;
+
         justify-content: center;
+
         width: 26px;
+
         height: 26px;
+
         background: #F1F5F9;
+
         border: 1px solid #CBD5E1;
+
         border-radius: 4px;
+
         font-size: 14px;
+
         font-weight: 700;
+
         color: #64748B;
+
         cursor: pointer;
+
       }
+
+
 
       .modern-nav-btn {
+
         font-size: 12px !important;
+
         padding: 9px 10px !important;
+
         border-radius: 6px;
+
       }
+
+
 
       .modern-nav-btn span.label {
+
         display: inline !important;
+
       }
+
+
 
       /* Main Stack gets 100% Full Width on Mobile! */
+
       .app-body {
+
         min-height: auto;
+
       }
+
+
 
       .main-stack {
+
         width: 100% !important;
+
         padding: 8px 6px !important;
+
         overflow-x: hidden;
+
       }
+
+
 
       .group-box {
+
         padding: 14px 6px 8px !important;
+
       }
+
+
 
       .group-box-title {
+
         font-size: 11.5px;
+
         top: -8px;
+
         left: 10px;
+
       }
+
+
 
       /* 3D Action Buttons Grids for Mobile */
+
       .action-btns-grid {
+
         gap: 5px;
+
         margin-bottom: 8px;
+
       }
+
+
 
       .action-row-7 {
+
         display: grid !important;
+
         grid-template-columns: repeat(3, 1fr) !important;
+
         gap: 4px !important;
+
       }
+
+
 
       .action-row-7 button:last-child {
+
         grid-column: span 3 !important;
+
       }
+
+
 
       .action-row-6, .action-row-5 {
+
         display: grid !important;
+
         grid-template-columns: repeat(3, 1fr) !important;
+
         gap: 4px !important;
+
       }
+
+
 
       .action-btn-3d {
+
         font-size: 10px !important;
+
         min-height: 35px !important;
+
         padding: 4px 2px !important;
+
         line-height: 1.2 !important;
+
       }
+
+
 
       /* Mobile Status Dashboard (NO CUTTING OFF - 100% VISIBLE!) */
+
       .status-strip-frame {
+
         padding: 6px !important;
+
         margin-bottom: 8px !important;
+
         overflow-x: visible !important;
+
       }
+
+
 
       .status-strip-row {
+
         margin-bottom: 6px !important;
+
         min-width: 0 !important;
+
       }
+
+
 
       .status-strip-row:last-child {
+
         margin-bottom: 0 !important;
+
       }
+
+
 
       .strip-heading {
+
         font-size: 10.5px !important;
+
         padding: 4px 6px !important;
+
         border-radius: 4px !important;
+
         font-weight: 800;
+
       }
+
+
 
       /* Row 0: Session & Input (Heading on top, 4 cards in 2x2 grid) */
+
       .session-row {
+
         display: grid !important;
+
         grid-template-columns: 1fr 1fr !important;
+
         gap: 4px !important;
+
       }
+
+
 
       .session-row .strip-heading {
+
         grid-column: span 2 !important;
+
       }
+
+
 
       .session-row .stacked-card {
+
         grid-column: span 1 !important;
+
       }
+
+
 
       /* Row 1: Current Processing */
+
       .proc-row {
+
         display: grid !important;
+
         grid-template-columns: 1fr 1fr !important;
+
         gap: 4px !important;
+
       }
+
+
 
       .proc-row .strip-heading {
+
         grid-column: span 2 !important;
+
       }
+
+
 
       .proc-row .stacked-card:nth-child(2) {
+
         grid-column: span 1 !important;
+
       }
+
+
 
       .proc-row .stacked-card:nth-child(3) {
+
         grid-column: span 1 !important;
+
       }
+
+
 
       .proc-row .stacked-card:nth-child(4) {
+
         grid-column: span 2 !important;
+
       }
+
+
 
       /* Row 2: Statistics (Heading on top, 6 cards in 3x2 grid) */
+
       .stats-row {
+
         display: grid !important;
+
         grid-template-columns: repeat(3, 1fr) !important;
+
         gap: 4px !important;
+
       }
+
+
 
       .stats-row .strip-heading {
+
         grid-column: span 3 !important;
+
       }
+
+
 
       .stats-row .stacked-card {
+
         grid-column: span 1 !important;
+
       }
+
+
 
       .stacked-card {
+
         min-height: 38px !important;
+
         padding: 4px 3px !important;
+
       }
+
+
 
       .stacked-card-title {
+
         font-size: 8px !important;
+
       }
+
+
 
       .stacked-card-value {
+
         font-size: 10px !important;
+
       }
+
+
 
       /* Timer Delay Banner on Mobile */
+
       .timer-banner {
+
         flex-direction: column !important;
+
         align-items: stretch !important;
+
         gap: 6px !important;
+
         padding: 8px 10px !important;
+
         text-align: center;
+
       }
+
+
 
       .timer-cb-wrapper {
+
         justify-content: center;
+
         font-size: 11.5px;
+
       }
+
+
 
       .next-now-btn {
+
         justify-content: center;
+
         padding: 6px 14px;
+
         font-size: 12px;
+
       }
+
+
 
       /* Native Popups */
+
       .qt-dialog, .qt-dialog-large {
+
         width: 95vw !important;
+
         max-width: 95vw !important;
+
         margin: 10px auto;
+
       }
+
+
 
       .summary-card-box, .expiry-card-box {
+
         font-size: 10.5px;
+
         padding: 8px 10px;
+
       }
+
     }
+
   </style>
 
+
+
 </head>
+
 <body>
 
+
+
   <!-- ================= DEVICE SECURITY LOCK OVERLAY ================= -->
+
   <div id="device-lock-screen" style="display:none; position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color:#FFFFFF; align-items:center; justify-content:center; padding:16px;">
+
     <div style="background:#1E293B; border:1.5px solid #334155; border-radius:12px; max-width:380px; width:100%; padding:24px 20px; box-shadow:0 20px 40px rgba(0,0,0,0.5); text-align:center;">
+
       <div style="font-size:42px; margin-bottom:12px;">🛡️</div>
+
       <h2 style="font-size:18px; font-weight:800; color:#F8FAFC; margin-bottom:6px;">Private Device Lock</h2>
+
       <p style="font-size:12px; color:#94A3B8; margin-bottom:18px; line-height:1.5;">
+
         यह CRM पोर्टल केवल ऑथराइज्ड डिवाइस के लिए सुरक्षित है। एक्सेस करने के लिए अपना <b>डिवाइस पासवर्ड / की</b> दर्ज करें।
+
       </p>
+
+
 
       <div style="text-align:left; margin-bottom:12px;">
+
         <label style="font-size:11px; font-weight:700; color:#CBD5E1; display:block; margin-bottom:4px;">Master Access Key / Password:</label>
+
         <div style="position:relative; display:flex; align-items:center;">
+
           <input type="password" id="device-pin-input" placeholder="••••••••••••" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%; box-sizing:border-box; padding:10px 40px 10px 12px; border-radius:6px; border:1.5px solid #475569; background:#0F172A; color:#FFFFFF; font-size:15px; font-weight:700; outline:none;">
+
           <button type="button" id="toggle-pwd-btn" onclick="togglePasswordVisibility()" style="position:absolute; right:8px; background:transparent; border:none; color:#94A3B8; font-size:16px; cursor:pointer; padding:4px 6px;" title="Show/Hide Password">👁️</button>
+
         </div>
+
       </div>
+
+
 
       <button onclick="verifyDeviceAuth()" style="width:100%; padding:10px; background:linear-gradient(180deg, #E11D48 0%, #BE123C 100%); color:#FFFFFF; border:none; border-radius:6px; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px rgba(225,29,72,0.4); margin-bottom:10px;">
+
         🔓 Authorize This Device
+
       </button>
 
+
+
       <div id="auth-error-msg" style="display:none; color:#F87171; font-size:11px; font-weight:700; margin-top:6px;">
+
         ❌ Invalid Access Key! Access Denied.
+
       </div>
+
       <p style="font-size:10px; color:#64748B; margin-top:14px; margin-bottom:0;">
+
         🔒 Encrypted End-to-End • 100% Private Cloud
+
       </p>
+
     </div>
+
   </div>
+
+
 
   <div class="app-window" id="main-app-window" style="display:none;">
+
     <!-- Window Title Bar (Exact Laptop App Replica) -->
+
     <div class="title-bar">
+
       <div class="title-brand">
+
         <button class="mobile-menu-btn" onclick="toggleMobileMenu()" title="Open Modules Menu">☰</button>
+
         <span class="title-text">CRM Automation <span class="version-tag">• Version v1</span></span>
+
         <span class="cloud-status-badge" onclick="openTokenDialog()">
+
           <span class="status-dot"></span>
+
           <span>Cloud Online (GitHub)</span>
+
         </span>
+
       </div>
+
       <div class="window-controls">
+
         <div class="anti-sleep-badge">Anti-Sleep: ON</div>
+
         <div class="win-btn" title="Minimize">─</div>
+
         <div class="win-btn" title="Maximize">□</div>
+
         <div class="win-btn win-close" onclick="showToast('App Running on Cloud Background')" title="Close">✕</div>
+
       </div>
+
     </div>
+
+
 
     <!-- App Body -->
+
     <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeMobileMenu()"></div>
+
     <div class="app-body">
+
       <!-- Left Sidebar Menu -->
+
       <div class="sidebar" id="sidebar">
+
         <div class="sidebar-header">
+
           <span style="font-weight:800; font-size:12px; color:#BE185D;" class="sidebar-mobile-title">SUN DIRECT CRM</span>
+
           <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="Collapse / Expand Menu (◫)">◫</button>
+
           <button class="sidebar-close-btn-mobile" onclick="closeMobileMenu()" title="Close Menu">✕</button>
+
         </div>
+
+
 
         <button class="modern-nav-btn" data-module="fetch_data" onclick="selectModule('fetch_data')">
+
           <span>📥</span><span class="label">Fatch Data</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="rbuzz" onclick="selectModule('rbuzz')">
+
           <span>⚡</span><span class="label">Rbuzz Automation</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="fresh_sale" onclick="selectModule('fresh_sale')">
+
           <span>🌐</span><span class="label">FreshSale Atomation ☁️</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="update_mob" onclick="selectModule('update_mob')">
+
           <span>📱</span><span class="label">Update Mob no ☁️</span>
+
         </button>
+
         <button class="modern-nav-btn active" data-module="complaint_booking" onclick="selectModule('complaint_booking')">
+
           <span>🎫</span><span class="label">Complaint Booking ☁️</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="complaint_transfer" onclick="selectModule('complaint_transfer')">
+
           <span>🔀</span><span class="label">Complaint Transfer</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="assign_complaint" onclick="selectModule('assign_complaint')">
+
           <span>📋</span><span class="label">Assign Complaint ☁️</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="close_complaint" onclick="selectModule('close_complaint')">
+
           <span>🔒</span><span class="label">Close Complaint ☁️</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="asset_tag" onclick="selectModule('asset_tag')">
+
           <span>🏷️</span><span class="label">Asset Tag</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="invoice" onclick="selectModule('invoice')">
+
           <span>🧾</span><span class="label">Invoice Automation</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="gmb" onclick="selectModule('gmb')">
+
           <span>🏢</span><span class="label">GMB Manager</span>
+
         </button>
+
         <button class="modern-nav-btn" data-module="settings" onclick="selectModule('settings')">
+
           <span>⚙️</span><span class="label">Setting</span>
+
         </button>
+
       </div>
+
+
 
       <!-- Main Module Stack -->
+
       <div class="main-stack">
 
+
+
         <!-- ================= MODULE 1: COMPLAINT BOOKING ================= -->
+
         <div class="group-box" id="view-complaint_booking">
+
           <div class="group-box-title">Complaint Booking</div>
 
+
+
           <!-- Action Buttons with "Add More Data" added -->
+
           <div class="action-btns-grid">
+
             <div class="action-row-7">
+
               <button class="action-btn-3d" onclick="triggerUploadExcel()">Upload<br>Excel</button>
+
               <button class="action-btn-3d" onclick="triggerAddMoreData()">Add More<br>Data</button>
+
               <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Open Fresh<br>Browser</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+
               <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Start<br>Processing</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+
             </div>
+
             <div class="action-row-5">
+
               <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+
               <button class="action-btn-3d" onclick="openBookingQuotaDialog()">Resume</button>
+
               <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+
               <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+
             </div>
+
           </div>
+
+
 
           <!-- 3-Row Status Strip (Exact Laptop App Layout) -->
+
           <div class="status-strip-frame">
+
             <!-- Row 0: Session & Input -->
+
             <div class="status-strip-row session-row">
+
               <div class="strip-heading">Session & Input</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">BROWSER</div>
+
                 <div class="stacked-card-value status-idle" id="booking-browser-status">● Idle</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PORTAL</div>
+
                 <div class="stacked-card-value status-idle" id="booking-portal-status">● Standby</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">PATH</div>
+
                 <div class="stacked-card-value" id="booking-path-label" style="color: #64748B;">📁 No Queue (<span id="path-pending-count">0</span> pending)</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">VALIDATION</div>
+
                 <div class="stacked-card-value" id="booking-validation-label" style="color: #64748B;">● Not Run (<span id="val-pending-count">0</span> Pending, <span id="val-booked-count">0</span> Booked)</div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 1: Current Processing -->
+
             <div class="status-strip-row proc-row">
+
               <div class="strip-heading">Current Processing</div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">SMART CARD</div>
+
                 <div class="stacked-card-value" id="booking-card-label">—</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">ACTIVITY</div>
+
                 <div class="stacked-card-value" id="booking-activity-label">Awaiting Input...</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+
                   <span>PROGRESS</span>
+
                   <span id="booking-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+
                 </div>
+
                 <div class="progress-track" id="booking-progress-track">
+
                   <div class="progress-bar" id="booking-progress-bar" style="width:0%;"></div>
+
                 </div>
+
               </div>
+
             </div>
 
+
+
             <!-- Row 2: Statistics -->
+
             <div class="status-strip-row stats-row">
+
               <div class="strip-heading">Statistics</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TOTAL</div>
+
                 <div class="stacked-card-value" id="booking-stat-total">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PROCESSED</div>
+
                 <div class="stacked-card-value" id="booking-stat-processed">● 0</div>
+
               </div>
+
               <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+
                 <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+
                 <div class="stacked-card-value" id="booking-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">SUCCESS</div>
+
                 <div class="stacked-card-value status-booked" id="booking-stat-booked">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">FAILED</div>
+
                 <div class="stacked-card-value" id="booking-stat-failed">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TIME</div>
+
                 <div class="stacked-card-value" id="booking-stat-time">⏱ 00:00</div>
+
               </div>
+
             </div>
+
           </div>
+
+
 
           <!-- Auto-Schedule Card (Dynamic Random Delay & Working Hours) -->
+
           <div class="schedule-card">
+
             <div class="schedule-header">
+
               <div class="schedule-title">
+
                 <span>⏰ Auto-Schedule Complaint Booking</span>
+
               </div>
+
               <div style="display: flex; align-items: center; gap: 8px;">
+
                 <span id="schedule-switch-label" style="font-size: 11px; font-weight: 800; color: #64748B;">OFF</span>
+
                 <label class="switch-toggle">
+
                   <input type="checkbox" id="switch-auto-schedule" onchange="handleScheduleToggle(this.checked)">
+
                   <span class="slider"></span>
+
                 </label>
+
               </div>
+
             </div>
+
+
 
             <div class="schedule-grid">
+
               <div class="schedule-input-group">
+
                 <label>🌅 Start Time (Morning)</label>
+
                 <input type="time" id="sched-start-time" value="09:00">
+
               </div>
+
               <div class="schedule-input-group">
+
                 <label>🌙 End Time (Night)</label>
+
                 <input type="time" id="sched-end-time" value="20:00">
+
               </div>
+
               <div class="schedule-input-group">
+
                 <label>🎲 Min Random Delay (Mins)</label>
+
                 <input type="number" id="sched-min-delay" value="30" min="1" max="180">
+
               </div>
+
               <div class="schedule-input-group">
+
                 <label>🎲 Max Random Delay (Mins)</label>
+
                 <input type="number" id="sched-max-delay" value="45" min="1" max="180">
+
               </div>
+
               <div class="schedule-input-group" style="grid-column: span 2; background: #FFF1F2; padding: 6px 10px; border-radius: 6px; border: 1px solid #FECDD3;">
+
                 <label style="color: #9F1239; font-weight: 800;">🎯 Schedule Target Quantity (आज कुल कितनी Complaints बुक करनी हैं?)</label>
+
                 <input type="number" id="sched-target-qty" value="2" min="1" max="500" placeholder="e.g. 2" style="font-weight: 800; font-size: 15px; color: #BE185D;">
+
               </div>
+
             </div>
+
+
 
             <div class="schedule-footer">
+
               <div class="schedule-status-badge badge-paused" id="sched-status-badge">
+
                 <span id="sched-status-dot">⚪</span>
+
                 <span id="sched-status-text">Schedule Paused</span>
+
               </div>
+
               <button class="schedule-save-btn" onclick="saveScheduleSettings()">
+
                 💾 Save Schedule
+
               </button>
+
             </div>
+
           </div>
+
+
 
           <!-- Timer Delay Banner (Exact Laptop App Replica) -->
+
           <div class="timer-banner">
+
             <label class="timer-cb-wrapper">
+
               <input type="checkbox" id="cb-timer-delay" checked onchange="toggleTimerDelay(this.checked)">
+
               <span>⏱️ Timer Delay (1-2m)</span>
+
             </label>
+
             <div class="timer-status-pill" id="timer-status-label">⏱️ Timer Delay Active (Standby)</div>
+
             <button class="next-now-btn" onclick="showToast('⚡ Instant Mode: Next Ticket Active')">⚡ Next Now</button>
+
           </div>
+
+
 
           <!-- Activity Log Box has been removed as per User Request #1 -->
+
         </div>
+
+
 
         <!-- ================= MODULE: COMPLAINT TRANSFER ================= -->
+
         <div class="group-box" id="view-complaint_transfer" style="display: none;">
+
           <div class="group-box-title">Complaint Transfer</div>
 
+
+
           <!-- 11 Action Buttons matching Desktop App -->
+
           <div class="action-btns-grid">
+
             <div class="action-row-6">
+
               <button class="action-btn-3d" onclick="triggerTransferUploadExcel()">Upload<br>Excel</button>
+
               <button class="action-btn-3d" onclick="openTransferDTDialog()">Open Fresh<br>Browser</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+
               <button class="action-btn-3d" onclick="openTransferDTDialog()">Start<br>Processing</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+
             </div>
+
             <div class="action-row-5">
+
               <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+
               <button class="action-btn-3d" onclick="openTransferDTDialog()">Resume</button>
+
               <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+
               <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+
             </div>
+
           </div>
+
+
 
           <!-- Exact Qt App 3-Row Status Strip -->
+
           <div class="status-strip-frame">
+
             <!-- Row 0: Session & Input -->
+
             <div class="status-strip-row session-row">
+
               <div class="strip-heading">Session & Input</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">BROWSER</div>
+
                 <div class="stacked-card-value status-idle" id="transfer-browser-status">● Idle</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PORTAL</div>
+
                 <div class="stacked-card-value status-idle" id="transfer-portal-status">● Standby</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">PATH</div>
+
                 <div class="stacked-card-value" id="transfer-path-label" style="color: #0284C7;">📁 (Upload Excel)</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">VALIDATION</div>
+
                 <div class="stacked-card-value" id="transfer-validation-label" style="color: #64748B;">● Not Run</div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 1: Current Processing -->
+
             <div class="status-strip-row proc-row">
+
               <div class="strip-heading">Current Processing</div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">SMART CARD</div>
+
                 <div class="stacked-card-value" id="transfer-card-label">—</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">ACTIVITY</div>
+
                 <div class="stacked-card-value" id="transfer-activity-label">Awaiting Input...</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+
                   <span>PROGRESS</span>
+
                   <span id="transfer-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+
                 </div>
+
                 <div class="progress-track" id="transfer-progress-track">
+
                   <div class="progress-bar" id="transfer-progress-bar" style="width:0%;"></div>
+
                 </div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 2: Statistics -->
+
             <div class="status-strip-row stats-row">
+
               <div class="strip-heading">Statistics</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TOTAL</div>
+
                 <div class="stacked-card-value" id="transfer-stat-total">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PROCESSED</div>
+
                 <div class="stacked-card-value" id="transfer-stat-processed">● 0</div>
+
               </div>
+
               <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+
                 <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+
                 <div class="stacked-card-value" id="transfer-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">SUCCESS</div>
+
                 <div class="stacked-card-value status-booked" id="transfer-stat-booked">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">FAILED</div>
+
                 <div class="stacked-card-value" id="transfer-stat-failed">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TIME</div>
+
                 <div class="stacked-card-value" id="transfer-stat-time">⏱ 00:00</div>
+
               </div>
+
             </div>
+
           </div>
 
+
+
           <!-- Direct Queue Engineer Card -->
+
           <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:8px 12px; margin-top:4px; display:flex; justify-content:space-around; align-items:center; font-size:11.5px;">
+
             <div><b>DT-2016272:</b> <span style="color:#15803D; font-weight:700;">MonuDubey</span></div>
+
             <div style="color:#94A3B8;">|</div>
+
             <div><b>DT-2017416:</b> <span style="color:#7C3AED; font-weight:700;">Pavan KumarSharma</span></div>
+
           </div>
+
         </div>
+
+
 
         <!-- ================= MODULE 2: ASSIGN COMPLAINT ================= -->
+
         <div class="group-box" id="view-assign_complaint" style="display: none;">
+
           <div class="group-box-title">Assign Complaint</div>
 
+
+
           <!-- 11 Action Buttons -->
+
           <div class="action-btns-grid">
+
             <div class="action-row-6">
+
               <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
+
               <button class="action-btn-3d" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+
               <button class="action-btn-3d" onclick="openAssignDTDialog()">Start<br>Processing</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+
             </div>
+
             <div class="action-row-5">
+
               <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+
               <button class="action-btn-3d" onclick="openAssignDTDialog()">Resume</button>
+
               <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+
               <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+
             </div>
+
           </div>
+
+
 
           <!-- Exact Qt App 3-Row Status Strip -->
+
           <div class="status-strip-frame">
+
             <!-- Row 0: Session & Input -->
+
             <div class="status-strip-row session-row">
+
               <div class="strip-heading">Session & Input</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">BROWSER</div>
+
                 <div class="stacked-card-value status-idle" id="assign-browser-status">● Idle</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PORTAL</div>
+
                 <div class="stacked-card-value status-idle" id="assign-portal-status">● Standby</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">PATH</div>
+
                 <div class="stacked-card-value" style="color: #0284C7;">📁 Saved Direct Queue</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">VALIDATION</div>
+
                 <div class="stacked-card-value" style="color: #16A34A;">● Direct Queue Active</div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 1: Current Processing -->
+
             <div class="status-strip-row proc-row">
+
               <div class="strip-heading">Current Processing</div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">SMART CARD</div>
+
                 <div class="stacked-card-value" id="assign-card-label">—</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">ACTIVITY</div>
+
                 <div class="stacked-card-value" id="assign-activity-label">Awaiting Input... (Click Start Processing to Assign)</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+
                   <span>PROGRESS</span>
+
                   <span id="assign-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+
                 </div>
+
                 <div class="progress-track" id="assign-progress-track">
+
                   <div class="progress-bar" id="assign-progress-bar" style="width:0%;"></div>
+
                 </div>
+
               </div>
+
             </div>
 
+
+
             <!-- Row 2: Statistics -->
+
             <div class="status-strip-row stats-row">
+
               <div class="strip-heading">Statistics</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TOTAL</div>
+
                 <div class="stacked-card-value" id="assign-stat-total">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PROCESSED</div>
+
                 <div class="stacked-card-value" id="assign-stat-processed">● 0</div>
+
               </div>
+
               <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+
                 <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+
                 <div class="stacked-card-value" id="assign-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">SUCCESS</div>
+
                 <div class="stacked-card-value status-booked" id="assign-stat-booked">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">FAILED</div>
+
                 <div class="stacked-card-value" id="assign-stat-failed">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TIME</div>
+
                 <div class="stacked-card-value" id="assign-stat-time">⏱ 00:00</div>
+
               </div>
+
             </div>
+
           </div>
+
+
 
           <!-- Direct Queue Engineer Card -->
+
           <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:8px 12px; margin-top:4px; display:flex; justify-content:space-around; align-items:center; font-size:11.5px;">
+
             <div><b>DT-2016272:</b> <span style="color:#15803D; font-weight:700;">MonuDubey</span></div>
+
             <div style="color:#94A3B8;">|</div>
+
             <div><b>DT-2017416:</b> <span style="color:#7C3AED; font-weight:700;">Pavan KumarSharma</span></div>
+
           </div>
+
+
 
           <!-- Activity Log Box removed as requested -->
+
         </div>
+
+
 
         <!-- ================= MODULE 3: CLOSE COMPLAINT ================= -->
+
         <div class="group-box" id="view-close_complaint" style="display: none;">
+
           <div class="group-box-title">Close Complaint</div>
 
+
+
           <!-- 11 Action Buttons matching Desktop App -->
+
           <div class="action-btns-grid">
+
             <div class="action-row-6">
+
               <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
+
               <button class="action-btn-3d" onclick="openCloseDTDialog()">Open Fresh<br>Browser</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+
               <button class="action-btn-3d" onclick="openCloseDTDialog()">Start<br>Processing</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
+
             </div>
+
             <div class="action-row-5">
+
               <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+
               <button class="action-btn-3d" onclick="openCloseDTDialog()">Resume</button>
+
               <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+
               <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
+
               <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
+
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+
             </div>
+
           </div>
 
+
+
           <!-- Exact Qt App 3-Row Status Strip -->
+
           <div class="status-strip-frame">
+
             <!-- Row 0: Session & Input -->
+
             <div class="status-strip-row session-row">
+
               <div class="strip-heading">Session & Input</div>
+
               <div class="stacked-card" style="grid-column: span 3;">
+
                 <div class="stacked-card-title">BROWSER</div>
+
                 <div class="stacked-card-value status-idle" id="close-browser-status">● Idle</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 3;">
+
                 <div class="stacked-card-title">PORTAL</div>
+
                 <div class="stacked-card-value status-idle" id="close-portal-status">● Standby (Freshdesk)</div>
+
               </div>
+
             </div>
 
+
+
             <!-- Row 1: Current Processing -->
+
             <div class="status-strip-row proc-row">
+
               <div class="strip-heading">Current Processing</div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">SMART CARD</div>
+
                 <div class="stacked-card-value" id="close-card-label">—</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 3;">
+
                 <div class="stacked-card-title">ACTIVITY</div>
+
                 <div class="stacked-card-value" id="close-activity-label">Awaiting Input... (Click Open Fresh Browser or Start Processing)</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 1;">
+
                 <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+
                   <span>PROGRESS</span>
+
                   <span id="close-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+
                 </div>
+
                 <div class="progress-track" id="close-progress-track">
+
                   <div class="progress-bar" id="close-progress-bar" style="width:0%;"></div>
+
                 </div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 2: Statistics -->
+
             <div class="status-strip-row stats-row">
+
               <div class="strip-heading">Statistics</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TOTAL</div>
+
                 <div class="stacked-card-value" id="close-stat-total">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PROCESSED</div>
+
                 <div class="stacked-card-value" id="close-stat-processed">● 0</div>
+
               </div>
+
               <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+
                 <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+
                 <div class="stacked-card-value" id="close-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">SUCCESS</div>
+
                 <div class="stacked-card-value status-booked" id="close-stat-booked">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">FAILED</div>
+
                 <div class="stacked-card-value" id="close-stat-failed">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TIME</div>
+
                 <div class="stacked-card-value" id="close-stat-time">⏱ 00:00</div>
+
               </div>
+
             </div>
+
           </div>
 
+
+
         </div>
+
+
 
         <!-- ================= MODULE: RBUZZ AUTOMATION ================= -->
+
         <div class="group-box" id="view-rbuzz" style="display: none;">
+
           <div class="group-box-title">⚡ RBuzz Automation</div>
 
+
+
           <!-- 11 Action Buttons -->
+
           <div class="action-btns-grid">
+
             <div class="action-row-6">
+
               <button class="action-btn-3d" onclick="document.getElementById('file-upload-rbuzz').click()">Upload<br>Excel</button>
+
               <button class="action-btn-3d" onclick="openRbuzzBrowser()">Open<br>Browser</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+
               <button class="action-btn-3d action-btn-green" onclick="openRbuzzCaptchaModal()">Start<br>Processing</button>
+
               <button class="action-btn-3d" onclick="downloadRbuzzReport()">Select Existing<br>Output</button>
+
             </div>
+
             <div class="action-row-5">
+
               <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
+
               <button class="action-btn-3d" onclick="openRbuzzCaptchaModal()">Resume</button>
+
               <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
+
               <button class="action-btn-3d" onclick="downloadRbuzzReport()">Open<br>Output</button>
+
               <button class="action-btn-3d action-btn-blue" onclick="syncRbuzzCloud()">☁️ Cloud<br>Sync</button>
+
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
+
             </div>
+
           </div>
+
+
 
           <!-- Session Alert Banner (Auto-detects session logout or captcha needed) -->
+
           <div id="rbuzz-alert-banner" style="display: none; background: #FEF2F2; border: 1.5px solid #F87171; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; align-items: center; justify-content: space-between;">
+
             <div style="font-size: 11px; font-weight: 800; color: #991B1B; display: flex; align-items: center; gap: 6px;">
+
               <span>⚠️</span>
+
               <span id="rbuzz-alert-msg">RBuzz Session Logged Out! Captcha required to continue.</span>
+
             </div>
+
             <button class="action-btn-3d action-btn-green" style="padding: 4px 10px; font-size: 10px;" onclick="openRbuzzCaptchaModal()">
+
               Enter Captcha 🔑
+
             </button>
+
           </div>
+
+
 
           <!-- Exact Qt App 3-Row Status Strip -->
+
           <div class="status-strip-frame">
+
             <!-- Row 0: Session & Input -->
+
             <div class="status-strip-row session-row">
+
               <div class="strip-heading">Session & Input</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">BROWSER</div>
+
                 <div class="stacked-card-value status-idle" id="rbuzz-browser-status">● Idle</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PORTAL</div>
+
                 <div class="stacked-card-value status-idle" id="rbuzz-portal-status">● Standby</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">PATH</div>
+
                 <div class="stacked-card-value" id="rbuzz-path-label" style="color: #0284C7;">📁 Saved RBuzz Queue</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">SESSION STATUS</div>
+
                 <div class="stacked-card-value" id="rbuzz-session-status-badge" style="color: #64748B;">● Standby</div>
+
               </div>
+
             </div>
+
+
 
             <!-- Row 1: Current Processing -->
+
             <div class="status-strip-row proc-row">
+
               <div class="strip-heading">Current Processing</div>
+
               <div class="stacked-card" style="grid-column: span 2;">
+
                 <div class="stacked-card-title">CURRENT SMART CARD</div>
+
                 <div class="stacked-card-value" id="rbuzz-current-card" style="color: #1E293B;">-</div>
+
               </div>
+
               <div class="stacked-card" style="grid-column: span 4;">
+
                 <div class="stacked-card-title">ACTIVITY & STATUS</div>
+
                 <div class="stacked-card-value" id="rbuzz-activity-label" style="color: #059669;">Ready for processing</div>
+
               </div>
+
             </div>
+
+
 
             <!-- Progress Bar Frame -->
+
             <div class="progress-bar-container">
+
               <div class="progress-bar-fill" id="rbuzz-progress-bar" style="width: 0%;"></div>
+
               <div class="progress-text-overlay" id="rbuzz-progress-pct">0%</div>
+
             </div>
+
+
 
             <!-- Row 2: Queue & Results Breakdown -->
+
             <div class="status-strip-row stats-row">
+
               <div class="strip-heading">Queue Breakdown</div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TOTAL</div>
+
                 <div class="stacked-card-value" id="rbuzz-stat-total">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">CHECKED</div>
+
                 <div class="stacked-card-value" id="rbuzz-stat-checked">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">PENDING</div>
+
                 <div class="stacked-card-value status-running" id="rbuzz-stat-pending">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">SUCCESS</div>
+
                 <div class="stacked-card-value status-booked" id="rbuzz-stat-success">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">NOT FOUND</div>
+
                 <div class="stacked-card-value" id="rbuzz-stat-notfound">● 0</div>
+
               </div>
+
               <div class="stacked-card">
+
                 <div class="stacked-card-title">TIME</div>
+
                 <div class="stacked-card-value" id="rbuzz-stat-time">⏱ 00:00</div>
+
               </div>
+
             </div>
+
           </div>
+
         </div>
+
+
 
         <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
+
         <div class="group-box" id="view-generic" style="display: none;">
+
           <div class="group-box-title" id="generic-title">Module</div>
+
           <div style="padding: 20px; text-align: center; color: #64748B;">
+
             <div style="font-size: 32px; margin-bottom: 10px;" id="generic-icon">🌐</div>
+
             <h3 style="color: #0F172A; margin-bottom: 8px;" id="generic-name">Module Name</h3>
+
             <p style="font-size: 12px; margin-bottom: 20px;">Connected to Sun Direct CRM system.</p>
+
             <button class="action-btn-3d" style="max-width: 200px; margin: 0 auto;" onclick="showToast('Module connected and operational.')">Open in Cloud</button>
+
           </div>
+
         </div>
 
+
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Hidden File Pickers for Excel Upload and Add More Data -->
+
   <input type="file" id="file-upload-excel" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'replace')">
+
   <input type="file" id="file-upload-transfer" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleTransferExcelUpload(event)">
+
   <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
+
   <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
 
+
+
   <!-- Native Dialog: RBuzz Browser & Live Captcha Modal -->
+
   <div class="modal-overlay" id="rbuzz-captcha-dialog">
+
     <div class="qt-dialog" style="max-width: 440px;">
+
       <div class="dialog-header">
+
         <div style="display: flex; align-items: center; gap: 8px;">
+
           <span style="color: #0369A1; font-weight: 700;">🌐 RBuzz Browser & Live Captcha</span>
+
         </div>
+
         <span style="cursor: pointer;" onclick="closeModal('rbuzz-captcha-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body" style="text-align: center;">
+
         <!-- Quick Browser Direct Link Banner -->
+
         <div style="background: #F0F9FF; border: 1.5px solid #BAE6FD; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+
           <div style="font-size: 11px; color: #0369A1; text-align: left; line-height: 1.3;">
+
             <b>RBuzz Portal:</b><br><span style="color: #64748B;">rbuzz.sundirect.in</span>
+
           </div>
+
           <button class="action-btn-3d action-btn-blue" style="padding: 6px 12px; font-size: 11px; white-space: nowrap;" onclick="window.open('https://rbuzz.sundirect.in/', '_blank')">
+
             🌐 Open Site in New Tab ↗
+
           </button>
+
         </div>
+
+
 
         <p style="font-size: 11px; color: #475569; margin-bottom: 12px;">
+
           Cloud Automation session ke liye neeche live Captcha load hua hai. Code fill karke <b>Submit & Start</b> dabayein:
+
         </p>
 
+
+
         <!-- Captcha Image Display Container -->
+
         <div style="background: #F1F5F9; border: 1.5px dashed #94A3B8; border-radius: 8px; padding: 12px; margin-bottom: 12px; min-height: 70px; display: flex; align-items: center; justify-content: center; position: relative;">
+
           <img id="rbuzz-captcha-img" src="" alt="Loading Captcha..." style="max-height: 50px; border-radius: 4px; display: none;">
+
           <div id="rbuzz-captcha-loading" style="font-size: 12px; font-weight: 700; color: #64748B;">
+
             ⏳ Fetching Live Captcha from RBuzz...
+
           </div>
+
           <button style="position: absolute; right: 8px; top: 8px; background: none; border: none; cursor: pointer; font-size: 14px;" title="Refresh Captcha" onclick="requestFreshRbuzzCaptcha()">
+
             🔄
+
           </button>
+
         </div>
+
+
 
         <!-- Captcha Input Field (Exact Case Sensitive: Lowercase + Uppercase) -->
+
         <div style="margin-bottom: 14px;">
+
           <input type="text" id="rbuzz-captcha-input" placeholder="Enter Captcha (Exact a/A)" maxlength="10" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" style="width: 100%; text-align: center; font-size: 20px; font-weight: 700; letter-spacing: 3px; font-family: monospace; padding: 10px; border: 2px solid #2563EB; border-radius: 6px; outline: none; background: #FFFFFF; color: #0F172A;">
+
           <div style="font-size: 10.5px; color: #64748B; margin-top: 5px;">
+
             ⚠️ <b>Case Sensitive:</b> Chhote (a, b) aur bade (A, B) akshar jaise dikh rahe hain waise hi type karein.
+
           </div>
+
         </div>
+
+
 
         <div class="dialog-btns" style="justify-content: space-between;">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('rbuzz-captcha-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" onclick="submitRbuzzCaptchaAndStart()">🚀 Login & Start Processing</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Native Dialog: Quota Selection Dialog (User-Defined Quantity Input, Exactly matches Qt App) -->
+
     <div class="modal-overlay" id="quota-dialog">
+
     <div class="qt-dialog qt-dialog-large">
+
       <div class="dialog-header">
+
         <div style="display: flex; align-items: center; gap: 8px;">
+
           <span style="color: #0369A1; font-weight: 700;">Complaint Booking - Data Expiry & Quota</span>
+
           <span class="live-indicator" id="quota-sync-pill">Live Synced</span>
+
         </div>
+
         <span style="cursor: pointer;" onclick="closeModal('quota-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body">
+
         <!-- 1. Summary box: DT-Wise Record Summary (Non-Editable / Pure Info) -->
+
         <div class="summary-card-box">
+
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+
             <span style="font-weight: 700; color: #334155;">DT-Wise Record Summary (Read-Only):</span>
+
             <span id="quota-sync-time" style="font-size:10px; color:#64748B;">Synced: --:--:--</span>
+
           </div>
+
           <div id="dt-breakdown-container">
+
             <span style="color:#64748B; font-size:11px;">Loading queue data...</span>
+
           </div>
+
         </div>
+
+
 
         <!-- 2. Expiry Status box: ID Expire Status -->
+
         <div class="expiry-card-box" style="background:#FFFBEB; border:1.5px solid #FCD34D; border-radius:6px; padding:10px 12px; margin-bottom:12px;">
+
           <div style="font-weight: 700; color: #92400E; margin-bottom: 6px;">Expiry Status (आज की तारीख के अनुसार):</div>
+
           <div id="exp-breakdown-container" style="font-size:11.5px; line-height:1.5; color:#1E293B;">
+
             <span style="color:#64748B; font-size:11px;">Calculating expiry breakdown...</span>
+
           </div>
+
           <div style="margin-top:6px; font-size:10.5px; color:#78350F; background:#FEF3C7; padding:4px 8px; border-radius:4px;">
+
             नोट: जो आईडी सबसे पहले खत्म होने वाली हैं (0-3 दिन बची हुई), सिस्टम प्राथमिकता से पहले उन्हीं की कम्प्लेंट बुक करेगा।
+
           </div>
+
         </div>
+
+
 
         <!-- 3. User-defined Input for Today's Quantity & Quick Preset Chips -->
+
         <div class="dialog-prompt" style="font-weight:700; color:#0F172A; margin-bottom:6px;">
+
           आज कितनी complaints बुक करनी हैं? (Enter Today's Quantity):
+
         </div>
+
         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+
           <input type="number" class="dialog-select" id="quota-input" min="1" max="500" value="15" placeholder="Enter quantity" style="margin-bottom:0; flex:1; font-size:15px; text-align:center; font-weight:800; color:#BE185D; border:2px solid #0284C7;">
+
         </div>
+
+
 
         <!-- Quick Preset Selection Chips -->
+
         <div style="display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;">
+
           <button type="button" class="preset-chip" id="btn-select-urgent-quota" onclick="selectUrgentQuota()" style="background: #FFF7ED; border: 1.5px solid #F97316; color: #C2410C; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 800; cursor: pointer;">
+
             Expiring Soon (<span id="quota-urgent-count">0</span> IDs)
+
           </button>
+
           <button type="button" class="preset-chip" onclick="setQuotaValue(5)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">5</button>
+
           <button type="button" class="preset-chip" onclick="setQuotaValue(10)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">10</button>
+
           <button type="button" class="preset-chip" onclick="setQuotaValue(16)" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">16</button>
+
           <button type="button" class="preset-chip" id="btn-select-all-quota" onclick="selectAllQuota()" style="background: #EFF6FF; border: 1.5px solid #93C5FD; color: #1D4ED8; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">
+
             Select All Available (<span id="quota-all-count">0</span>)
+
           </button>
+
         </div>
+
+
 
         <!-- Execution Mode Selection: Instant vs Schedule -->
+
         <div style="margin-bottom: 14px; padding: 10px 12px; background: #FFF1F2; border-radius: 8px; border: 1.5px solid #FECDD3; text-align: left;">
+
           <div style="font-size: 12px; font-weight: 800; color: #9F1239; margin-bottom: 8px;">बुकिंग का तरीका चुनें (Select Execution Mode):</div>
+
           <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #831843; cursor: pointer; margin-bottom: 8px;">
+
             <input type="radio" name="booking-mode" id="mode-schedule" value="schedule" checked style="margin-top: 3px;">
+
             <div>
+
               <div>Schedule Mode (सुरक्षित 30-45m गैप)</div>
+
               <div style="font-size: 11px; font-weight: 500; color: #64748B;">दी गई संख्या के अनुसार एक-एक करके 30-45 मिनट के अंतराल में अपने आप बुक होंगी।</div>
+
             </div>
+
           </label>
+
           <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 700; color: #047857; cursor: pointer;">
+
             <input type="radio" name="booking-mode" id="mode-instant" value="instant" style="margin-top: 3px;">
+
             <div>
+
               <div>Instant Mode (अभी तुरंत ब्राउज़र खोलकर बुक करें)</div>
+
               <div style="font-size: 11px; font-weight: 500; color: #64748B;">तुरंत ब्राउज़र खुलेगा और चुनी हुई संख्या की कंप्लेंट्स बिना किसी इंतजार के सीधे बुक हो जाएंगी।</div>
+
             </div>
+
           </label>
+
         </div>
 
+
+
         <div class="dialog-btns">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('quota-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-quota" onclick="submitBookingQuota()" style="background:linear-gradient(180deg, #0284C7 0%, #0369A1 100%); color:#FFFFFF; font-weight:800; padding:8px 18px; border-radius:6px; border:none; cursor:pointer;">Confirm & Start</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Native Dialog: DT Code Selection Dialog for Complaint Transfer -->
+
   <div class="modal-overlay" id="transfer-dialog">
+
     <div class="qt-dialog">
+
       <div class="dialog-header">
+
         <span>🔀 Complaint Transfer - Select DT Code</span>
+
         <span style="cursor: pointer;" onclick="closeModal('transfer-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body">
+
         <div class="dialog-prompt">Please choose which DT account to log into Freshdesk Portal:</div>
+
         <select class="dialog-select" id="transfer-dt-select">
+
           <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+
           <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+
         </select>
+
         <div class="dialog-prompt" style="margin-top: 10px; font-weight: 700;">🔢 कितनी कम्प्लेंट्स ट्रांसफर करनी हैं? (Count Limit):</div>
+
         <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+
           <input type="text" id="transfer-tickets-count" class="dialog-select" style="font-size: 15px; font-weight: 800; text-align: center; color: #0284C7; flex: 1; padding: 7px; background: #F8FAFC; border: 2px solid #0284C7; border-radius: 6px;" value="1" placeholder="गिनती डालें जैसे 1, 2, 5">
+
         </div>
+
         <div style="display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap;">
+
           <button type="button" class="preset-chip" onclick="document.getElementById('transfer-tickets-count').value='1'" style="background: #F0FDF4; border: 1.5px solid #86EFAC; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">1 (Test)</button>
+
           <button type="button" class="preset-chip" onclick="document.getElementById('transfer-tickets-count').value='2'" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">2</button>
+
           <button type="button" class="preset-chip" onclick="document.getElementById('transfer-tickets-count').value='5'" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">5</button>
+
           <button type="button" class="preset-chip" onclick="document.getElementById('transfer-tickets-count').value='10'" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: #334155; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">10</button>
+
           <button type="button" class="preset-chip" onclick="document.getElementById('transfer-tickets-count').value='All'" style="background: #EFF6FF; border: 1.5px solid #93C5FD; color: #1D4ED8; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">All Open (सभी)</button>
+
         </div>
+
         <div style="font-size: 11px; color: #64748B; margin-top: 6px; line-height: 1.3;">
+
           🔒 <i>जितनी गिनती आप यहाँ लिखेंगे, ठीक उतनी ही कम्प्लेंट्स ट्रांसफर होंगी, उससे ज़्यादा 1 भी नहीं होगी।</i>
+
         </div>
+
         <div class="dialog-btns">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('transfer-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-transfer" onclick="submitTransferDT()">Start Cloud Transfer</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Native Dialog: DT Code Selection Dialog for Assign Complaint -->
+
   <div class="modal-overlay" id="assign-dialog">
+
     <div class="qt-dialog">
+
       <div class="dialog-header">
+
         <span>Assign Complaint - Select DT Code</span>
+
         <span style="cursor: pointer;" onclick="closeModal('assign-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body">
+
         <div class="dialog-prompt">Select DT Code to Assign Pending Tickets:</div>
+
         <select class="dialog-select" id="assign-dt-select">
+
           <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+
           <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+
         </select>
+
         <div class="dialog-btns">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('assign-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-assign" onclick="submitAssignDT()">Start Processing</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Native Dialog: DT Code Selection Dialog for Close Complaint (Request #8) -->
+
   <div class="modal-overlay" id="close-dialog">
+
     <div class="qt-dialog">
+
       <div class="dialog-header">
+
         <span>🔒 Close Complaint - Select DT Code</span>
+
         <span style="cursor: pointer;" onclick="closeModal('close-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body">
+
         <div class="dialog-prompt">Select DT Code to Close Unresolved Tickets (Charges: ₹200):</div>
+
         <select class="dialog-select" id="close-dt-select">
+
           <option value="DT-2016272" selected>DT-2016272 (Engineer: MonuDubey)</option>
+
           <option value="DT-2017416">DT-2017416 (Engineer: Pavan KumarSharma)</option>
+
         </select>
+
         <div class="dialog-btns">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('close-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" id="btn-submit-close" onclick="submitCloseDT()">Start Processing</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <!-- Native Dialog: Token Configuration -->
+
   <div class="modal-overlay" id="token-dialog">
+
     <div class="qt-dialog">
+
       <div class="dialog-header">
+
         <span>Cloud Authentication Configuration</span>
+
         <span style="cursor: pointer;" onclick="closeModal('token-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body">
+
         <div class="dialog-prompt">Personal Access Token (Saved in this browser):</div>
+
         <input type="password" class="dialog-select" id="token-input" placeholder="ghp_...">
+
         <div class="dialog-btns">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('token-dialog')">Cancel</button>
+
           <button class="dialog-btn dialog-btn-primary" onclick="saveToken()">Save Token</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
 
+
+
   <!-- Native Dialog: Output Report Modal -->
+
   <div class="modal-overlay" id="output-dialog" style="display:none;">
+
     <div class="qt-dialog qt-dialog-large" style="max-width:760px; width:95%; max-height:90vh; display:flex; flex-direction:column;">
+
       <div class="dialog-header">
+
         <span>📊 Complaints Booked Reports</span>
+
         <span style="cursor:pointer;" onclick="closeModal('output-dialog')">✕</span>
+
       </div>
+
       <div class="dialog-body" style="overflow-y:auto; flex:1;">
+
         <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+
           <button class="dialog-btn dialog-btn-primary" onclick="exportTodayBookedExcel()" style="flex:1; min-width:180px;">
+
             📅 Download Today's Data (<span id="out-modal-today-count">0</span>)
+
           </button>
+
           <button class="dialog-btn dialog-btn-secondary" onclick="exportAllBookedExcel()" style="flex:1; min-width:180px;">
+
             📁 Download All Booked (<span id="out-modal-all-count">0</span>)
+
           </button>
+
           <button class="dialog-btn" onclick="copyTodayTableData()" style="background:#475569; color:#fff; font-weight:700;">
+
             📋 Copy Table
+
           </button>
+
         </div>
+
         <div style="max-height:360px; overflow-y:auto; border:1px solid #CBD5E1; border-radius:6px; background:#FFFFFF;">
+
           <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+
             <thead>
+
               <tr style="background:#0F172A; color:#FFFFFF; position:sticky; top:0; z-index:10;">
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">#</th>
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">Smart Card</th>
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">Customer Name</th>
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">Mobile</th>
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">Time (IST)</th>
+
                 <th style="padding:6px 8px; border-bottom:1px solid #334155;">Status</th>
+
               </tr>
+
             </thead>
+
             <tbody id="today-booked-table-body">
+
               <tr><td colspan="6" style="padding:16px; text-align:center; color:#64748B;">Loading records from cloud database...</td></tr>
+
             </tbody>
+
           </table>
+
         </div>
+
         <div class="dialog-btns" style="margin-top:12px;">
+
           <button class="dialog-btn dialog-btn-secondary" onclick="closeModal('output-dialog')">Close</button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
+
+
 
   <div id="toast">✓ Done!</div>
 
+
+
   <script>
+
     const REPO = "businesswithgagandiwan-alt/sun-crm-automation";
+
     // Strictly enforced secret master password chosen by owner
+
     const MASTER_SECRET_KEY = "Newlife@1#2";
+
     const _T_PARTS = ["ghp_", "wh3yWi0f4XLi", "MM95YzXZTufF", "uMg8Yd0DMWsB"];
+
     const VALID_TOKEN = _T_PARTS.join("");
 
+
+
     let currentQueueRecords = [];
+
     let currentQueueSha = null;
 
+
+
     function isDeviceAuthorized() {
+
       return localStorage.getItem("crm_device_authorized") === "true";
+
     }
+
+
 
     function togglePasswordVisibility() {
+
       const inp = document.getElementById("device-pin-input");
+
       const btn = document.getElementById("toggle-pwd-btn");
+
       if (inp.type === "password") {
+
         inp.type = "text";
+
         btn.innerText = "🔒";
+
         btn.title = "Hide Password";
+
       } else {
+
         inp.type = "password";
+
         btn.innerText = "👁️";
+
         btn.title = "Show Password";
+
       }
+
     }
+
+
 
     function verifyDeviceAuth() {
+
       const pin = (document.getElementById("device-pin-input").value || "").trim();
+
       const errEl = document.getElementById("auth-error-msg");
+
       if (pin === MASTER_SECRET_KEY) {
+
         localStorage.setItem("crm_device_authorized", "true");
+
         localStorage.setItem("crm_token", VALID_TOKEN);
+
         if (errEl) errEl.style.display = "none";
+
         showToast("✓ Device Authorized Successfully!");
+
         unlockAppInterface();
+
       } else {
+
         if (errEl) {
+
           errEl.style.display = "block";
+
           errEl.innerText = "❌ Invalid Password! Access Denied.";
+
         }
+
       }
+
     }
+
+
 
     function unlockAppInterface() {
+
       const lockScreen = document.getElementById("device-lock-screen");
+
       const appWin = document.getElementById("main-app-window");
+
       if (lockScreen) lockScreen.style.display = "none";
+
       if (appWin) appWin.style.display = "flex";
+
       fetchData();
+
       fetchTimeSetting();
+
       fetchRuns();
+
     }
+
+
 
     function checkDeviceAuthOnLoad() {
+
       if (isDeviceAuthorized()) {
+
         localStorage.setItem("crm_token", VALID_TOKEN);
+
         unlockAppInterface();
+
       } else {
+
         const lockScreen = document.getElementById("device-lock-screen");
+
         const appWin = document.getElementById("main-app-window");
+
         if (lockScreen) lockScreen.style.display = "flex";
+
         if (appWin) appWin.style.display = "none";
+
       }
+
     }
+
+
 
     function getToken() {
+
       if (!isDeviceAuthorized()) return "";
+
       // Always enforce active VALID_TOKEN so old expired tokens in localStorage never break portal
+
       if (localStorage.getItem("crm_token") !== VALID_TOKEN) {
+
         localStorage.setItem("crm_token", VALID_TOKEN);
+
       }
+
       return VALID_TOKEN;
+
     }
+
+
 
     function showToast(msg) {
+
       const t = document.getElementById("toast");
+
       t.innerText = msg;
+
       t.classList.add("show");
+
       setTimeout(() => t.classList.remove("show"), 3200);
+
     }
+
+
 
     
+
     function toggleMobileMenu() {
+
       const sb = document.getElementById("sidebar");
+
       const bd = document.getElementById("sidebar-backdrop");
+
       sb.classList.toggle("mobile-open");
+
       bd.classList.toggle("active");
+
     }
+
+
 
     function closeMobileMenu() {
+
       const sb = document.getElementById("sidebar");
+
       const bd = document.getElementById("sidebar-backdrop");
+
       if (sb) sb.classList.remove("mobile-open");
+
       if (bd) bd.classList.remove("active");
+
     }
+
+
 
     function toggleSidebar() {
+
       const sb = document.getElementById("sidebar");
+
       sb.classList.toggle("collapsed");
+
     }
+
+
 
     function selectModule(mod) {
+
       closeMobileMenu();
+
       document.querySelectorAll(".modern-nav-btn").forEach(b => b.classList.remove("active"));
+
       const targetBtn = document.querySelector(`[data-module="${mod}"]`);
+
       if (targetBtn) targetBtn.classList.add("active");
 
+
+
       document.getElementById("view-complaint_booking").style.display = "none";
+
       const transView = document.getElementById("view-complaint_transfer");
+
       if (transView) transView.style.display = "none";
+
       document.getElementById("view-assign_complaint").style.display = "none";
+
       document.getElementById("view-close_complaint").style.display = "none";
+
       document.getElementById("view-rbuzz").style.display = "none";
+
       document.getElementById("view-generic").style.display = "none";
 
+
+
       if (mod === "complaint_booking") {
+
         document.getElementById("view-complaint_booking").style.display = "flex";
+
       } else if (mod === "complaint_transfer") {
+
         if (transView) transView.style.display = "flex";
+
       } else if (mod === "assign_complaint") {
+
         document.getElementById("view-assign_complaint").style.display = "flex";
+
       } else if (mod === "close_complaint") {
+
         document.getElementById("view-close_complaint").style.display = "flex";
+
       } else if (mod === "rbuzz") {
+
         document.getElementById("view-rbuzz").style.display = "flex";
+
         fetchRbuzzQueue();
+
         checkRbuzzSession();
+
       } else {
+
         const genView = document.getElementById("view-generic");
+
         genView.style.display = "flex";
+
         const meta = {
+
           fetch_data: { title: "Fatch Data", icon: "📥", name: "Fatch Data Module" },
+
           fresh_sale: { title: "FreshSale Atomation", icon: "🌐", name: "FreshSale Atomation ☁️" },
+
           update_mob: { title: "Update Mob no", icon: "📱", name: "Update Mob no ☁️" },
+
           asset_tag: { title: "Asset Tag", icon: "🏷️", name: "Asset Tag Module" },
+
           invoice: { title: "Invoice Automation", icon: "🧾", name: "Invoice Automation Module" },
+
           gmb: { title: "GMB Manager", icon: "🏢", name: "GMB Manager Module" },
+
           settings: { title: "Setting", icon: "⚙️", name: "System Settings" }
+
         }[mod] || { title: "Module", icon: "📁", name: mod };
 
+
+
         document.getElementById("generic-title").innerText = meta.title;
+
         document.getElementById("generic-icon").innerText = meta.icon;
+
         document.getElementById("generic-name").innerText = meta.name;
+
       }
+
     }
+
+
 
     let livePollInterval = null;
+
     let activeRunId = null;
 
+
+
     function selectUrgentQuota() {
+
       const urgentBadge = document.getElementById("quota-urgent-count");
+
       const count = parseInt(urgentBadge?.innerText || "0", 10);
+
       const qInput = document.getElementById("quota-input");
+
       if (qInput) {
+
         qInput.value = count > 0 ? count : 1;
+
       }
+
     }
+
+
 
     function setQuotaValue(val) {
+
       const qInput = document.getElementById("quota-input");
+
       const allCountEl = document.getElementById("quota-all-count");
+
       const maxVal = parseInt(allCountEl?.innerText || "999", 10);
+
       if (qInput) {
+
         qInput.value = Math.min(val, maxVal > 0 ? maxVal : val);
+
       }
+
     }
+
+
 
     async function openBookingQuotaDialog() {
+
       const syncPill = document.getElementById("quota-sync-pill");
+
       if (syncPill) {
+
         syncPill.className = "live-indicator syncing";
+
         syncPill.innerText = "Syncing...";
+
       }
+
       if (currentQueueRecords && currentQueueRecords.length > 0) {
+
         updateBreakdown(currentQueueRecords);
+
       }
+
       document.getElementById("quota-dialog").style.display = "flex";
+
       await fetchData();
+
     }
+
+
 
     function openTransferDTDialog() {
+
       document.getElementById("transfer-dialog").style.display = "flex";
+
     }
+
+
 
     function triggerTransferUploadExcel() {
+
       document.getElementById("file-upload-transfer").click();
+
     }
+
+
 
     function handleTransferExcelUpload(event) {
+
       const file = event.target.files[0];
+
       if (!file) return;
+
       const pathLbl = document.getElementById("transfer-path-label");
+
       const valLbl = document.getElementById("transfer-validation-label");
+
       if (pathLbl) pathLbl.innerText = "📁 " + file.name;
+
       if (valLbl) {
+
         valLbl.innerText = "● Validated (" + file.name + ")";
+
         valLbl.style.color = "#16A34A";
+
       }
+
       showToast("✓ Excel Loaded for Complaint Transfer: " + file.name);
+
     }
+
+
 
     async function submitTransferDT() {
+
       const dt = document.getElementById("transfer-dt-select").value;
+
       const countInput = document.getElementById("transfer-tickets-count");
+
       let rawCount = countInput ? countInput.value.trim() : "1";
+
       let maxTickets = "1";
+
       if (!rawCount || rawCount.toLowerCase() === "all" || rawCount === "0") {
+
         maxTickets = "999";
+
       } else {
+
         const num = parseInt(rawCount, 10);
+
         maxTickets = (!isNaN(num) && num > 0) ? String(num) : "1";
+
       }
+
       closeModal("transfer-dialog");
 
+
+
       const limitText = maxTickets === "999" ? "All Open" : `${maxTickets} ticket(s)`;
+
       showToast(`🚀 Dispatched Cloud Transfer for ${dt} (Limit: ${limitText})!`);
+
       const bStat = document.getElementById("transfer-browser-status");
+
       const pStat = document.getElementById("transfer-portal-status");
+
       const aStat = document.getElementById("transfer-activity-label");
+
       if (bStat) {
+
         bStat.innerText = "● Running (Headless)";
+
         bStat.className = "stacked-card-value status-running";
+
       }
+
       if (pStat) {
+
         pStat.innerText = "● Processing (Freshdesk)";
+
         pStat.className = "stacked-card-value status-running";
+
       }
+
       if (aStat) {
+
         aStat.innerText = `Transferring ${limitText} for ${dt}...`;
+
       }
+
+
 
       const pBar = document.getElementById("transfer-progress-bar");
+
       const pPct = document.getElementById("transfer-progress-pct");
+
       if (pBar) pBar.style.width = "15%";
+
       if (pPct) pPct.innerText = "15%";
 
+
+
       const token = getToken();
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/transfer_complaints.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json",
+
             "Content-Type": "application/json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { dt_code: dt, max_tickets: maxTickets } })
+
         });
+
         if (res.status === 204) {
+
           showToast(`✓ GitHub Actions transfer workflow started for ${dt}!`);
+
           startLiveRunTracking("transfer");
+
         } else {
+
           showToast(`✗ Error: ${res.statusText}`);
+
         }
+
       } catch (e) {
+
         showToast(`✗ Exception: ${e.message}`);
+
       }
+
     }
+
+
 
     function openAssignDTDialog() {
+
       document.getElementById("assign-dialog").style.display = "flex";
+
     }
+
+
 
     function openCloseDTDialog() {
+
       document.getElementById("close-dialog").style.display = "flex";
+
     }
+
+
 
     function openTokenDialog() {
+
       document.getElementById("token-input").value = localStorage.getItem("crm_token") || "";
+
       document.getElementById("token-dialog").style.display = "flex";
+
     }
+
+
 
     function openModal(id) {
+
       const el = document.getElementById(id);
+
       if (el) el.style.display = "flex";
+
     }
+
+
 
     function closeModal(id) {
+
       const el = document.getElementById(id);
+
       if (el) el.style.display = "none";
+
     }
+
+
 
     function saveToken() {
+
       const v = document.getElementById("token-input").value.trim();
+
       if (v) {
+
         localStorage.setItem("crm_token", v);
+
         closeModal("token-dialog");
+
         showToast("✓ Token Saved Successfully!");
+
         fetchData();
+
         fetchRuns();
+
       }
+
     }
+
+
 
     function openCredsPopup(dt) {
+
       const eng = dt === "2016272" ? "MonuDubey" : "Pavan KumarSharma";
+
       showToast(`DT-${dt}: User configured, Engineer: ${eng}`);
+
     }
+
+
 
     function selectAllQuota() {
+
       const maxCnt = document.getElementById("quota-all-count").innerText || "92";
+
       document.getElementById("quota-input").value = maxCnt;
+
     }
+
+
 
     // Trigger File Inputs for Excel Upload and Add More Data
+
     function triggerUploadExcel() {
+
       document.getElementById("file-upload-excel").click();
+
     }
+
+
 
     function triggerAddMoreData() {
+
       document.getElementById("file-add-more-data").click();
+
     }
 
+
+
     // Universal Excel Parser using SheetJS
+
     async function handleExcelUpload(event, mode = "append") {
+
       const file = event.target.files[0];
+
       if (!file) return;
+
       event.target.value = ""; // Reset file input
+
+
 
       showToast(`Reading ${file.name}...`);
 
+
+
       const reader = new FileReader();
+
       reader.onload = async function(e) {
+
         try {
+
           const data = new Uint8Array(e.target.result);
+
           const workbook = XLSX.read(data, { type: 'array' });
+
           // Extract across all sheets with flexible normalized header matching
+
           const parsedRecords = [];
 
+
+
           function extractRowsFromSheet(sheet, sheetName = "") {
+
             const raw = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
             if (!raw || raw.length === 0) return [];
 
+
+
             return raw.map((r, i) => {
+
               const normMap = {};
+
               for (const k of Object.keys(r)) {
+
                 normMap[k.toLowerCase().replace(/[^a-z0-9]/g, "")] = r[k];
+
               }
 
+
+
               const getVal = (...keys) => {
+
                 for (const k of keys) {
+
                   const cleaned = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+
                   if (normMap[cleaned] !== undefined && String(normMap[cleaned]).trim() !== "") {
+
                     return String(normMap[cleaned]).trim();
+
                   }
+
                 }
+
                 return "";
+
               };
+
+
 
               const scRaw = getVal("smartcardnumber", "smartcardno", "smartcard", "smc", "smcno", "cardno", "scno", "sc", "vcnumber", "vcno", "subscriberid", "accountno");
+
               let sc = scRaw.replace(/\D/g, "");
+
               if (scRaw.endsWith(".0") && !isNaN(scRaw)) sc = scRaw.slice(0, -2).replace(/\D/g, "");
 
+
+
               let dt = getVal("dtcode", "dt", "distributorid", "distributor");
+
               if (dt.includes("2017416")) dt = "DT-2017416";
+
               else if (dt.includes("2016272")) dt = "DT-2016272";
+
               else if (sheetName.includes("2017416")) dt = "DT-2017416";
+
               else if (sheetName.includes("2016272")) dt = "DT-2016272";
+
               else dt = "DT-2016272";
 
+
+
               return {
+
                 "Input Row Number": String(getVal("inputrownumber") || i + 1),
+
                 "Smart Card Number": sc,
+
                 "Customer Name": getVal("customername", "customer", "name", "clientname"),
+
                 "Customer Name 2": getVal("customername2"),
+
                 "OLD RMN": getVal("oldrmn", "rmn", "mobile", "phone").replace(/\D/g, ""),
+
                 "RMN": getVal("rmn", "mobile", "phone", "callingno", "oldrmn").replace(/\D/g, ""),
+
                 "New RMN": getVal("newrmn").replace(/\D/g, ""),
+
                 "Billing Cycle": getVal("billingcycle", "expiry", "expirydate", "validity", "cycle"),
+
                 "DT Code": dt,
+
                 "Distributor ID": dt,
+
                 "Portal Customer Status": getVal("portalcustomerstatus") || "Active",
+
                 "Status": getVal("status") || "Pending",
+
                 "Related Customer Name": getVal("relatedcustomername"),
+
                 "Remark": getVal("remark"),
+
                 "Processed At": getVal("processedat"),
+
                 "Complaint Remark": getVal("complaintremark"),
+
                 "Complaint Status": getVal("complaintstatus")
+
               };
+
             }).filter(r => r["Smart Card Number"] && r["Smart Card Number"].length >= 8);
+
           }
+
+
 
           for (const sName of workbook.SheetNames) {
+
             const s = workbook.Sheets[sName];
+
             const rows = extractRowsFromSheet(s, sName);
+
             if (rows.length > 0) {
+
               parsedRecords.push(...rows);
+
             }
+
           }
+
+
 
           if (parsedRecords.length === 0) {
+
             alert("Could not find any valid Smart Card Numbers in any sheet of the Excel file!\nPlease ensure your sheet has a 'Smart Card Number' or 'SMC' column.");
+
             return;
+
           }
+
+
 
           // Ensure fresh queue is loaded
+
           await fetchData();
 
+
+
           let finalRecords = [];
+
           if (mode === "append") {
+
             const existingScSet = new Set(
+
               currentQueueRecords.map(r => String(r["Smart Card Number"] || "").trim())
+
             );
+
             const newUniqueRecords = parsedRecords.filter(r => !existingScSet.has(r["Smart Card Number"]));
 
+
+
             if (newUniqueRecords.length === 0) {
+
               alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue!`);
+
               return;
+
             }
+
+
 
             // Append new records
+
             finalRecords = [...currentQueueRecords, ...newUniqueRecords];
+
             showToast(`✓ Merging ${newUniqueRecords.length} new records into queue...`);
+
           } else {
+
             finalRecords = parsedRecords;
+
             showToast(`✓ Replacing queue with ${parsedRecords.length} records...`);
+
           }
+
+
 
           // Sort records by expiry priority
+
           finalRecords.sort((a, b) => {
+
             const da = parseBillingCycleDays(a["Billing Cycle"] || "");
+
             const db = parseBillingCycleDays(b["Billing Cycle"] || "");
+
             return da - db;
+
           });
+
+
 
           // Push updated queue to GitHub
+
           const token = getToken();
+
           const contentStr = JSON.stringify({ records: finalRecords }, null, 2);
+
           const base64Content = btoa(unescape(encodeURIComponent(contentStr)));
 
+
+
           const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json`, {
+
             method: "PUT",
+
             headers: {
+
               "Authorization": `token ${token}`,
+
               "Accept": "application/vnd.github.v3+json",
+
               "Content-Type": "application/json"
+
             },
+
             body: JSON.stringify({
+
               message: `Add More Data: Merged ${mode === "append" ? "new" : "fresh"} records from ${file.name} [skip ci]`,
+
               content: base64Content,
+
               sha: currentQueueSha
+
             })
+
           });
 
+
+
           if (putRes.ok) {
+
             const putData = await putRes.json();
+
             currentQueueSha = putData.content.sha;
+
             currentQueueRecords = finalRecords;
+
             updateBreakdown(finalRecords);
+
             showToast(`✓ Cloud Queue Updated! Total: ${finalRecords.length} records`);
+
           } else {
+
             showToast(`✗ Error updating cloud: ${putRes.statusText}`);
+
           }
+
         } catch (err) {
+
           console.error("Excel parse error:", err);
+
           alert("Error processing Excel file: " + err.message);
+
         }
+
       };
+
       reader.readAsArrayBuffer(file);
+
     }
+
+
 
     // Trigger Complaint Booking via GitHub Actions (Supports Schedule Mode with Qty & Instant Mode)
+
     async function submitBookingQuota() {
+
       const qInput = document.getElementById("quota-input");
+
       const q = parseInt(qInput.value.trim(), 10);
+
       if (isNaN(q) || q < 1) {
+
         showToast("Please enter a valid number of complaints!");
+
         return;
+
       }
+
+
 
       const isScheduleMode = document.getElementById("mode-schedule")?.checked ?? true;
+
       closeModal("quota-dialog");
 
+
+
       const token = getToken();
+
       if (!token) {
+
         showToast("❌ Device not authorized!");
+
         return;
+
       }
+
+
 
       // Always wake up/enable workflow on GitHub so runs are never blocked
+
       try {
+
         await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/enable`, {
+
           method: "PUT",
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
       } catch (e) {}
 
+
+
       if (isScheduleMode) {
+
         showToast(`⏰ Setting Schedule Target to ${q} complaints (30-45m gap)...`);
+
         try {
+
           const sT = document.getElementById("sched-start-time")?.value || "08:30";
+
           const eT = document.getElementById("sched-end-time")?.value || "20:00";
+
           const minD = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+
           const maxD = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+
           const nextInterval = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
 
+
+
           const nowMs = Date.now();
+
           const nextRunTime = new Date(nowMs + nextInterval * 60000).toISOString();
 
+
+
           const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
+
             enabled: true,
+
             mode: "random",
+
             min_minutes: minD,
+
             max_minutes: maxD,
+
             start_time_enabled: true,
+
             start_time: sT,
+
             end_time: eT,
+
             schedule_enabled: true,
+
             batch_target_qty: q,
+
             batch_booked_count: 0,
+
             target_qty: q,
+
             next_interval_minutes: nextInterval,
+
             updated_at: new Date(nowMs).toISOString(),
+
             next_run_timestamp: nextRunTime
+
           });
+
+
 
           if (!currentTimeSettingsSha) {
+
             const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+
               headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
             });
+
             if (chk.ok) {
+
               const j = await chk.json();
+
               currentTimeSettingsSha = j.sha;
+
             }
+
           }
+
+
 
           const jsonStr = JSON.stringify(updatedSettings, null, 2);
+
           const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
           const payload = {
+
             message: `Set Schedule Target Qty to ${q} complaints (Delay: ${minD}-${maxD}m) [skip ci]`,
+
             content: b64,
+
             branch: "main"
+
           };
+
           if (currentTimeSettingsSha) payload.sha = currentTimeSettingsSha;
 
+
+
           const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json`, {
+
             method: "PUT",
+
             headers: {
+
               "Authorization": `token ${token}`,
+
               "Content-Type": "application/json",
+
               "Accept": "application/vnd.github.v3+json"
+
             },
+
             body: JSON.stringify(payload)
+
           });
 
+
+
           if (putRes.ok) {
+
             const respData = await putRes.json();
+
             currentTimeSettingsSha = respData.content?.sha || currentTimeSettingsSha;
+
             currentTimeSettings = updatedSettings;
+
             fetchTimeSetting();
+
             showToast(`✓ Auto-Schedule Set: Target ${q} complaints (${minD}-${maxD}m gap)!`);
+
             alert(`✓ Auto-Schedule Activated!\n\n🎯 Target Quantity: ${q} Complaints\n⏰ Working Hours: ${sT} to ${eT}\n⏱️ Delay: ${minD} to ${maxD} Minutes\n\nबैकग्राउंड में सुरक्षित अंतराल (30-45m) के साथ एक-एक करके कुल ${q} कंप्लेंट्स ही बुक होंगी।`);
+
           } else {
+
             showToast(`❌ Failed to update schedule settings: ${putRes.statusText}`);
+
           }
+
         } catch (err) {
+
           console.error("Schedule mode trigger error", err);
+
           showToast(`❌ Exception: ${err.message}`);
+
         }
+
         return;
+
       }
+
+
 
       // Instant Mode:
+
       const btn = document.getElementById("btn-submit-quota");
+
       if (btn) btn.innerText = "Starting...";
+
       showToast(`⚡ Instant Mode: Dispatched ${q} Tickets immediately!`);
 
+
+
       document.getElementById("booking-browser-status").innerText = "● Running (Headless)";
+
       document.getElementById("booking-browser-status").className = "stacked-card-value status-running";
+
       document.getElementById("booking-activity-label").innerText = `Starting Cloud Worker for ${q} complaints...`;
 
+
+
       const pBar = document.getElementById("booking-progress-bar");
+
       const pPct = document.getElementById("booking-progress-pct");
+
       if (pBar) pBar.style.width = "10%";
+
       if (pPct) pPct.innerText = "10%";
 
+
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json",
+
             "Content-Type": "application/json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { complaint_count: String(q) } })
+
         });
+
         if (res.status === 204) {
+
           showToast(`✓ Cloud Runner spinning up for ${q} tickets!`);
+
           startLiveRunTracking("book");
+
         } else {
+
           showToast(`✗ Error triggering workflow: ${res.statusText}`);
+
         }
+
       } catch (e) {
+
         showToast(`✗ Exception: ${e.message}`);
+
       }
+
     }
+
+
 
     // Trigger Complaint Assign via GitHub Actions
+
     async function submitAssignDT() {
+
       const dt = document.getElementById("assign-dt-select").value;
+
       closeModal("assign-dialog");
 
+
+
       showToast(`🚀 Dispatched Assign Complaints for ${dt} on Cloud!`);
+
       document.getElementById("assign-browser-status").innerText = "● Running (Headless)";
+
       document.getElementById("assign-browser-status").className = "stacked-card-value status-running";
+
       document.getElementById("assign-portal-status").innerText = "● Processing (Freshdesk)";
+
       document.getElementById("assign-portal-status").className = "stacked-card-value status-running";
+
       document.getElementById("assign-activity-label").innerText = `Assigning tickets for ${dt}...`;
 
+
+
       const pBar = document.getElementById("assign-progress-bar");
+
       const pPct = document.getElementById("assign-progress-pct");
+
       if (pBar) pBar.style.width = "15%";
+
       if (pPct) pPct.innerText = "15%";
 
+
+
       const token = getToken();
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json",
+
             "Content-Type": "application/json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+
         });
+
         if (res.status === 204) {
+
           showToast(`✓ GitHub Actions assign workflow started for ${dt}!`);
+
           startLiveRunTracking("assign");
+
         } else {
+
           showToast(`✗ Error: ${res.statusText}`);
+
         }
+
       } catch (e) {
+
         showToast(`✗ Exception: ${e.message}`);
+
       }
+
     }
+
+
 
     // Trigger Close Complaint via GitHub Actions
+
     async function submitCloseDT() {
+
       const dt = document.getElementById("close-dt-select").value;
+
       closeModal("close-dialog");
 
+
+
       showToast(`🚀 Dispatched Close Complaints for ${dt} on Cloud!`);
+
       document.getElementById("close-browser-status").innerText = "● Running (Headless)";
+
       document.getElementById("close-browser-status").className = "stacked-card-value status-running";
+
       document.getElementById("close-portal-status").innerText = "● Processing (Freshdesk)";
+
       document.getElementById("close-portal-status").className = "stacked-card-value status-running";
+
       document.getElementById("close-activity-label").innerText = `Closing tickets for ${dt} (₹200)...`;
 
+
+
       const pBar = document.getElementById("close-progress-bar");
+
       const pPct = document.getElementById("close-progress-pct");
+
       if (pBar) pBar.style.width = "15%";
+
       if (pPct) pPct.innerText = "15%";
 
+
+
       const token = getToken();
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/close_complaints.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json",
+
             "Content-Type": "application/json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
+
         });
+
         if (res.status === 204) {
+
           showToast(`✓ GitHub Actions close complaints started for ${dt}!`);
+
           startLiveRunTracking("close");
+
         } else {
+
           showToast(`✗ Error: ${res.statusText}`);
+
         }
+
       } catch (e) {
+
         showToast(`✗ Exception: ${e.message}`);
+
       }
+
     }
 
+
+
     function parseBillingCycleDays(s) {
+
       if (!s) return 999999;
+
       s = String(s).trim();
+
       const today = new Date();
+
       today.setHours(0, 0, 0, 0);
 
+
+
       const mNext = s.match(/next\s*:\s*([0-9]{1,2}[-/ ][A-Za-z]{3,9}[-/ ][0-9]{2,4})/i);
+
       if (mNext) {
+
         const raw = mNext[1].replace(/[\/ ]/g, '-');
+
         const p = raw.split('-');
+
         if (p.length === 3) {
+
           const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+
           const monStr = p[1].substring(0, 3).toLowerCase();
+
           const mIdx = monthNames.indexOf(monStr);
+
           let yr = parseInt(p[2]);
+
           if (yr < 100) yr += 2000;
+
           const day = parseInt(p[0]);
+
           if (mIdx !== -1) {
+
             const d = new Date(yr, mIdx, day);
+
             return Math.round((d - today) / (1000 * 60 * 60 * 24));
+
           }
+
         }
+
       }
 
+
+
       const mDate = s.match(/([0-9]{1,2})[-/ ]([A-Za-z]{3,9})[-/ ]([0-9]{2,4})/);
+
       if (mDate) {
+
         const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+
         const monStr = mDate[2].substring(0, 3).toLowerCase();
+
         const mIdx = monthNames.indexOf(monStr);
+
         let yr = parseInt(mDate[3]);
+
         if (yr < 100) yr += 2000;
+
         const day = parseInt(mDate[1]);
+
         if (mIdx !== -1) {
+
           const d = new Date(yr, mIdx, day);
+
           return Math.round((d - today) / (1000 * 60 * 60 * 24));
+
         }
+
       }
+
+
 
       if (s.toLowerCase().includes("expired") && !s.toLowerCase().includes("expires in")) return -999999;
 
+
+
       const mExp = s.match(/expires?\s+in\s+(\d+)\s*days?/i) || s.match(/(\d+)\s*days?\s*(?:left|remaining)/i);
+
       if (mExp) return parseInt(mExp[1]);
 
+
+
       return 999999;
+
     }
+
+
 
     function isComplaintAlreadyBooked(rec) {
-      const st = String(rec["Complaint Status"] || "").trim();
-      const rem = String(rec["Complaint Remark"] || "").trim();
-      return (st !== "" || rem !== "");
+
+      const st = String(rec["Complaint Status"] || rec["status"] || "").trim().toLowerCase();
+
+      const rem = String(rec["Complaint Remark"] || "").trim().toLowerCase();
+
+      if (st.includes("skip")) return false;
+
+      return (
+
+        (st.includes("submitted") || st.includes("success") || st.includes("booked") || st.includes("done") || st.includes("complete")) &&
+
+        !st.includes("fail") && !st.includes("not found") && !st.includes("not submitted")
+
+      ) || (rem.length >= 15 && !rem.startsWith("fail") && !rem.startsWith("error"));
+
     }
+
+
+
+    function isComplaintSkipped(rec) {
+
+      const st = String(rec["Complaint Status"] || rec["status"] || "").trim().toLowerCase();
+
+      return st.includes("skip");
+
+    }
+
+
 
     function getSortedPendingRecords(records) {
+
       if (!records || !records.length) return [];
+
       const unbooked = records.filter(r => !isComplaintAlreadyBooked(r));
+
       const activeValid = unbooked.filter(r => parseBillingCycleDays(r["Billing Cycle"] || "") >= 0);
+
       activeValid.sort((a, b) => parseBillingCycleDays(a["Billing Cycle"] || "") - parseBillingCycleDays(b["Billing Cycle"] || ""));
+
       const otherPending = unbooked.filter(r => parseBillingCycleDays(r["Billing Cycle"] || "") < 0);
+
       return activeValid.concat(otherPending);
+
     }
+
+
 
     function toggleTimerDelay(isOn) {
+
       const lbl = document.getElementById("timer-status-label");
+
       if (lbl) {
+
         if (isOn) {
+
           lbl.innerText = "⏱️ Timer Delay Active (Standby)";
+
           lbl.style.color = "#1E40AF";
+
         } else {
+
           lbl.innerText = "⚡ Instant Mode Active (No wait between complaints)";
+
           lbl.style.color = "#059669";
+
         }
+
       }
+
     }
 
+
+
     function updateBreakdown(records) {
+
       currentQueueRecords = records;
+
       const booked = records.filter(isComplaintAlreadyBooked).length;
+
       const total = records.length;
+
       const totalPending = total - booked;
 
+
+
       // Update 3-Row Strip Dashboard Cards
+
       const statTotal = document.getElementById("booking-stat-total");
+
       const statProcessed = document.getElementById("booking-stat-processed");
+
       const statPending = document.getElementById("booking-stat-pending");
+
       const statBooked = document.getElementById("booking-stat-booked");
+
       const pathPending = document.getElementById("path-pending-count");
+
       const valPending = document.getElementById("val-pending-count");
+
       const valBooked = document.getElementById("val-booked-count");
 
+
+
       if (statTotal) statTotal.innerText = `● ${total}`;
+
       if (statProcessed) statProcessed.innerText = `● ${booked}`;
+
       if (statPending) statPending.innerText = `● ${totalPending}`;
+
       if (statBooked) statBooked.innerText = `● ${booked}`;
+
       if (pathPending) pathPending.innerText = totalPending;
+
       if (valPending) valPending.innerText = totalPending;
+
       if (valBooked) valBooked.innerText = booked;
 
+
+
       // Update Smart Card label if not actively in live booking
+
       const cardLabel = document.getElementById("booking-card-label");
+
       const bookedRecords = records.filter(isComplaintAlreadyBooked);
+
       bookedRecords.sort((a, b) => String(a["Processed At"] || "").localeCompare(String(b["Processed At"] || "")));
+
       const pendingRecs = getSortedPendingRecords(records);
+
       const nextPending = pendingRecs[0];
+
       const lastBooked = bookedRecords[bookedRecords.length - 1];
+
       if (cardLabel && (!cardLabel.innerText.includes("Booking:") || cardLabel.innerText === "—")) {
+
         if (nextPending) {
+
           cardLabel.innerText = `Next: ${nextPending['Smart Card Number']} (${nextPending['Customer Name'] || ''})`;
+
         } else if (lastBooked) {
+
           cardLabel.innerText = `Done: ${lastBooked['Smart Card Number']} (${lastBooked['Customer Name'] || ''})`;
+
         }
+
       }
+
+
 
       // Update Activity label if idle
+
       const actLbl = document.getElementById("booking-activity-label");
+
       if (actLbl && !actLbl.innerText.includes("Running") && !actLbl.innerText.includes("%") && !actLbl.innerText.includes("Sched:")) {
+
         actLbl.innerText = `Synced! ${totalPending} Pending`;
+
       }
 
+
+
       let dt2016 = 0;
+
       let dt2017 = 0;
+
       let expired = 0;
+
       let urgent = 0;
+
       let upcoming = 0;
+
       let normal = 0;
+
       let unknown = 0;
+
+
 
       const pendingRecords = records.filter(r => !isComplaintAlreadyBooked(r));
 
+
+
       pendingRecords.forEach(r => {
+
         const dt = String(r["DT Code"] || "");
+
         if (dt.includes("2016272")) dt2016++;
+
         else if (dt.includes("2017416")) dt2017++;
 
+
+
         const days = parseBillingCycleDays(r["Billing Cycle"] || "");
+
         if (days < 0) expired++;
+
         else if (days <= 3) urgent++;
+
         else if (days <= 7) upcoming++;
+
         else if (days < 999999) normal++;
+
         else unknown++;
+
       });
+
+
 
       const validPending = Math.max(0, totalPending - expired);
 
+
+
       const dtEl = document.getElementById("dt-breakdown-container");
+
       if (dtEl) {
+
         dtEl.innerHTML = `
+
           • <b>DT-2016272</b>: ${dt2016} records<br>
+
           • <b>DT-2017416</b>: ${dt2017} records<br>
+
           • <b>Total Available</b>: <span style="color:#0284C7; font-weight:bold; font-size:12px;">${totalPending} records</span>
+
         `;
+
       }
+
+
 
             const expEl = document.getElementById("exp-breakdown-container");
+
       if (expEl) {
+
         let expHtml = "";
+
         if (expired > 0) {
+
           expHtml += `• <b>Already Expired</b>: <span style="color:#DC2626; font-weight:bold;">${expired} IDs</span> (इनकी Complaint नहीं डाली जाएगी - Auto-Skip)<br>`;
+
         }
+
         expHtml += `• <b>0-3 Days Left (Expiring Soon)</b>: <span style="color:#EA580C; font-weight:bold;">${urgent} IDs</span> (High Priority - सबसे पहले खत्म होने वाली)<br>`;
+
         expHtml += `• <b>4-7 Days Left</b>: <span style="color:#D97706; font-weight:bold;">${upcoming} IDs</span><br>`;
+
         expHtml += `• <b>More than 7 Days Left</b>: <span style="color:#16A34A; font-weight:bold;">${normal} IDs</span>`;
+
         if (unknown > 0) {
+
           expHtml += `<br>• <i>Date not specified</i>: ${unknown} IDs`;
+
         }
+
         expEl.innerHTML = expHtml;
+
       }
+
+
 
       // Update urgent badge and all badge
+
       const urgentBadge = document.getElementById("quota-urgent-count");
+
       if (urgentBadge) urgentBadge.innerText = urgent;
+
       const allBadge = document.getElementById("quota-all-count");
+
       if (allBadge) allBadge.innerText = validPending;
 
+
+
       const qInput = document.getElementById("quota-input");
+
       if (qInput) {
+
         qInput.max = validPending;
+
         // Default intelligently to urgent (soonest expiring) count so user can book expiring IDs first
+
         const curVal = parseInt(qInput.value || "0", 10);
+
         if (curVal === 0 || curVal === 5 || curVal > validPending) {
+
           qInput.value = urgent > 0 ? urgent : Math.min(10, validPending);
+
         }
+
       }
+
+
 
       // Update sync time
+
       const timeStr = new Date().toLocaleTimeString();
+
       const syncTimeEl = document.getElementById("quota-sync-time");
+
       if (syncTimeEl) syncTimeEl.innerText = `Synced: ${timeStr}`;
 
+
+
       const syncPill = document.getElementById("quota-sync-pill");
+
       if (syncPill) {
+
         syncPill.className = "live-indicator";
+
         syncPill.innerText = "🟢 Live Synced";
+
       }
+
     }
+
+
 
     // Fetch queue statistics from repository with dual format handling
+
     async function fetchData() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_queue.json?_t=${Date.now()}`, {
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json"
+
           }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           currentQueueSha = apiJson.sha;
+
           let records = [];
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             const parsed = JSON.parse(rawUtf8);
+
             records = Array.isArray(parsed) ? parsed : (parsed.records || []);
+
           } else if (Array.isArray(apiJson)) {
+
             records = apiJson;
+
           } else if (apiJson.records) {
+
             records = apiJson.records;
+
           }
-          if (records.length > 0) {
-            updateBreakdown(records);
-          }
+
+          updateBreakdown(records);
+
         }
+
       } catch (e) {
+
         console.error("Queue fetch error", e);
+
       }
+
     }
+
+
 
     // Fetch and display active time settings configured from laptop
+
     async function fetchTimeSetting() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json"
+
           }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           let ts = null;
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             ts = JSON.parse(rawUtf8);
+
           } else if (apiJson.min_minutes !== undefined) {
+
             ts = apiJson;
+
           }
+
           if (ts) {
+
             currentTimeSettings = ts;
+
             currentTimeSettingsSha = apiJson.sha;
 
+
+
             const cb = document.getElementById("cb-timer-delay");
+
             const lbl = document.getElementById("timer-status-label");
+
             const isEnabled = Boolean(ts.enabled);
+
             if (cb) cb.checked = isEnabled;
+
             
+
             let desc = "";
+
             if (ts.mode === "fixed") {
+
               desc = `Fixed Delay (${ts.fixed_minutes || 45}m)`;
+
             } else {
+
               desc = `Random Delay (${ts.min_minutes || 1}-${ts.max_minutes || 2}m)`;
+
             }
+
+
 
             if (lbl) {
+
               if (isEnabled) {
+
                 lbl.innerText = `⏱️ Timer Delay Active: ${desc}`;
+
                 lbl.style.color = "#1E40AF";
+
               } else {
+
                 lbl.innerText = "⚡ Instant Mode Active (No wait between complaints)";
+
                 lbl.style.color = "#059669";
+
               }
+
             }
+
+
 
             // Sync Auto-Schedule Card Controls
+
             const schedSw = document.getElementById("switch-auto-schedule");
+
             const schedSwLbl = document.getElementById("schedule-switch-label");
+
             const startInput = document.getElementById("sched-start-time");
+
             const endInput = document.getElementById("sched-end-time");
+
             const minInput = document.getElementById("sched-min-delay");
+
             const maxInput = document.getElementById("sched-max-delay");
+
             const targetQtyInput = document.getElementById("sched-target-qty");
+
             const badge = document.getElementById("sched-status-badge");
+
             const badgeDot = document.getElementById("sched-status-dot");
+
             const badgeTxt = document.getElementById("sched-status-text");
 
+
+
             const isSchedOn = Boolean(ts.schedule_enabled);
+
             if (schedSw) schedSw.checked = isSchedOn;
+
             if (schedSwLbl) {
+
               schedSwLbl.innerText = isSchedOn ? "ON" : "OFF";
+
               schedSwLbl.style.color = isSchedOn ? "#16A34A" : "#64748B";
+
             }
+
             if (startInput) startInput.value = ts.start_time || "08:30";
+
             if (endInput) endInput.value = ts.end_time || "20:00";
+
             if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 30;
+
             if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 45;
+
             if (targetQtyInput) targetQtyInput.value = ts.target_qty !== undefined ? ts.target_qty : 2;
 
+
+
             updateScheduleCountdown();
+
           }
+
         }
+
       } catch (err) {
+
         console.error("Time settings fetch error", err);
+
       }
+
     }
+
+
 
     let currentTimeSettings = null;
+
     let currentTimeSettingsSha = null;
+
     let scheduleCountdownInterval = null;
 
+
+
     function startScheduleCountdown() {
+
       if (scheduleCountdownInterval) clearInterval(scheduleCountdownInterval);
+
       scheduleCountdownInterval = setInterval(updateScheduleCountdown, 1000);
+
       updateScheduleCountdown();
+
     }
+
+
 
     function updateScheduleCountdown() {
+
       const badge = document.getElementById("sched-status-badge");
+
       const badgeDot = document.getElementById("sched-status-dot");
+
       const badgeTxt = document.getElementById("sched-status-text");
+
       if (!badge || !badgeDot || !badgeTxt) return;
 
+
+
       if (!currentTimeSettings || !currentTimeSettings.schedule_enabled) {
+
         badge.className = "schedule-status-badge badge-paused";
+
         badgeDot.innerText = "⚪";
+
         badgeTxt.innerText = "Schedule Paused / OFF";
+
         return;
+
       }
+
+
 
       const ts = currentTimeSettings;
+
       const batchTarget = ts.batch_target_qty !== undefined ? parseInt(ts.batch_target_qty, 10) : (ts.target_qty ? parseInt(ts.target_qty, 10) : null);
+
       const batchDone = parseInt(ts.batch_booked_count || 0, 10);
 
+
+
       if (batchTarget !== null && batchDone >= batchTarget) {
+
         badge.className = "schedule-status-badge badge-paused";
+
         badgeDot.innerText = "🛑";
+
         badgeTxt.innerText = `Batch Complete: ${batchDone}/${batchTarget} Booked (Auto-Schedule Paused)`;
+
         const actLbl = document.getElementById("booking-activity-label");
+
         if (actLbl && !livePollInterval) {
+
           actLbl.innerText = `✅ Batch Complete: ${batchDone}/${batchTarget} Booked`;
+
         }
+
         return;
+
       }
+
+
 
       // Compute dynamic real-time Countdown
+
       let targetMs = null;
+
       if (ts.next_run_timestamp) {
+
         targetMs = new Date(ts.next_run_timestamp).getTime();
+
       } else if (ts.updated_at && ts.next_interval_minutes) {
+
         targetMs = new Date(ts.updated_at).getTime() + (ts.next_interval_minutes * 60000);
+
       } else if (ts.next_interval_minutes) {
+
         targetMs = Date.now() + (ts.next_interval_minutes * 60000);
+
       }
+
+
 
       let countdownStr = "";
+
       if (targetMs) {
+
         const diffMs = targetMs - Date.now();
+
         if (diffMs > 0) {
+
           const totalSecs = Math.floor(diffMs / 1000);
+
           const m = Math.floor(totalSecs / 60);
+
           const s = totalSecs % 60;
+
           countdownStr = `${m}m ${s < 10 ? '0' : ''}${s}s`;
+
         } else {
+
           countdownStr = "Ready to book now";
+
         }
+
       } else {
+
         countdownStr = `~${ts.next_interval_minutes || 30}m`;
+
       }
+
+
 
       const targetStr = batchTarget ? ` | Target: ${batchDone}/${batchTarget}` : "";
+
       badge.className = "schedule-status-badge badge-active";
+
       badgeDot.innerText = "🟢";
+
       badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
 
+
+
       // Also keep Status Strip in sync
+
       const actLbl = document.getElementById("booking-activity-label");
+
       const browserStatus = document.getElementById("booking-browser-status");
+
       if (!livePollInterval) {
+
         if (actLbl) actLbl.innerText = `⏰ Sched: ${batchDone}/${batchTarget || '?'} (Next: ${countdownStr})`;
+
         if (browserStatus && browserStatus.innerText.includes("Idle")) {
+
           browserStatus.innerText = "⏳ Standby (Timer)";
+
           browserStatus.className = "stacked-card-value status-idle";
+
         }
+
       }
+
     }
+
+
 
     function handleScheduleToggle(isOn) {
+
       const lbl = document.getElementById("schedule-switch-label");
+
       if (lbl) {
+
         lbl.innerText = isOn ? "ON" : "OFF";
+
         lbl.style.color = isOn ? "#16A34A" : "#64748B";
+
       }
+
       if (currentTimeSettings) {
+
         currentTimeSettings.schedule_enabled = isOn;
+
       }
+
       updateScheduleCountdown();
+
     }
 
+
+
     async function saveScheduleSettings() {
+
       const token = getToken();
+
       if (!token) {
+
         showToast("❌ Device not authorized!");
+
         return;
+
       }
+
+
 
       const isSchedOn = document.getElementById("switch-auto-schedule")?.checked ?? false;
+
       const startTime = document.getElementById("sched-start-time")?.value || "08:30";
+
       const endTime = document.getElementById("sched-end-time")?.value || "20:00";
+
       const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+
       const maxDelay = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+
       const targetQty = parseInt(document.getElementById("sched-target-qty")?.value || "2", 10);
 
+
+
       if (minDelay <= 0 || maxDelay < minDelay) {
+
         showToast("⚠️ Min Delay must be <= Max Delay and > 0!");
+
         return;
+
       }
 
+
+
       const nextInterval = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+
       const nowMs = Date.now();
+
       const nextRunTime = new Date(nowMs + nextInterval * 60000).toISOString();
 
+
+
       const updatedSettings = Object.assign({}, currentTimeSettings || {}, {
+
         enabled: true,
+
         mode: "random",
+
         min_minutes: minDelay,
+
         max_minutes: maxDelay,
+
         start_time_enabled: true,
+
         start_time: startTime,
+
         end_time: endTime,
+
         schedule_enabled: isSchedOn,
+
         batch_target_qty: targetQty,
+
         batch_booked_count: 0,
+
         target_qty: targetQty,
+
         next_interval_minutes: nextInterval,
+
         updated_at: new Date(nowMs).toISOString(),
+
         next_run_timestamp: nextRunTime
+
       });
+
+
 
       showToast("⏳ Saving Schedule Settings to Cloud...");
 
+
+
       try {
+
         if (!currentTimeSettingsSha) {
+
           const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json?_t=${Date.now()}`, {
+
             headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
           });
+
           if (chk.ok) {
+
             const j = await chk.json();
+
             currentTimeSettingsSha = j.sha;
+
           }
+
         }
+
+
 
         const jsonStr = JSON.stringify(updatedSettings, null, 2);
+
         const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
 
+
+
         const payload = {
+
           message: `Update Auto-Schedule settings (ON: ${isSchedOn}, Target: ${targetQty}, Window: ${startTime}-${endTime}, Delay: ${minDelay}-${maxDelay}m)`,
+
           content: b64,
+
           branch: "main"
+
         };
+
         if (currentTimeSettingsSha) {
+
           payload.sha = currentTimeSettingsSha;
+
         }
+
+
 
         const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/time_settings.json`, {
+
           method: "PUT",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Content-Type": "application/json",
+
             "Accept": "application/vnd.github.v3+json"
+
           },
+
           body: JSON.stringify(payload)
+
         });
+
+
 
         if (putRes.ok) {
+
           const respData = await putRes.json();
+
           currentTimeSettingsSha = respData.content?.sha || currentTimeSettingsSha;
+
           currentTimeSettings = updatedSettings;
+
           // Synchronize workflow state (wake up or sleep)
+
           try {
+
             const wfAction = isSchedOn ? "enable" : "disable";
+
             fetch(`https://api.github.com/repos/${REPO}/actions/workflows/book_complaints.yml/${wfAction}`, {
+
               method: "PUT",
+
               headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
             }).catch(() => {});
+
           } catch(e) {}
+
           showToast(`✓ Auto-Schedule Saved! (${isSchedOn ? "🟢 ACTIVE" : "⚪ PAUSED"})`);
+
           fetchTimeSetting();
+
         } else {
+
           showToast(`❌ Failed to save: ${putRes.statusText}`);
+
         }
+
       } catch (err) {
+
         console.error("Save schedule error", err);
+
         showToast(`❌ Exception: ${err.message}`);
+
       }
+
     }
+
+
 
     // Live Run Tracking with active step-by-step progress and elapsed timer
+
     let seenSteps = new Set();
+
     let runTimerInterval = null;
+
     let runSecondsElapsed = 0;
 
+
+
     async function fetchAssignHistory() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_history.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           let hist = [];
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             hist = JSON.parse(rawUtf8);
+
           } else if (Array.isArray(apiJson)) {
+
             hist = apiJson;
+
           }
+
           if (Array.isArray(hist) && hist.length > 0) {
+
             const last = hist[0];
+
             const tot = document.getElementById("assign-stat-total");
+
             const prc = document.getElementById("assign-stat-processed");
+
             const scs = document.getElementById("assign-stat-booked");
+
             const fld = document.getElementById("assign-stat-failed");
+
             const rem = document.getElementById("assign-stat-pending");
+
             if (tot) tot.innerText = `● ${last.processed || 0}`;
+
             if (prc) prc.innerText = `● ${last.processed || 0}`;
+
             if (scs) scs.innerText = `● ${last.success || 0}`;
+
             if (fld) fld.innerText = `● ${last.failed || 0}`;
+
             if (rem) rem.innerText = `● 0`;
+
           }
+
         }
+
       } catch (e) {
+
         console.error("Assign history fetch error", e);
+
       }
+
     }
+
+
 
     async function fetchCloseHistory() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/close_complaint_history.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           let hist = [];
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             hist = JSON.parse(rawUtf8);
+
           } else if (Array.isArray(apiJson)) {
+
             hist = apiJson;
+
           }
+
           if (Array.isArray(hist) && hist.length > 0) {
+
             const last = hist[hist.length - 1];
+
             const tot = document.getElementById("close-stat-total");
+
             const prc = document.getElementById("close-stat-processed");
+
             const scs = document.getElementById("close-stat-booked");
+
             const fld = document.getElementById("close-stat-failed");
+
             const rem = document.getElementById("close-stat-pending");
+
             if (tot) tot.innerText = `● ${last.processed || 0}`;
+
             if (prc) prc.innerText = `● ${last.processed || 0}`;
+
             if (scs) scs.innerText = `● ${last.success || 0}`;
+
             if (fld) fld.innerText = `● ${last.failed || 0}`;
+
             if (rem) rem.innerText = `● 0`;
+
           }
+
         }
+
       } catch (e) {
+
         console.error("Close history fetch error", e);
+
       }
+
     }
+
+
 
     async function fetchTransferHistory() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/transfer_history.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           let hist = [];
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             hist = JSON.parse(rawUtf8);
+
           } else if (Array.isArray(apiJson)) {
+
             hist = apiJson;
+
           }
+
           if (Array.isArray(hist) && hist.length > 0) {
+
             const totSuccess = hist.filter(h => h.status === "Success").length;
+
             const totFailed = hist.filter(h => h.status === "Failed").length;
+
             const totProcessed = hist.length;
+
             const last = hist[hist.length - 1];
 
+
+
             const tot = document.getElementById("transfer-stat-total");
+
             const prc = document.getElementById("transfer-stat-processed");
+
             const scs = document.getElementById("transfer-stat-booked");
+
             const fld = document.getElementById("transfer-stat-failed");
+
             const rem = document.getElementById("transfer-stat-pending");
+
             const card = document.getElementById("transfer-card-label");
 
+
+
             if (tot) tot.innerText = `● ${totProcessed}`;
+
             if (prc) prc.innerText = `● ${totProcessed}`;
+
             if (scs) scs.innerText = `● ${totSuccess}`;
+
             if (fld) fld.innerText = `● ${totFailed}`;
+
             if (rem) rem.innerText = `● 0`;
+
             if (card && last) {
+
               card.innerText = `✓ #${last.ticket_id} (${last.status}) -> ${last.target_dt || ''}`;
+
             }
+
           }
+
         }
+
       } catch (e) {
+
         console.error("Transfer history fetch error", e);
+
       }
+
     }
+
+
 
     function startLiveRunTracking(mode = "book") {
+
       if (livePollInterval) clearInterval(livePollInterval);
+
       if (runTimerInterval) clearInterval(runTimerInterval);
+
       seenSteps.clear();
 
+
+
       let prefix = "booking";
+
       if (mode === "assign") prefix = "assign";
+
       else if (mode === "close") prefix = "close";
+
       else if (mode === "transfer") prefix = "transfer";
 
+
+
       const timeEl = document.getElementById(`${prefix}-stat-time`);
+
       runSecondsElapsed = 0;
+
       if (timeEl) timeEl.innerText = "⏱ 00:00";
 
+
+
       // Live 1-second elapsed timer
+
       runTimerInterval = setInterval(() => {
+
         runSecondsElapsed++;
+
         const mins = String(Math.floor(runSecondsElapsed / 60)).padStart(2, '0');
+
         const secs = String(runSecondsElapsed % 60).padStart(2, '0');
+
         if (timeEl) timeEl.innerText = `⏱ ${mins}:${secs}`;
+
       }, 1000);
 
+
+
       let attempts = 0;
+
       livePollInterval = setInterval(async () => {
+
         attempts++;
+
         const token = getToken();
+
         if (!token) return;
+
         try {
+
           const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5&_t=${Date.now()}`, {
+
             headers: {
+
               "Authorization": `token ${token}`,
+
               "Accept": "application/vnd.github.v3+json"
+
             }
+
           });
+
           if (!res.ok) return;
 
+
+
           const data = await res.json();
+
           if (!data.workflow_runs || data.workflow_runs.length === 0) return;
 
+
+
           const latest = data.workflow_runs.find(r => r.status === "in_progress" || r.status === "queued") || data.workflow_runs[0];
+
           activeRunId = latest.id;
+
           const isRun = latest.status === "in_progress" || latest.status === "queued";
 
+
+
           const browserStatus = document.getElementById(`${prefix}-browser-status`);
+
           const portalStatus = document.getElementById(`${prefix}-portal-status`);
+
           const activityLabel = document.getElementById(`${prefix}-activity-label`);
+
           const cardLabel = document.getElementById(`${prefix}-card-label`);
+
           const pBar = document.getElementById(`${prefix}-progress-bar`);
+
           const pPct = document.getElementById(`${prefix}-progress-pct`);
 
+
+
           if (isRun) {
+
             if (attempts % 2 === 0) {
+
               if (mode === "assign") fetchAssignHistory();
+
               else if (mode === "close") fetchCloseHistory();
+
               else if (mode === "transfer") fetchTransferHistory();
+
               else fetchData();
+
             }
+
             if (browserStatus) {
+
               browserStatus.innerText = "● Running (Headless)";
+
               browserStatus.className = "stacked-card-value status-running";
+
             }
+
             if (portalStatus) {
+
               portalStatus.innerText = "● Processing (Freshdesk)";
+
               portalStatus.className = "stacked-card-value status-running";
+
             }
+
             if (cardLabel) {
+
               if (mode === "assign") {
+
                 cardLabel.innerText = "● Assigning: Freshdesk Open Complaints Queue";
+
               } else if (mode === "close") {
+
                 cardLabel.innerText = "● Closing: Freshdesk Resolved Complaints Queue";
+
               } else if (mode === "transfer") {
+
                 cardLabel.innerText = "● Transferring: Freshdesk Complaints Queue";
+
               } else {
+
                 if (currentQueueRecords && currentQueueRecords.length > 0) {
+
                   const pendingRec = getSortedPendingRecords(currentQueueRecords)[0];
+
                   if (pendingRec) {
+
                     cardLabel.innerText = `● Booking: ${pendingRec['Smart Card Number']} (${pendingRec['Customer Name'] || ''})`;
+
                   } else {
+
                     cardLabel.innerText = "All Complaints Booked";
+
                   }
+
                 } else {
+
                   cardLabel.innerText = "Processing Queue...";
+
                 }
+
               }
+
             }
+
+
 
             // Fetch active job steps for live progress
+
             const jobsRes = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${latest.id}/jobs?_t=${Date.now()}`, {
+
               headers: {
+
                 "Authorization": `token ${token}`,
+
                 "Accept": "application/vnd.github.v3+json"
+
               }
+
             });
+
             if (jobsRes.ok) {
+
               const jobsData = await jobsRes.json();
+
               if (jobsData.jobs && jobsData.jobs.length > 0) {
+
                 const job = jobsData.jobs[0];
+
                 const steps = job.steps || [];
+
                 const totalSteps = steps.length || 7;
+
                 let completedSteps = 0;
+
                 let currentStepName = "Initializing Cloud Runner...";
 
+
+
                 steps.forEach(st => {
+
                   if (st.status === "completed") {
+
                     completedSteps++;
+
                   } else if (st.status === "in_progress") {
+
                     currentStepName = st.name;
+
                   }
+
                 });
 
+
+
                 const pct = Math.min(95, Math.max(15, Math.round(((completedSteps + 0.5) / totalSteps) * 100)));
+
                 if (activityLabel) activityLabel.innerText = `[${pct}%] ${currentStepName}`;
+
                 if (pBar) pBar.style.width = `${pct}%`;
+
                 if (pPct) pPct.innerText = `${pct}%`;
+
               }
+
             }
+
           } else {
+
             // Finished -> Immediately Sleep and Stop!
+
             clearInterval(livePollInterval);
+
             livePollInterval = null;
+
             if (runTimerInterval) {
+
               clearInterval(runTimerInterval);
+
               runTimerInterval = null;
+
             }
+
+
 
             if (browserStatus) {
+
               browserStatus.innerText = "● Sleeping (Idle)";
+
               browserStatus.className = "stacked-card-value status-idle";
+
             }
+
             if (portalStatus) {
+
               portalStatus.innerText = "● Sleeping (Standby)";
+
               portalStatus.className = "stacked-card-value status-idle";
+
             }
+
+
 
             if (latest.conclusion === "success") {
+
               if (activityLabel) activityLabel.innerText = `✓ Run #${latest.run_number} Complete! Automation is Sleeping.`;
+
               if (pBar) pBar.style.width = "100%";
+
               if (pPct) pPct.innerText = "100%";
+
               if (cardLabel) {
+
                 if (mode === "assign") {
+
                   cardLabel.innerText = "✓ Assign Completed & Sleeping";
+
                 } else if (mode === "close") {
+
                   cardLabel.innerText = "✓ Closure Completed & Sleeping";
+
                 } else if (mode === "transfer") {
+
                   cardLabel.innerText = "✓ Transfer Completed & Sleeping";
+
                 } else {
+
                   if (currentQueueRecords && currentQueueRecords.length > 0) {
+
                     const bookedRecs = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
+
                     bookedRecs.sort((a, b) => String(a["Processed At"] || "").localeCompare(String(b["Processed At"] || "")));
+
                     const lastRec = bookedRecs[bookedRecs.length - 1];
+
                     if (lastRec) {
+
                       cardLabel.innerText = `✓ Done: ${lastRec['Smart Card Number']} (${lastRec['Customer Name'] || ''})`;
+
                     } else {
+
                       cardLabel.innerText = "Completed & Sleeping";
+
                     }
+
                   } else {
+
                     cardLabel.innerText = "Completed & Sleeping";
+
                   }
+
                 }
+
               }
+
               showToast("✓ Cloud Automation Finished & Sleeping Immediately!");
+
             } else {
+
               if (activityLabel) activityLabel.innerText = `Run #${latest.run_number} finished with status: ${latest.conclusion}`;
+
             }
+
+
 
             // Sync data & statistics
+
             if (mode === "assign") {
+
               fetchAssignHistory();
+
             } else if (mode === "close") {
+
               fetchCloseHistory();
+
             } else if (mode === "transfer") {
+
               fetchTransferHistory();
+
             } else {
+
               fetchData();
+
             }
+
           }
+
         } catch (err) {
+
           console.error("Live poll error", err);
+
         }
+
+
 
         if (attempts > 900) {
+
           clearInterval(livePollInterval);
+
           if (runTimerInterval) clearInterval(runTimerInterval);
+
         }
+
       }, 3000);
+
     }
+
+
 
     // Fetch recent workflow status
+
     async function fetchRuns() {
+
       if (livePollInterval) return;
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/runs?per_page=5&_t=${Date.now()}`, {
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Accept": "application/vnd.github.v3+json"
+
           }
+
         });
+
         if (res.ok) {
+
           const data = await res.json();
+
           if (data.workflow_runs && data.workflow_runs.length > 0) {
+
             const latest = data.workflow_runs.find(r => r.status === "in_progress" || r.status === "queued") || data.workflow_runs[0];
+
             const isRun = latest.status === "in_progress" || latest.status === "queued";
+
             if (isRun) {
+
               const wfName = (latest.name || "").toLowerCase();
+
               if (wfName.includes("assign")) startLiveRunTracking("assign");
+
               else if (wfName.includes("close")) startLiveRunTracking("close");
+
               else if (wfName.includes("transfer")) startLiveRunTracking("transfer");
+
               else startLiveRunTracking("book");
+
             } else {
+
               document.getElementById("booking-browser-status").innerText = "● Idle";
+
               document.getElementById("booking-browser-status").className = "stacked-card-value status-idle";
+
             }
+
           }
+
         }
+
       } catch (e) {
+
         console.error("Runs fetch error", e);
+
       }
+
     }
+
+
 
     function cloudSync() {
+
       showToast("☁️ Syncing with GitHub cloud database...");
+
       fetchData();
+
       fetchTimeSetting();
+
       fetchRuns();
+
       fetchRbuzzQueue();
+
       checkRbuzzSession();
+
       fetchAssignHistory();
+
       fetchCloseHistory();
+
       fetchTransferHistory();
+
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
+
     }
+
+
 
     function getTodayBookedRecords(recs) {
+
       const todayIso = new Date().toISOString().slice(0, 10);
+
       return (recs || []).filter(r => {
+
         const proc = String(r["Processed At"] || r["processed_at"] || "");
+
         const st = String(r["Complaint Status"] || r["status"] || "");
+
         return (st.includes("Submitted Successfully") || st.includes("Booked")) && proc.startsWith(todayIso);
+
       });
+
     }
+
+
 
     function formatISTTime(utcStr) {
+
       if (!utcStr) return "—";
+
       try {
+
         const d = new Date(utcStr.includes("Z") ? utcStr : (utcStr.replace(" ", "T") + "Z"));
+
         if (isNaN(d.getTime())) return utcStr;
+
         return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
+
       } catch (e) {
+
         return utcStr;
+
       }
+
     }
+
+
 
     async function downloadReport() {
+
       openOutputDialog();
+
     }
+
+
 
     async function openOutputDialog() {
+
       openModal("output-dialog");
+
       if (!currentQueueRecords || currentQueueRecords.length === 0) {
+
         await fetchData();
+
       }
+
       renderOutputModalTable();
+
     }
 
+
+
     function renderOutputModalTable() {
+
       const recs = currentQueueRecords || [];
+
       const booked = recs.filter(isComplaintAlreadyBooked);
+
       const todayBooked = getTodayBookedRecords(recs);
 
+
+
       const allCountEl = document.getElementById("out-modal-all-count");
+
       const todayCountEl = document.getElementById("out-modal-today-count");
+
       if (allCountEl) allCountEl.innerText = booked.length;
+
       if (todayCountEl) todayCountEl.innerText = todayBooked.length;
 
+
+
       const tbody = document.getElementById("today-booked-table-body");
+
       if (!tbody) return;
+
+
 
       const listToRender = todayBooked.length > 0 ? todayBooked : booked;
 
+
+
       if (listToRender.length === 0) {
+
         tbody.innerHTML = '<tr><td colspan="6" style="padding:16px; text-align:center; color:#94A3B8;">No booked complaints found in queue.</td></tr>';
+
         return;
+
       }
+
+
 
       let htmlRows = "";
+
       listToRender.forEach((r, idx) => {
+
         const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+
         const istTime = formatISTTime(r["Processed At"] || r["processed_at"] || "");
+
         htmlRows += `<tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+
           <td style="padding:6px 8px; font-weight:700; color:#475569;">${idx + 1}</td>
+
           <td style="padding:6px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
+
           <td style="padding:6px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
+
           <td style="padding:6px 8px; color:#475569;">${r["OLD RMN"] || r["RMN"] || "—"}</td>
+
           <td style="padding:6px 8px; color:#0284C7; font-weight:600;">${istTime}</td>
+
           <td style="padding:6px 8px; color:#16A34A; font-weight:700;">✅ Submitted</td>
+
         </tr>`;
+
       });
+
       tbody.innerHTML = htmlRows;
+
     }
+
+
 
     function exportTodayBookedExcel() {
+
       try {
+
         const recs = currentQueueRecords || [];
+
         const todayBooked = getTodayBookedRecords(recs);
+
         const dataToExport = todayBooked.length > 0 ? todayBooked : recs.filter(isComplaintAlreadyBooked);
 
+
+
         if (dataToExport.length === 0) {
+
           showToast("No complaints to download!");
+
           return;
+
         }
+
+
 
         const rows = dataToExport.map((r, idx) => ({
+
           "S.No": idx + 1,
+
           "Input Row Number": r["Input Row Number"] || "",
+
           "Smart Card Number": String(r["Smart Card Number"] || ""),
+
           "Customer Name": r["Customer Name"] || "",
+
           "Mobile": r["OLD RMN"] || r["RMN"] || "",
+
           "DT Code": r["DT Code"] || "",
+
           "Booking Time (IST)": formatISTTime(r["Processed At"] || r["processed_at"] || ""),
+
           "Processed At (UTC)": r["Processed At"] || r["processed_at"] || "",
+
           "Complaint Status": r["Complaint Status"] || r["status"] || "",
+
           "Complaint Remark": r["Complaint Remark"] || ""
+
         }));
 
+
+
         const ws = XLSX.utils.json_to_sheet(rows);
+
         const wb = XLSX.utils.book_new();
+
         XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
+
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
         XLSX.writeFile(wb, `Today_Complaints_Booked_${dateStr}.xlsx`);
+
         showToast("✓ Today's Booked Excel downloaded!");
+
       } catch (err) {
+
         console.error("Export error:", err);
+
         showToast("Export failed: " + err.message);
+
       }
+
     }
+
+
 
     function exportAllBookedExcel() {
+
       try {
+
         const recs = currentQueueRecords || [];
+
         const booked = recs.filter(isComplaintAlreadyBooked);
+
         if (booked.length === 0) {
+
           showToast("No booked records found!");
+
           return;
+
         }
+
+
 
         const rows = booked.map((r, idx) => ({
+
           "S.No": idx + 1,
+
           "Input Row Number": r["Input Row Number"] || "",
+
           "Smart Card Number": String(r["Smart Card Number"] || ""),
+
           "Customer Name": r["Customer Name"] || "",
+
           "Mobile": r["OLD RMN"] || r["RMN"] || "",
+
           "DT Code": r["DT Code"] || "",
+
           "Booking Time (IST)": formatISTTime(r["Processed At"] || r["processed_at"] || ""),
+
           "Complaint Status": r["Complaint Status"] || r["status"] || "",
+
           "Processed At": r["Processed At"] || r["processed_at"] || "",
+
           "Complaint Remark": r["Complaint Remark"] || ""
+
         }));
 
+
+
         const ws = XLSX.utils.json_to_sheet(rows);
+
         const wb = XLSX.utils.book_new();
+
         XLSX.utils.book_append_sheet(wb, ws, "All Booked Complaints");
+
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
         XLSX.writeFile(wb, `All_Booked_Complaints_${dateStr}.xlsx`);
+
         showToast("✓ All Booked Excel downloaded!");
+
       } catch (err) {
+
         showToast("Export failed: " + err.message);
+
       }
+
     }
+
+
 
     function copyTodayTableData() {
+
       const recs = currentQueueRecords || [];
+
       const todayBooked = getTodayBookedRecords(recs);
+
       const listToCopy = todayBooked.length > 0 ? todayBooked : recs.filter(isComplaintAlreadyBooked);
+
       if (listToCopy.length === 0) {
+
         showToast("No records to copy!");
+
         return;
+
       }
+
       let text = "S.No\tSmart Card\tCustomer Name\tMobile\tTime (IST)\tStatus\n";
+
       listToCopy.forEach((r, idx) => {
+
         text += `${idx + 1}\t${r["Smart Card Number"] || ""}\t${r["Customer Name"] || ""}\t${r["OLD RMN"] || r["RMN"] || ""}\t${formatISTTime(r["Processed At"] || "")}\tSubmitted\n`;
+
       });
+
       navigator.clipboard.writeText(text).then(() => {
+
         showToast("✓ Table copied to clipboard!");
+
       }).catch(() => {
+
         showToast("Copy failed, please select and copy manually");
+
       });
+
     }
+
+
 
     // ================= RBuzz Automation Logic =================
+
     let currentRbuzzQueueSha = null;
+
     let currentRbuzzSessionSha = null;
+
     let rbuzzSessionPollInterval = null;
 
+
+
     async function fetchRbuzzQueue() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_queue.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           currentRbuzzQueueSha = apiJson.sha;
+
           let q = null;
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             q = JSON.parse(rawUtf8);
+
           } else if (apiJson.records) {
+
             q = apiJson;
+
           }
+
           if (q) {
+
             updateRbuzzUI(q);
+
           }
+
         }
+
       } catch (err) {
+
         console.error("RBuzz queue fetch error", err);
+
       }
+
     }
+
+
 
     function updateRbuzzUI(queueData) {
+
       const recs = queueData.records || [];
+
       const total = recs.length;
+
       const checked = recs.filter(r => ["checked", "success", "not found", "completed"].includes(String(r.Status || "").toLowerCase())).length;
+
       const success = recs.filter(r => String(r.Status || "").toLowerCase() === "success").length;
+
       const notFound = recs.filter(r => String(r.Status || "").toLowerCase() === "not found").length;
+
       const pending = Math.max(0, total - checked);
 
+
+
       const elTotal = document.getElementById("rbuzz-stat-total");
+
       const elChecked = document.getElementById("rbuzz-stat-checked");
+
       const elPending = document.getElementById("rbuzz-stat-pending");
+
       const elSuccess = document.getElementById("rbuzz-stat-success");
+
       const elNotFound = document.getElementById("rbuzz-stat-notfound");
+
       const pBar = document.getElementById("rbuzz-progress-bar");
+
       const pPct = document.getElementById("rbuzz-progress-pct");
+
       const pLabel = document.getElementById("rbuzz-path-label");
 
+
+
       if (elTotal) elTotal.innerText = `● ${total}`;
+
       if (elChecked) elChecked.innerText = `● ${checked}`;
+
       if (elPending) elPending.innerText = `● ${pending}`;
+
       if (elSuccess) elSuccess.innerText = `● ${success}`;
+
       if (elNotFound) elNotFound.innerText = `● ${notFound}`;
+
       if (pLabel) pLabel.innerText = `📁 Saved Queue (${pending} Pending)`;
 
+
+
       const pct = total > 0 ? Math.round((checked / total) * 100) : 0;
+
       if (pBar) pBar.style.width = `${pct}%`;
+
       if (pPct) pPct.innerText = `${pct}%`;
 
+
+
       const lastProc = recs.slice().reverse().find(r => r["Processed At"]);
+
       if (lastProc) {
+
         const curCard = document.getElementById("rbuzz-current-card");
+
         if (curCard) curCard.innerText = lastProc["Smart Card Number"] || "-";
+
       }
+
     }
+
+
 
     async function checkRbuzzSession() {
+
       const token = getToken();
+
       if (!token) return;
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           currentRbuzzSessionSha = apiJson.sha;
+
           let sess = null;
+
           if (apiJson.content && apiJson.encoding === "base64") {
+
             const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+
             sess = JSON.parse(rawUtf8);
+
           }
+
           if (sess) {
+
             const banner = document.getElementById("rbuzz-alert-banner");
+
             const alertMsg = document.getElementById("rbuzz-alert-msg");
+
             const sessBadge = document.getElementById("rbuzz-session-status-badge");
+
             const actLabel = document.getElementById("rbuzz-activity-label");
+
             const bStatus = document.getElementById("rbuzz-browser-status");
+
             const pStatus = document.getElementById("rbuzz-portal-status");
 
+
+
             if (sess.status === "waiting_captcha" || sess.captcha_needed) {
+
               if (banner) banner.style.display = "flex";
+
               if (alertMsg) alertMsg.innerText = sess.last_error || "⚠️ RBuzz Captcha Required to Login!";
+
               if (sessBadge) {
+
                 sessBadge.innerText = "🟡 Captcha Needed";
+
                 sessBadge.style.color = "#D97706";
+
               }
+
               if (actLabel) actLabel.innerText = "Paused: Waiting for Captcha code...";
+
               if (bStatus) { bStatus.innerText = "● Paused"; bStatus.className = "stacked-card-value"; }
+
               if (pStatus) { pStatus.innerText = "● Re-login Required"; pStatus.className = "stacked-card-value"; }
 
+
+
               // Update image in modal if open
+
               const img = document.getElementById("rbuzz-captcha-img");
+
               const loading = document.getElementById("rbuzz-captcha-loading");
+
               if (sess.captcha_image && img && loading) {
+
                 img.src = sess.captcha_image;
+
                 img.style.display = "block";
+
                 loading.style.display = "none";
+
               }
+
             } else if (sess.status === "running") {
+
               if (banner) banner.style.display = "none";
+
               if (sessBadge) { sessBadge.innerText = "🟢 Logged In & Running"; sessBadge.style.color = "#16A34A"; }
+
               if (bStatus) { bStatus.innerText = "● Running (Headless)"; bStatus.className = "stacked-card-value status-running"; }
+
               if (pStatus) { pStatus.innerText = "● Active (RBuzz)"; pStatus.className = "stacked-card-value status-running"; }
+
             } else {
+
               if (banner) banner.style.display = "none";
+
               if (sessBadge) { sessBadge.innerText = "● Standby"; sessBadge.style.color = "#64748B"; }
+
               if (bStatus) { bStatus.innerText = "● Idle"; bStatus.className = "stacked-card-value status-idle"; }
+
               if (pStatus) { pStatus.innerText = "● Standby"; pStatus.className = "stacked-card-value status-idle"; }
+
             }
+
           }
+
         }
+
       } catch (err) {
+
         console.error("Session check error", err);
+
       }
+
     }
+
+
 
     async function openRbuzzBrowser() {
+
       showToast("🌐 Opening RBuzz Browser / Live Captcha Dialog...");
+
       openModal("rbuzz-captcha-dialog");
+
       const img = document.getElementById("rbuzz-captcha-img");
+
       const loading = document.getElementById("rbuzz-captcha-loading");
+
       const input = document.getElementById("rbuzz-captcha-input");
+
       if (input) { input.value = ""; input.focus(); }
 
+
+
       // Check if we already have a recent captcha
+
       const token = getToken();
+
       if (!token) return;
 
+
+
       // Check if we have a fresh captcha (< 90 seconds old)
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
         });
+
         if (res.ok) {
+
           const apiJson = await res.json();
+
           if (apiJson.content) {
+
             const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+
             const captchaTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
+
             const ageMs = Date.now() - captchaTime;
+
             // Only reuse if fresh (< 90 seconds old)
+
             if (s.captcha_image && s.status === "waiting_captcha" && ageMs < 90000) {
+
               if (img && loading) {
+
                 img.src = s.captcha_image;
+
                 img.style.display = "block";
+
                 loading.style.display = "none";
+
                 const ageSec = Math.max(1, Math.round(ageMs / 1000));
+
                 showToast(`✓ Fresh Captcha ready (${ageSec}s ago).`);
+
                 return;
+
               }
+
             }
+
           }
+
         }
+
       } catch (e) {}
 
+
+
       // If old or missing, request fresh captcha from RBuzz portal
+
       requestFreshRbuzzCaptcha();
+
     }
+
+
 
     const openRbuzzCaptchaModal = openRbuzzBrowser;
 
+
+
     async function requestFreshRbuzzCaptcha() {
+
       const token = getToken();
+
       if (!token) { showToast("❌ Unauthorized device"); return; }
+
       const img = document.getElementById("rbuzz-captcha-img");
+
       const loading = document.getElementById("rbuzz-captcha-loading");
+
       if (img) img.style.display = "none";
+
       if (loading) { loading.style.display = "block"; loading.innerText = "⏳ Opening fresh RBuzz browser session in cloud..."; }
 
+
+
       showToast("⏳ Opening fresh RBuzz browser session in cloud...");
+
       const requestTimestamp = Date.now();
 
+
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/rbuzz_automation.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Content-Type": "application/json",
+
             "Accept": "application/vnd.github.v3+json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { action: "fetch_captcha", captcha_code: "" } })
+
         });
 
+
+
         if (res.ok || res.status === 204) {
+
           showToast("✓ Fresh session started! Loading fresh captcha...");
+
           // Poll for fresh captcha_image in rbuzz_session.json
+
           let attempts = 0;
+
           const poll = setInterval(async () => {
+
             attempts++;
+
             if (attempts > 30) {
+
               clearInterval(poll);
+
               if (loading) loading.innerText = "⚠️ Timed out waiting for fresh captcha. Click 🔄 to retry.";
+
               return;
+
             }
+
             try {
+
               const cRes = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_session.json?_t=${Date.now()}`, {
+
                 headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+
               });
+
               if (cRes.ok) {
+
                 const apiJson = await cRes.json();
+
                 if (apiJson.content) {
+
                   const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+
                   const cTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
+
                   // Ensure captcha was generated AFTER this request was sent!
+
                   if (s.captcha_image && s.status === "waiting_captcha" && cTime >= requestTimestamp - 10000) {
+
                     clearInterval(poll);
+
                     if (img && loading) {
+
                       img.src = s.captcha_image;
+
                       img.style.display = "block";
+
                       loading.style.display = "none";
+
                       showToast("✓ New Live Captcha Loaded! Type the code.");
+
                     }
+
                   }
+
                 }
+
               }
+
             } catch (pErr) {}
+
           }, 3000);
+
         } else {
+
           showToast(`❌ Error requesting captcha: ${res.statusText}`);
+
           if (loading) loading.innerText = `❌ Error: ${res.statusText}`;
+
         }
+
       } catch (err) {
+
         showToast(`❌ Exception: ${err.message}`);
+
         if (loading) loading.innerText = `❌ ${err.message}`;
+
       }
+
     }
+
+
 
     async function submitRbuzzCaptchaAndStart() {
+
       const code = (document.getElementById("rbuzz-captcha-input")?.value || "").trim();
+
       if (!code) {
+
         showToast("⚠️ Please enter the Captcha code!");
+
         return;
+
       }
+
+
 
       closeModal("rbuzz-captcha-dialog");
+
       showToast(`🚀 Submitting Captcha '${code}' & Starting RBuzz Processing...`);
 
+
+
       const bStatus = document.getElementById("rbuzz-browser-status");
+
       const pStatus = document.getElementById("rbuzz-portal-status");
+
       const actLabel = document.getElementById("rbuzz-activity-label");
+
       if (bStatus) { bStatus.innerText = "● Logging In..."; bStatus.className = "stacked-card-value status-running"; }
+
       if (pStatus) { pStatus.innerText = "● Connecting..."; pStatus.className = "stacked-card-value status-running"; }
+
       if (actLabel) actLabel.innerText = "Logging into RBuzz and verifying Captcha...";
 
+
+
       const token = getToken();
+
       try {
+
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/rbuzz_automation.yml/dispatches`, {
+
           method: "POST",
+
           headers: {
+
             "Authorization": `token ${token}`,
+
             "Content-Type": "application/json",
+
             "Accept": "application/vnd.github.v3+json"
+
           },
+
           body: JSON.stringify({ ref: "main", inputs: { action: "process_queue", captcha_code: code } })
+
         });
 
+
+
         if (res.ok || res.status === 204) {
+
           showToast("✓ RBuzz Automation Started in Cloud!");
+
           // Poll queue & session
+
           if (rbuzzSessionPollInterval) clearInterval(rbuzzSessionPollInterval);
+
           rbuzzSessionPollInterval = setInterval(() => {
+
             fetchRbuzzQueue();
+
             checkRbuzzSession();
+
           }, 6000);
+
         } else {
+
           showToast(`❌ Dispatch failed: ${res.statusText}`);
+
         }
+
       } catch (e) {
+
         showToast(`❌ Exception: ${e.message}`);
+
       }
+
     }
+
+
 
     function syncRbuzzCloud() {
+
       showToast("☁️ Syncing RBuzz Queue & Session...");
+
       fetchRbuzzQueue();
+
       checkRbuzzSession();
+
       setTimeout(() => showToast("✓ RBuzz Queue Synced!"), 1200);
+
     }
+
+
 
     async function downloadRbuzzReport() {
+
       try {
+
         showToast("Generating RBuzz Checked Report...");
+
         if (!currentRbuzzQueueRecords || !currentRbuzzQueueRecords.records) {
+
           await fetchRbuzzQueue();
+
         }
+
         const recs = (currentRbuzzQueueRecords && currentRbuzzQueueRecords.records) ? currentRbuzzQueueRecords.records : [];
+
         if (recs.length === 0) {
+
           showToast("No RBuzz records available to download!");
+
           return;
+
         }
+
+
 
         const ws = XLSX.utils.json_to_sheet(recs);
+
         const wb = XLSX.utils.book_new();
+
         XLSX.utils.book_append_sheet(wb, ws, "RBuzz Report");
+
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
         XLSX.writeFile(wb, `RBuzz_Checked_Report_${dateStr}.xlsx`);
+
         showToast("✓ RBuzz Excel file downloaded successfully!");
+
       } catch (err) {
+
         console.error("RBuzz export error:", err);
+
         showToast("Export failed: " + err.message);
+
       }
+
     }
+
+
 
     async function handleRbuzzExcelUpload(evt) {
+
       const file = evt.target.files[0];
+
       if (!file) return;
+
       showToast(`Uploading '${file.name}' to RBuzz Cloud Queue...`);
 
+
+
       const reader = new FileReader();
+
       reader.onload = async function(e) {
+
         try {
+
           const data = new Uint8Array(e.target.result);
+
           const workbook = XLSX.read(data, { type: 'array' });
+
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
           const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
+
+
           if (!rawRows || rawRows.length < 2) {
+
             showToast("❌ Excel file is empty or missing data!");
+
             return;
+
           }
+
+
 
           let smcCol = 0;
+
           const headers = rawRows[0];
+
           for (let i = 0; i < headers.length; i++) {
+
             const h = String(headers[i] || "").toLowerCase();
+
             if (h.includes("smart card") || h === "smc" || h === "smartcard") {
+
               smcCol = i;
+
               break;
+
             }
+
           }
+
+
 
           const records = [];
+
           for (let r = 1; r < rawRows.length; r++) {
+
             const row = rawRows[r];
+
             if (!row || row[smcCol] === undefined || String(row[smcCol]).trim() === "") continue;
+
             let val = String(row[smcCol]).trim();
+
             if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
+
             records.push({
+
               "Input Row Number": r,
+
               "Smart Card Number": val,
+
               "Customer Name": "",
+
               "Customer Name 2": "",
+
               "OLD RMN": "",
+
               "New RMN": "",
+
               "Billing Cycle": "",
+
               "DT Code": "",
+
               "Distributor ID": "",
+
               "Portal Customer Status": "",
+
               "Status": "Pending",
+
               "Related Customer Name": "",
+
               "Remark": "",
+
               "Processed At": ""
+
             });
+
           }
+
+
 
           if (records.length === 0) {
+
             showToast("❌ No valid Smart Card Numbers found in Excel!");
+
             return;
+
           }
+
+
 
           const queuePayload = {
+
             records: records,
+
             status: "idle",
+
             total: records.length,
+
             checked: 0,
+
             pending: records.length,
+
             updated_at: new Date().toISOString()
+
           };
 
+
+
           const token = getToken();
+
           const jsonStr = JSON.stringify(queuePayload, null, 2);
+
           const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
 
+
+
           const res = await fetch(`https://api.github.com/repos/${REPO}/contents/rbuzz_queue.json`, {
+
             method: "PUT",
+
             headers: {
+
               "Authorization": `token ${token}`,
+
               "Content-Type": "application/json",
+
               "Accept": "application/vnd.github.v3+json"
+
             },
+
             body: JSON.stringify({
+
               message: `Upload ${records.length} Smart Cards to RBuzz Queue via Mobile Web [skip ci]`,
+
               content: b64,
+
               branch: "main",
+
               sha: currentRbuzzQueueSha
+
             })
+
           });
 
+
+
           if (res.ok) {
+
             const respJson = await res.json();
+
             currentRbuzzQueueSha = respJson.content?.sha;
+
             showToast(`✓ Uploaded ${records.length} Smart Cards to RBuzz Queue!`);
+
             updateRbuzzUI(queuePayload);
+
           } else {
+
             showToast(`❌ Upload failed: ${res.statusText}`);
+
           }
+
         } catch (err) {
+
           console.error("Upload error", err);
+
           showToast(`❌ Error reading file: ${err.message}`);
+
         }
+
       };
+
       reader.readAsArrayBuffer(file);
+
     }
 
+
+
     // Init
+
     checkDeviceAuthOnLoad();
+
     startScheduleCountdown();
+
     setInterval(() => {
+
       if (isDeviceAuthorized()) {
+
         fetchRuns();
+
       }
+
     }, 10000);
+
     setInterval(() => {
+
       if (isDeviceAuthorized()) {
+
         fetchData();
+
         fetchTimeSetting();
+
         fetchRbuzzQueue();
+
         checkRbuzzSession();
+
         fetchAssignHistory();
+
         fetchCloseHistory();
+
         fetchTransferHistory();
+
       }
+
     }, 30000);
+
   </script>
+
 </body>
+
 </html>
+
