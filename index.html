@@ -2714,7 +2714,7 @@
 
                 <label>🌙 End Time (Night)</label>
 
-                <input type="time" id="sched-end-time" value="20:00">
+                <input type="time" id="sched-end-time" value="21:30">
 
               </div>
 
@@ -2722,7 +2722,7 @@
 
                 <label>🎲 Min Random Delay (Mins)</label>
 
-                <input type="number" id="sched-min-delay" value="30" min="1" max="180">
+                <input type="number" id="sched-min-delay" value="5" min="1" max="180">
 
               </div>
 
@@ -2730,7 +2730,7 @@
 
                 <label>🎲 Max Random Delay (Mins)</label>
 
-                <input type="number" id="sched-max-delay" value="45" min="1" max="180">
+                <input type="number" id="sched-max-delay" value="10" min="1" max="180">
 
               </div>
 
@@ -5190,17 +5190,17 @@
 
       if (isScheduleMode) {
 
-        showToast(`⏰ Setting Schedule Target to ${q} complaints (30-45m gap)...`);
-
         try {
 
-          const sT = document.getElementById("sched-start-time")?.value || "08:30";
+          const sT = document.getElementById("sched-start-time")?.value || "08:00";
 
-          const eT = document.getElementById("sched-end-time")?.value || "20:00";
+          const eT = document.getElementById("sched-end-time")?.value || "21:30";
 
-          const minD = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+          const minD = parseInt(document.getElementById("sched-min-delay")?.value || (currentTimeSettings?.min_minutes != null ? currentTimeSettings.min_minutes : "5"), 10);
 
-          const maxD = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+          const maxD = parseInt(document.getElementById("sched-max-delay")?.value || (currentTimeSettings?.max_minutes != null ? currentTimeSettings.max_minutes : "10"), 10);
+
+          showToast(`⏰ Setting Schedule Target to ${q} complaints (${minD}-${maxD}m gap)...`);
 
           const nextInterval = Math.floor(Math.random() * (maxD - minD + 1)) + minD;
 
@@ -5316,7 +5316,7 @@
 
             showToast(`✓ Auto-Schedule Set: Target ${q} complaints (${minD}-${maxD}m gap)!`);
 
-            alert(`✓ Auto-Schedule Activated!\n\n🎯 Target Quantity: ${q} Complaints\n⏰ Working Hours: ${sT} to ${eT}\n⏱️ Delay: ${minD} to ${maxD} Minutes\n\nबैकग्राउंड में सुरक्षित अंतराल (30-45m) के साथ एक-एक करके कुल ${q} कंप्लेंट्स ही बुक होंगी।`);
+            alert(`✓ Auto-Schedule Activated!\n\n🎯 Target Quantity: ${q} Complaints\n⏰ Working Hours: ${sT} to ${eT}\n⏱️ Delay: ${minD} to ${maxD} Minutes\n\nबैकग्राउंड में सुरक्षित अंतराल (${minD}-${maxD}m) के साथ एक-एक करके कुल ${q} कंप्लेंट्स ही बुक होंगी।`);
 
           } else {
 
@@ -6162,13 +6162,13 @@
 
             }
 
-            if (startInput) startInput.value = ts.start_time || "08:30";
+            if (startInput) startInput.value = ts.start_time || "08:00";
 
-            if (endInput) endInput.value = ts.end_time || "20:00";
+            if (endInput) endInput.value = ts.end_time || "21:30";
 
-            if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 30;
+            if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 5;
 
-            if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 45;
+            if (maxInput) maxInput.value = ts.max_minutes !== undefined ? ts.max_minutes : 10;
 
             if (targetQtyInput) targetQtyInput.value = ts.target_qty !== undefined ? ts.target_qty : 2;
 
@@ -6322,7 +6322,7 @@
 
       badgeDot.innerText = "🟢";
 
-      badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
+      badgeTxt.innerText = `Active: ${ts.start_time || '08:00'} - ${ts.end_time || '21:30'}${targetStr} (⏱️ Next in: ${countdownStr})`;
 
 
 
@@ -6390,13 +6390,13 @@
 
       const isSchedOn = document.getElementById("switch-auto-schedule")?.checked ?? false;
 
-      const startTime = document.getElementById("sched-start-time")?.value || "08:30";
+      const startTime = document.getElementById("sched-start-time")?.value || "08:00";
 
-      const endTime = document.getElementById("sched-end-time")?.value || "20:00";
+      const endTime = document.getElementById("sched-end-time")?.value || "21:30";
 
-      const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "30", 10);
+      const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "5", 10);
 
-      const maxDelay = parseInt(document.getElementById("sched-max-delay")?.value || "45", 10);
+      const maxDelay = parseInt(document.getElementById("sched-max-delay")?.value || "10", 10);
 
       const targetQty = parseInt(document.getElementById("sched-target-qty")?.value || "2", 10);
 
