@@ -2714,7 +2714,7 @@
 
                 <label>🌙 End Time (Night)</label>
 
-                <input type="time" id="sched-end-time" value="20:00">
+                <input type="time" id="sched-end-time" value="21:30">
 
               </div>
 
@@ -5192,9 +5192,9 @@
 
         try {
 
-          const sT = document.getElementById("sched-start-time")?.value || "08:30";
+          const sT = document.getElementById("sched-start-time")?.value || "08:00";
 
-          const eT = document.getElementById("sched-end-time")?.value || "20:00";
+          const eT = document.getElementById("sched-end-time")?.value || "21:30";
 
           const minD = parseInt(document.getElementById("sched-min-delay")?.value || (currentTimeSettings?.min_minutes != null ? currentTimeSettings.min_minutes : "5"), 10);
 
@@ -6162,9 +6162,9 @@
 
             }
 
-            if (startInput) startInput.value = ts.start_time || "08:30";
+            if (startInput) startInput.value = ts.start_time || "08:00";
 
-            if (endInput) endInput.value = ts.end_time || "20:00";
+            if (endInput) endInput.value = ts.end_time || "21:30";
 
             if (minInput) minInput.value = ts.min_minutes !== undefined ? ts.min_minutes : 5;
 
@@ -6322,7 +6322,7 @@
 
       badgeDot.innerText = "🟢";
 
-      badgeTxt.innerText = `Active: ${ts.start_time || '08:30'} - ${ts.end_time || '20:00'}${targetStr} (⏱️ Next in: ${countdownStr})`;
+      badgeTxt.innerText = `Active: ${ts.start_time || '08:00'} - ${ts.end_time || '21:30'}${targetStr} (⏱️ Next in: ${countdownStr})`;
 
 
 
@@ -6390,9 +6390,9 @@
 
       const isSchedOn = document.getElementById("switch-auto-schedule")?.checked ?? false;
 
-      const startTime = document.getElementById("sched-start-time")?.value || "08:30";
+      const startTime = document.getElementById("sched-start-time")?.value || "08:00";
 
-      const endTime = document.getElementById("sched-end-time")?.value || "20:00";
+      const endTime = document.getElementById("sched-end-time")?.value || "21:30";
 
       const minDelay = parseInt(document.getElementById("sched-min-delay")?.value || "5", 10);
 
