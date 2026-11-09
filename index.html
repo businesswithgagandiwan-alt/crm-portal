@@ -6548,6 +6548,22 @@
 
           } catch(e) {}
 
+          // Synchronize external cron-job.org trigger (wake up or sleep)
+          try {
+            const cId = updatedSettings.cronjob_id || "8781294";
+            const cKey = updatedSettings.cronjob_api_key || "gkOcqvn63ZOS8ZGiPMV85RMYabIkzU7qcjgnpa74jUc=";
+            fetch(`https://api.cron-job.org/jobs/${cId}`, {
+              method: "PATCH",
+              headers: {
+                "Authorization": `Bearer ${cKey}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ job: { enabled: isSchedOn } })
+            }).then(r => {
+              if (r.ok) console.log("cron-job.org trigger " + (isSchedOn ? "ENABLED" : "DISABLED"));
+            }).catch(() => {});
+          } catch(e) {}
+
           showToast(`✓ Auto-Schedule Saved! (${isSchedOn ? "🟢 ACTIVE" : "⚪ PAUSED"})`);
 
           fetchTimeSetting();
