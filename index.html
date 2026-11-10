@@ -8715,30 +8715,38 @@
 
     let freshSaleIsRunning = false;
 
-    async function isWorkflowActive(workflowFile) {
+    async function getWorkflowRunStatus(workflowFile) {
       const token = getToken();
-      if (!token) return false;
+      if (!token) return { active: false, error: "Device not authorized. Please set GitHub Token." };
       try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowFile}/runs?status=in_progress&per_page=1`, {
+        const inProgRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowFile}/runs?status=in_progress&per_page=1`, {
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" },
           cache: "no-store"
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.workflow_runs && data.workflow_runs.length > 0) return true;
+        if (!inProgRes.ok) {
+          return { active: false, error: `GitHub API error: ${inProgRes.status}` };
         }
+        const inProgData = await inProgRes.json();
+        if (inProgData.workflow_runs && inProgData.workflow_runs.length > 0) {
+          return { active: true, error: null };
+        }
+
         const qRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowFile}/runs?status=queued&per_page=1`, {
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" },
           cache: "no-store"
         });
-        if (qRes.ok) {
-          const qData = await qRes.json();
-          if (qData.workflow_runs && qData.workflow_runs.length > 0) return true;
+        if (!qRes.ok) {
+          return { active: false, error: `GitHub API error: ${qRes.status}` };
         }
+        const qData = await qRes.json();
+        if (qData.workflow_runs && qData.workflow_runs.length > 0) {
+          return { active: true, error: null };
+        }
+
+        return { active: false, error: null };
       } catch (err) {
-        console.error("isWorkflowActive error:", err);
+        return { active: false, error: err.message || "Network error" };
       }
-      return false;
     }
 
     async function triggerFreshSaleUpload() {
@@ -8746,9 +8754,21 @@
         showToast("⚠️ FreshSale run is currently in progress! Upload is blocked until completion.");
         return;
       }
-      // Check GitHub Actions for an in_progress or queued run (survives page reload / multiple devices)
-      const active = await isWorkflowActive("fresh_sales.yml");
-      if (active) {
+      showToast("⏳ Checking cloud workflow status before upload...");
+      const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+      if (statusCheck.error) {
+        // Fail-safe: keep upload blocked and show error
+        freshSaleIsRunning = true;
+        const upBtn = document.getElementById("btn-upload-fresh-sale");
+        if (upBtn) {
+          upBtn.disabled = true;
+          upBtn.style.opacity = "0.5";
+          upBtn.style.cursor = "not-allowed";
+        }
+        showToast(`⚠️ Could not verify run status, try again (${statusCheck.error})`, "error");
+        return;
+      }
+      if (statusCheck.active) {
         freshSaleIsRunning = true;
         const upBtn = document.getElementById("btn-upload-fresh-sale");
         if (upBtn) {
@@ -8759,12 +8779,25 @@
         showToast("⚠️ FreshSale workflow is currently queued or running on GitHub! Upload is blocked.", "warning");
         return;
       }
+      freshSaleIsRunning = false;
+      const upBtn = document.getElementById("btn-upload-fresh-sale");
+      if (upBtn) {
+        upBtn.disabled = false;
+        upBtn.style.opacity = "1";
+        upBtn.style.cursor = "pointer";
+      }
       const fileInput = document.getElementById("file-upload-fresh-sale");
       if (fileInput) fileInput.click();
     }
 
     async function handleFreshSaleExcelUpload(event) {
-      if (freshSaleIsRunning || (await isWorkflowActive("fresh_sales.yml"))) {
+      if (freshSaleIsRunning) {
+        showToast("⚠️ FreshSale workflow is currently queued or running on GitHub! Upload is blocked.");
+        if (event && event.target) event.target.value = "";
+        return;
+      }
+      const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+      if (statusCheck.error || statusCheck.active) {
         freshSaleIsRunning = true;
         const upBtn = document.getElementById("btn-upload-fresh-sale");
         if (upBtn) {
@@ -8772,7 +8805,8 @@
           upBtn.style.opacity = "0.5";
           upBtn.style.cursor = "not-allowed";
         }
-        showToast("⚠️ FreshSale workflow is currently queued or running on GitHub! Upload is blocked.", "warning");
+        const msg = statusCheck.error ? `Could not verify run status, try again (${statusCheck.error})` : "FreshSale workflow is currently queued or running on GitHub! Upload is blocked.";
+        showToast("⚠️ " + msg, "error");
         if (event && event.target) event.target.value = "";
         return;
       }
@@ -9298,6 +9332,24 @@
         fetchCloseHistory();
 
         fetchTransferHistory();
+
+        fetchFreshSaleQueue();
+
+        // Auto-poll GitHub Actions to re-enable FreshSale upload button when run finishes
+        if (freshSaleIsRunning) {
+          getWorkflowRunStatus("fresh_sales.yml").then(fsCheck => {
+            if (!fsCheck.active && !fsCheck.error) {
+              freshSaleIsRunning = false;
+              const upBtn = document.getElementById("btn-upload-fresh-sale");
+              if (upBtn) {
+                upBtn.disabled = false;
+                upBtn.style.opacity = "1";
+                upBtn.style.cursor = "pointer";
+              }
+              console.log("FreshSale run completed on cloud: upload button re-enabled");
+            }
+          });
+        }
 
       }
 
