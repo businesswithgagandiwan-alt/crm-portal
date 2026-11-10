@@ -3767,6 +3767,162 @@
         </div>
 
 
+        <!-- ================= MODULE: MOBILE UPDATE AUTOMATION ================= -->
+        <div class="group-box" id="view-update_mob" style="display: none;">
+          <div class="group-box-title">📱 Update Mob no ☁️</div>
+
+          <!-- 6 Action Buttons -->
+          <div class="action-btns-grid">
+            <div class="action-row-6">
+              <button class="action-btn-3d" id="btn-upload-update-mob" onclick="triggerMobileUpdateUpload()">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d action-btn-green" onclick="dispatchMobileUpdateRun()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadMobileUpdateReport()">Download<br>Excel</button>
+              <button class="action-btn-3d action-btn-blue" onclick="fetchMobileUpdateQueue(true)">☁️ Cloud<br>Sync</button>
+            </div>
+          </div>
+
+          <!-- DT Profile & Rules Banner -->
+          <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:6px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:11.5px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; color:#15803D;">Target DT Profile:</span>
+              <select id="mobileupdate-dt-select" style="font-weight:700; padding:2px 8px; border-radius:4px; border:1px solid #16A34A; background:#FFFFFF; color:#0F172A;">
+                <option value="DT-2016272" selected>DT-2016272 (MonuDubey)</option>
+                <option value="DT-2017416">DT-2017416 (Pavan KumarSharma)</option>
+              </select>
+              <label style="display:inline-flex; align-items:center; gap:5px; font-weight:700; color:#0369A1; margin-left:12px; cursor:pointer;">
+                <input type="checkbox" id="mobileupdate-test-mode" checked style="accent-color:#0284C7; width:15px; height:15px; cursor:pointer;">
+                <span>Test mode (no save)</span>
+              </label>
+            </div>
+            <div style="font-size:11px; color:#475569; display:flex; align-items:center; gap:4px;">
+              <span>🛡️</span>
+              <b>1-Retry Rule Active</b> | Safe Customer Name Matching
+            </div>
+          </div>
+
+          <!-- Exact Qt App 3-Row Status Strip -->
+          <div class="status-strip-frame">
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row session-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="mobileupdate-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="mobileupdate-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">QUEUE FILE</div>
+                <div class="stacked-card-value" style="color: #0284C7;">📁 mobile_update_queue.json</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">VALIDATION</div>
+                <div class="stacked-card-value" id="mobileupdate-val-status" style="color: #16A34A;">● Ready</div>
+              </div>
+            </div>
+
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row proc-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="mobileupdate-card-label">—</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="mobileupdate-activity-label">Awaiting Input... (Upload Excel or click Start)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="mobileupdate-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="mobileupdate-progress-track">
+                  <div class="progress-bar" id="mobileupdate-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row stats-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="mobileupdate-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="mobileupdate-stat-processed">● 0</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="mobileupdate-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="mobileupdate-stat-success">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="mobileupdate-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="mobileupdate-stat-time">⏱ 00:00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Controls Strip -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin:10px 0 6px 0;">
+            <div style="font-weight:700; font-size:13px; color:#0F172A; display:flex; align-items:center; gap:6px;">
+              <span>📊 Mobile Update Records Queue</span>
+              <span id="mobileupdate-records-badge" style="background:#E2E8F0; color:#334155; font-size:10.5px; padding:1px 6px; border-radius:10px;">0 records</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="text" id="mobileupdate-search-input" placeholder="🔍 Search Smart Card / RMN / Name..." style="padding:4px 8px; font-size:11px; border:1px solid #CBD5E1; border-radius:4px; width:220px;" oninput="filterMobileUpdateTable()">
+              <select id="mobileupdate-filter-status" style="padding:4px 8px; font-size:11px; border:1px solid #CBD5E1; border-radius:4px;" onchange="filterMobileUpdateTable()">
+                <option value="all">All Status</option>
+                <option value="success">Success / Updated</option>
+                <option value="test">Test Mode (Dry Run)</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed / Issues</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Interactive Results Table -->
+          <div class="table-container" style="max-height: 420px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 6px;">
+            <table class="data-table" id="mobileupdate-table" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+              <thead style="position: sticky; top: 0; background: #16A34A; color: #FFFFFF; z-index: 2;">
+                <tr>
+                  <th style="padding: 6px 8px; text-align: center; width: 45px;">#</th>
+                  <th style="padding: 6px 8px; text-align: center;">Smart Card</th>
+                  <th style="padding: 6px 8px; text-align: left;">Customer Name</th>
+                  <th style="padding: 6px 8px; text-align: center;">OLD RMN</th>
+                  <th style="padding: 6px 8px; text-align: center;">New RMN</th>
+                  <th style="padding: 6px 8px; text-align: center;">DT Code</th>
+                  <th style="padding: 6px 8px; text-align: center;">Status</th>
+                  <th style="padding: 6px 8px; text-align: left;">Remark</th>
+                  <th style="padding: 6px 8px; text-align: center;">Processed At</th>
+                </tr>
+              </thead>
+              <tbody id="mobileupdate-table-body">
+                <tr>
+                  <td colspan="9" style="text-align: center; padding: 24px; color: #64748B;">
+                    No mobile update records loaded. Click <b>Upload Excel</b> to import records, or <b>Cloud Sync</b> to load current remote queue.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+
 <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
 
         <div class="group-box" id="view-generic" style="display: none;">
@@ -3807,6 +3963,7 @@
 
   <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
   <input type="file" id="file-upload-fresh-sale" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFreshSaleExcelUpload(event)">
+  <input type="file" id="file-upload-update-mob" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleMobileUpdateExcelUpload(event)">
 
 
 
@@ -4586,6 +4743,8 @@
 
       const freshView = document.getElementById("view-fresh_sale");
       if (freshView) freshView.style.display = "none";
+      const mobView = document.getElementById("view-update_mob");
+      if (mobView) mobView.style.display = "none";
       document.getElementById("view-generic").style.display = "none";
 
 
@@ -4619,6 +4778,12 @@
         if (freshView) freshView.style.display = "flex";
 
         fetchFreshSaleQueue();
+
+      } else if (mod === "update_mob") {
+
+        if (mobView) mobView.style.display = "flex";
+
+        fetchMobileUpdateQueue();
 
       } else {
 
@@ -9299,6 +9464,758 @@
     }
 
 
+
+    // ==========================================
+    // MOBILE UPDATE AUTOMATION (CLOUD RUNNER)
+    // ==========================================
+    let currentMobileUpdateRecords = [];
+    let mobileUpdateLivePoll = null;
+    let mobileUpdateTimerInterval = null;
+    let mobileUpdateIsRunning = false;
+
+    function normalizeDtCode(dtVal) {
+      if (!dtVal) return "";
+      const val = String(dtVal).trim();
+      if (!val || ["dt code not found", "not found", "none", "nan", "null"].includes(val.toLowerCase())) {
+        return "";
+      }
+      const digits = val.replace(/\D/g, "");
+      if (digits && digits.length >= 5) {
+        return "DT-" + digits;
+      }
+      return "";
+    }
+
+    async function triggerMobileUpdateUpload() {
+      if (mobileUpdateIsRunning) {
+        showToast("⚠️ Mobile Update run is currently in progress! Upload is blocked.");
+        return;
+      }
+      showToast("⏳ Checking cloud workflow status before upload...");
+      const statusCheck = await getWorkflowRunStatus("mobile_update.yml");
+      if (statusCheck.error) {
+        // Fail-safe: keep upload blocked and show error
+        mobileUpdateIsRunning = true;
+        const upBtn = document.getElementById("btn-upload-update-mob");
+        if (upBtn) {
+          upBtn.disabled = true;
+          upBtn.style.opacity = "0.5";
+          upBtn.style.cursor = "not-allowed";
+        }
+        showToast(`⚠️ Could not verify run status, try again (${statusCheck.error})`, "error");
+        return;
+      }
+      if (statusCheck.active) {
+        mobileUpdateIsRunning = true;
+        const upBtn = document.getElementById("btn-upload-update-mob");
+        if (upBtn) {
+          upBtn.disabled = true;
+          upBtn.style.opacity = "0.5";
+          upBtn.style.cursor = "not-allowed";
+        }
+        showToast("⚠️ Mobile Update workflow is currently queued or running on GitHub! Upload is blocked.", "warning");
+        return;
+      }
+      mobileUpdateIsRunning = false;
+      const upBtn = document.getElementById("btn-upload-update-mob");
+      if (upBtn) {
+        upBtn.disabled = false;
+        upBtn.style.opacity = "1";
+        upBtn.style.cursor = "pointer";
+      }
+      const fileInput = document.getElementById("file-upload-update-mob");
+      if (fileInput) fileInput.click();
+    }
+
+    async function fetchMobileUpdateQueue(forceToast = false) {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/mobile_update_queue.json?ref=main`, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
+          },
+          cache: "no-store"
+        });
+
+        if (res.ok) {
+          const fileData = await res.json();
+          const jsonText = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
+          const qData = JSON.parse(jsonText);
+          const recordsList = Array.isArray(qData) ? qData : (Array.isArray(qData?.records) ? qData.records : []);
+          currentMobileUpdateRecords = recordsList;
+          updateMobileUpdateUI(recordsList);
+          renderMobileUpdateTable(recordsList);
+          if (forceToast) showToast(`✓ Mobile Update Queue Synced (${recordsList.length} records)`);
+        } else if (res.status === 404) {
+          currentMobileUpdateRecords = [];
+          updateMobileUpdateUI([]);
+          renderMobileUpdateTable([]);
+        }
+      } catch (err) {
+        console.error("fetchMobileUpdateQueue error:", err);
+      }
+    }
+
+    function updateMobileUpdateUI(qData) {
+      if (!Array.isArray(qData)) return;
+
+      const total = qData.length;
+      let processed = 0;
+      let success = 0;
+      let failed = 0;
+      let pending = 0;
+
+      qData.forEach(r => {
+        const s = String(r.Status || "Pending").trim().toLowerCase();
+        if (s === "pending" || s === "") {
+          pending++;
+        } else {
+          processed++;
+          if (s.includes("success") || s.includes("updated") || s.includes("dry run")) {
+            success++;
+          } else {
+            failed++;
+          }
+        }
+      });
+
+      const statTotal = document.getElementById("mobileupdate-stat-total");
+      const statProc = document.getElementById("mobileupdate-stat-processed");
+      const statPending = document.getElementById("mobileupdate-stat-pending");
+      const statSucc = document.getElementById("mobileupdate-stat-success");
+      const statFail = document.getElementById("mobileupdate-stat-failed");
+      const badge = document.getElementById("mobileupdate-records-badge");
+
+      if (statTotal) statTotal.innerText = `● ${total}`;
+      if (statProc) statProc.innerText = `● ${processed}`;
+      if (statPending) statPending.innerText = `● ${pending}`;
+      if (statSucc) statSucc.innerText = `● ${success}`;
+      if (statFail) statFail.innerText = `● ${failed}`;
+      if (badge) badge.innerText = `${total} records`;
+
+      const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+      const bar = document.getElementById("mobileupdate-progress-bar");
+      const pctLabel = document.getElementById("mobileupdate-progress-pct");
+      if (bar) bar.style.width = `${pct}%`;
+      if (pctLabel) pctLabel.innerText = `${pct}%`;
+    }
+
+    function renderMobileUpdateTable(records) {
+      const tbody = document.getElementById("mobileupdate-table-body");
+      if (!tbody) return;
+
+      if (!records || records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 24px; color: #64748B;">No mobile update records loaded. Click <b>Upload Excel</b> to import records, or <b>Cloud Sync</b> to load current remote queue.</td></tr>`;
+        return;
+      }
+
+      const rowsHtml = records.slice(0, 500).map((r, i) => {
+        const s = String(r.Status || "Pending").trim();
+        const sLow = s.toLowerCase();
+        let badgeStyle = "background:#E2E8F0; color:#334155;";
+
+        if (sLow.includes("success") || sLow.includes("updated")) {
+          badgeStyle = "background:#DCFCE7; color:#15803D; font-weight:700;";
+        } else if (sLow.includes("dry run")) {
+          if (sLow.includes("already updated")) {
+            badgeStyle = "background:#E0E7FF; color:#4338CA; font-weight:700;";
+          } else {
+            badgeStyle = "background:#E0F2FE; color:#0369A1; font-weight:700;";
+          }
+        } else if (sLow.includes("failed") || sLow.includes("error") || sLow.includes("not found")) {
+          badgeStyle = "background:#FEE2E2; color:#B91C1C; font-weight:700;";
+        } else if (sLow === "pending") {
+          badgeStyle = "background:#FEF3C7; color:#B45309; font-weight:700;";
+        }
+
+        const smc = r["Smart Card Number"] || r["Smart Card"] || r["smc"] || "—";
+        const cname = r["Customer Name"] || "—";
+        const oldRmn = r["OLD RMN"] || r["RMN"] || "—";
+        const newRmn = r["New RMN"] || "—";
+        const dt = normalizeDtCode(r["DT Code"] || "") || r["DT Code"] || "—";
+        const remark = r["Remark"] || "—";
+        const processedAt = r["Processed At"] || "—";
+
+        return `<tr style="border-bottom: 1px solid #F1F5F9; hover: background-color: #F8FAFC;">
+          <td style="padding: 6px 8px; text-align: center; color: #64748B;">${r["Input Row Number"] || (i + 1)}</td>
+          <td style="padding: 6px 8px; text-align: center; font-weight: 700; color: #0284C7; font-family: monospace;">${smc}</td>
+          <td style="padding: 6px 8px; text-align: left; font-weight: 600; color: #1E293B;">${cname}</td>
+          <td style="padding: 6px 8px; text-align: center; font-family: monospace; color: #64748B;">${oldRmn}</td>
+          <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700; color: #16A34A;">${newRmn}</td>
+          <td style="padding: 6px 8px; text-align: center; font-weight: 600; color: #475569;">${dt}</td>
+          <td style="padding: 6px 8px; text-align: center;"><span style="display:inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10.5px; ${badgeStyle}">${s}</span></td>
+          <td style="padding: 6px 8px; text-align: left; color: #475569; font-size: 11px;">${remark}</td>
+          <td style="padding: 6px 8px; text-align: center; color: #64748B; font-size: 10.5px;">${processedAt}</td>
+        </tr>`;
+      }).join("");
+
+      tbody.innerHTML = rowsHtml;
+    }
+
+    function filterMobileUpdateTable() {
+      const searchInput = document.getElementById("mobileupdate-search-input");
+      const filterSelect = document.getElementById("mobileupdate-filter-status");
+      const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+      const filterVal = filterSelect ? filterSelect.value : "all";
+
+      if (!currentMobileUpdateRecords || currentMobileUpdateRecords.length === 0) return;
+
+      const filtered = currentMobileUpdateRecords.filter(r => {
+        const s = String(r.Status || "Pending").trim().toLowerCase();
+        let matchFilter = true;
+
+        if (filterVal === "success") {
+          matchFilter = s.includes("success") || (s.includes("updated") && !s.includes("dry run"));
+        } else if (filterVal === "test") {
+          matchFilter = s.includes("dry run");
+        } else if (filterVal === "pending") {
+          matchFilter = s === "pending" || s === "";
+        } else if (filterVal === "failed") {
+          matchFilter = s.includes("failed") || s.includes("error") || s.includes("not found") || s.includes("issue");
+        }
+
+        if (!matchFilter) return false;
+        if (!query) return true;
+
+        const smc = String(r["Smart Card Number"] || "").toLowerCase();
+        const cname = String(r["Customer Name"] || "").toLowerCase();
+        const oldRmn = String(r["OLD RMN"] || r["RMN"] || "").toLowerCase();
+        const newRmn = String(r["New RMN"] || "").toLowerCase();
+        const dt = String(r["DT Code"] || "").toLowerCase();
+
+        return smc.includes(query) || cname.includes(query) || oldRmn.includes(query) || newRmn.includes(query) || dt.includes(query);
+      });
+
+      renderMobileUpdateTable(filtered);
+    }
+
+    async function handleMobileUpdateExcelUpload(event) {
+      if (mobileUpdateIsRunning) {
+        showToast("⚠️ Mobile Update workflow is currently running or queued on GitHub! Upload is blocked.");
+        if (event && event.target) event.target.value = "";
+        return;
+      }
+      const statusCheck = await getWorkflowRunStatus("mobile_update.yml");
+      if (statusCheck.error || statusCheck.active) {
+        mobileUpdateIsRunning = true;
+        const upBtn = document.getElementById("btn-upload-update-mob");
+        if (upBtn) {
+          upBtn.disabled = true;
+          upBtn.style.opacity = "0.5";
+          upBtn.style.cursor = "not-allowed";
+        }
+        const msg = statusCheck.error ? `Could not verify run status, try again (${statusCheck.error})` : "Mobile Update workflow is currently queued or running on GitHub! Upload is blocked.";
+        showToast("⚠️ " + msg, "error");
+        if (event && event.target) event.target.value = "";
+        return;
+      }
+
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      event.target.value = "";
+
+      const token = getToken();
+      if (!token) {
+        showToast("❌ GitHub Token not set! Configure device authorization first.");
+        return;
+      }
+
+      showToast(`Uploading '${file.name}' to Mobile Update Queue...`);
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+
+          // Multi-sheet check: read first sheet that contains a "Smart Card Number" header
+          let targetSheet = null;
+          let targetSheetName = "";
+          let smcColIdx = -1;
+          let headerRow = [];
+
+          for (const sName of workbook.SheetNames) {
+            const ws = workbook.Sheets[sName];
+            const sheetRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+            if (!sheetRows || sheetRows.length < 2) continue;
+
+            const firstRow = sheetRows[0] || [];
+            for (let c = 0; c < firstRow.length; c++) {
+              const hClean = String(firstRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                targetSheet = ws;
+                targetSheetName = sName;
+                smcColIdx = c;
+                headerRow = firstRow;
+                break;
+              }
+            }
+            if (targetSheet) break;
+          }
+
+          if (!targetSheet) {
+            targetSheetName = workbook.SheetNames[0];
+            targetSheet = workbook.Sheets[targetSheetName];
+            const sheetRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
+            headerRow = (sheetRows && sheetRows[0]) ? sheetRows[0] : [];
+            for (let c = 0; c < headerRow.length; c++) {
+              const hClean = String(headerRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                smcColIdx = c;
+                break;
+              }
+            }
+            if (smcColIdx === -1) smcColIdx = 0;
+          }
+
+          const rawRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
+          if (!rawRows || rawRows.length < 2) {
+            showToast("❌ Excel file is empty or missing data!");
+            return;
+          }
+
+          const canonicalMap = {
+            "inputrownumber": "Input Row Number",
+            "smartcardnumber": "Smart Card Number",
+            "smartcard": "Smart Card Number",
+            "smc": "Smart Card Number",
+            "smc#": "Smart Card Number",
+            "smartcardno": "Smart Card Number",
+            "customername": "Customer Name",
+            "custname": "Customer Name",
+            "customer": "Customer Name",
+            "customername2": "Customer Name 2",
+            "custname2": "Customer Name 2",
+            "oldrmn": "OLD RMN",
+            "rmn": "OLD RMN",
+            "newrmn": "New RMN",
+            "newmobile": "New RMN",
+            "newmobileno": "New RMN",
+            "billingcycle": "Billing Cycle",
+            "dtcode": "DT Code",
+            "dt": "DT Code",
+            "distributorid": "Distributor ID",
+            "distid": "Distributor ID",
+            "portalcustomerstatus": "Portal Customer Status",
+            "customerstatus": "Portal Customer Status",
+            "status": "Status",
+            "relatedcustomername": "Related Customer Name",
+            "relatedcustomer": "Related Customer Name",
+            "remark": "Remark",
+            "lastbookingdate": "Last Booking Date",
+            "lastticketno": "Last Ticket No",
+            "dayssinceclose": "Days Since Close",
+            "100daystatus": "100 Day Status",
+            "processedat": "Processed At",
+            "complaintremark": "Complaint Remark",
+            "complaintstatus": "Complaint Status"
+          };
+
+          const colToProp = {};
+          headerRow.forEach((h, colIdx) => {
+            const rawH = String(h || "").trim();
+            if (!rawH) return;
+            const normH = rawH.toLowerCase().replace(/[\s_\-#]/g, "");
+            if (canonicalMap[normH]) {
+              colToProp[colIdx] = canonicalMap[normH];
+            } else {
+              colToProp[colIdx] = rawH;
+            }
+          });
+
+          const records = [];
+          for (let r = 1; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || row[smcColIdx] === undefined || String(row[smcColIdx]).trim() === "") continue;
+            let val = String(row[smcColIdx]).trim();
+            if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
+            val = val.replace(/\D/g, "");
+            if (!val) continue;
+
+            const rec = {
+              "Input Row Number": r,
+              "Smart Card Number": val,
+              "Customer Name": "",
+              "Customer Name 2": "",
+              "OLD RMN": "",
+              "New RMN": "",
+              "Billing Cycle": "",
+              "DT Code": "",
+              "Distributor ID": "",
+              "Portal Customer Status": "",
+              "Status": "Pending",
+              "Related Customer Name": "",
+              "Remark": "",
+              "Last Booking Date": "",
+              "Last Ticket No": "",
+              "Days Since Close": "",
+              "100 Day Status": "",
+              "Processed At": "",
+              "Complaint Remark": "",
+              "Complaint Status": ""
+            };
+
+            Object.keys(colToProp).forEach(cIdx => {
+              const prop = colToProp[cIdx];
+              let cellVal = row[cIdx];
+              if (cellVal === undefined || cellVal === null) cellVal = "";
+              cellVal = String(cellVal).trim();
+              if (prop === "Smart Card Number") {
+                rec[prop] = val;
+              } else if (prop === "OLD RMN" || prop === "New RMN") {
+                if (cellVal.endsWith(".0") && !isNaN(cellVal)) cellVal = cellVal.slice(0, -2);
+                rec[prop] = cellVal.replace(/\D/g, "");
+              } else if (prop === "DT Code") {
+                rec[prop] = normalizeDtCode(cellVal) || cellVal;
+              } else if (prop === "Status") {
+                // FIX 8 & 11: Do NOT copy Status column from uploaded Excel into queue; starts as Pending
+              } else {
+                rec[prop] = cellVal;
+              }
+            });
+
+            rec["Status"] = "Pending";
+            records.push(rec);
+          }
+
+          if (records.length === 0) {
+            showToast("❌ No valid rows with Smart Card Number found in file!");
+            return;
+          }
+
+          showToast(`⏳ Uploading ${records.length} records to cloud queue...`);
+
+          let fileSha = null;
+          try {
+            const checkRes = await fetch(`https://api.github.com/repos/${REPO}/contents/mobile_update_queue.json?ref=main`, {
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            });
+            if (checkRes.ok) {
+              const fileInfo = await checkRes.json();
+              fileSha = fileInfo.sha;
+            }
+          } catch (e) {}
+
+          // FIX 1: Upload as an object { records: [...], status: "idle", total: ... } matching FreshSale and runner
+          const queuePayload = {
+            records: records,
+            status: "idle",
+            total: records.length,
+            processed: 0,
+            pending: records.length,
+            updated_at: new Date().toISOString()
+          };
+
+          const payload = {
+            message: `chore: upload ${records.length} records to mobile_update_queue.json [portal] [skip ci]`,
+            content: btoa(unescape(encodeURIComponent(JSON.stringify(queuePayload, null, 2)))),
+            branch: "main"
+          };
+          if (fileSha) payload.sha = fileSha;
+
+          const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/mobile_update_queue.json`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (putRes.ok) {
+            showToast(`✅ Successfully uploaded ${records.length} records to Mobile Update Queue!`);
+            currentMobileUpdateRecords = records;
+            updateMobileUpdateUI(records);
+            renderMobileUpdateTable(records);
+          } else {
+            const errData = await putRes.json().catch(() => ({}));
+            showToast(`❌ Failed to upload queue: ${errData.message || putRes.statusText}`);
+          }
+        } catch (err) {
+          console.error("handleMobileUpdateExcelUpload error:", err);
+          showToast(`❌ Excel upload error: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function dispatchMobileUpdateRun() {
+      const token = getToken();
+      if (!token) {
+        showToast("❌ GitHub Token not set! Configure device authorization first.");
+        return;
+      }
+
+      const dtSelect = document.getElementById("mobileupdate-dt-select");
+      const chosenDt = dtSelect ? dtSelect.value : "DT-2016272";
+      const isTestMode = document.getElementById("mobileupdate-test-mode")?.checked ?? true;
+
+      // FIX 2: Confirmation count must match what the runner will really process
+      if (!isTestMode) {
+        const normTargetDt = normalizeDtCode(chosenDt);
+        const mobileUpdateSuccessStatuses = [
+          "success - rmn updated",
+          "rmn updated",
+          "updated",
+          "success (already updated on previous attempt)",
+          "already updated"
+        ];
+
+        const rowCount = (currentMobileUpdateRecords || []).filter(r => {
+          const s = String(r["Status"] || "").trim().toLowerCase();
+          const rem = String(r["Remark"] || "").trim().toLowerCase();
+
+          // 1. Dry run statuses and earlier failures are NOT skipped (they are to-be-processed)
+          const isDryRun = s.includes("dry run") || rem.includes("dry run");
+          if (!isDryRun) {
+            if (mobileUpdateSuccessStatuses.includes(s)) return false;
+            if (s.includes("updated") && !s.includes("not updated") && !s.includes("unupdated")) return false;
+            if (rem.includes("updated") && !rem.includes("not updated") && !rem.includes("unupdated") && !rem.includes("would update")) return false;
+          }
+
+          // 2. Must have a valid DT code and match chosen DT after normalization
+          const rowDt = normalizeDtCode(r["DT Code"] || "");
+          if (!rowDt) return false;
+          return rowDt === normTargetDt;
+        }).length;
+
+        const confirmed = confirm(`This will change mobile numbers on the real CRM for ${rowCount} rows of ${chosenDt}. Continue?`);
+        if (!confirmed) {
+          showToast("Real CRM update cancelled by user", "info");
+          return;
+        }
+      }
+
+      showToast(`⏳ Triggering Mobile Update Cloud Runner for ${chosenDt} (${isTestMode ? "Dry Run" : "Live"})...`);
+
+      const actLabel = document.getElementById("mobileupdate-activity-label");
+      if (actLabel) actLabel.innerText = `Triggering workflow for ${chosenDt}...`;
+
+      try {
+        // FIX 13: Send dry_run as a string: dry_run: testMode ? 'true' : 'false'
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/mobile_update.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ref: "main",
+            inputs: {
+              dt_code: chosenDt,
+              dry_run: isTestMode ? "true" : "false"
+            }
+          })
+        });
+
+        if (res.ok || res.status === 204) {
+          mobileUpdateIsRunning = true;
+          const upBtn = document.getElementById("btn-upload-update-mob");
+          if (upBtn) {
+            upBtn.disabled = true;
+            upBtn.style.opacity = "0.5";
+            upBtn.style.cursor = "not-allowed";
+          }
+          showToast(`🚀 Mobile Update Workflow triggered successfully for ${chosenDt}!`);
+          if (actLabel) actLabel.innerText = `Workflow dispatched. Waiting for cloud runner...`;
+          startMobileUpdateTracking();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          showToast(`❌ Dispatch failed: ${errData.message || res.statusText}`);
+          if (actLabel) actLabel.innerText = `Dispatch failed: ${errData.message || res.statusText}`;
+        }
+      } catch (err) {
+        console.error("dispatchMobileUpdateRun error:", err);
+        showToast(`❌ Network error triggering workflow: ${err.message}`);
+      }
+    }
+
+    function startMobileUpdateTracking() {
+      if (mobileUpdateLivePoll) clearInterval(mobileUpdateLivePoll);
+      if (mobileUpdateTimerInterval) clearInterval(mobileUpdateTimerInterval);
+
+      const startTime = Date.now();
+      const timeVal = document.getElementById("mobileupdate-stat-time");
+      const browserStatus = document.getElementById("mobileupdate-browser-status");
+      const portalStatus = document.getElementById("mobileupdate-portal-status");
+      const activityLabel = document.getElementById("mobileupdate-activity-label");
+
+      if (browserStatus) {
+        browserStatus.innerText = "● Running (Cloud)";
+        browserStatus.className = "stacked-card-value status-booked";
+      }
+      if (portalStatus) {
+        portalStatus.innerText = "● Active";
+        portalStatus.className = "stacked-card-value status-booked";
+      }
+
+      mobileUpdateTimerInterval = setInterval(() => {
+        if (!timeVal) return;
+        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+        const secs = String(elapsedSec % 60).padStart(2, '0');
+        timeVal.innerText = `⏱ ${mins}:${secs}`;
+      }, 1000);
+
+      let attempts = 0;
+      mobileUpdateLivePoll = setInterval(async () => {
+        attempts++;
+        const token = getToken();
+        if (!token) return;
+
+        try {
+          const runsRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/mobile_update.yml/runs?per_page=1`, {
+            headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+          });
+
+          if (runsRes.ok) {
+            const data = await runsRes.json();
+            if (data.workflow_runs && data.workflow_runs.length > 0) {
+              const run = data.workflow_runs[0];
+              if (run.status === "completed") {
+                clearInterval(mobileUpdateLivePoll);
+                clearInterval(mobileUpdateTimerInterval);
+                mobileUpdateIsRunning = false;
+                const upBtn = document.getElementById("btn-upload-update-mob");
+                if (upBtn) {
+                  upBtn.disabled = false;
+                  upBtn.style.opacity = "1";
+                  upBtn.style.cursor = "pointer";
+                }
+                if (browserStatus) {
+                  browserStatus.innerText = "● Idle";
+                  browserStatus.className = "stacked-card-value status-idle";
+                }
+                if (portalStatus) {
+                  portalStatus.innerText = "● Standby";
+                  portalStatus.className = "stacked-card-value status-idle";
+                }
+                if (activityLabel) activityLabel.innerText = `Job completed (${run.conclusion || 'finished'})`;
+                fetchMobileUpdateQueue();
+                showToast(`✓ Mobile Update completed (${run.conclusion || 'done'})`);
+                return;
+              }
+            }
+          }
+
+          if (attempts % 2 === 0) {
+            fetchMobileUpdateQueue();
+          }
+        } catch (err) {
+          console.error("Mobile Update tracking error:", err);
+        }
+      }, 3000);
+    }
+
+    function downloadMobileUpdateReport() {
+      try {
+        if (!currentMobileUpdateRecords || currentMobileUpdateRecords.length === 0) {
+          showToast("❌ No records available to download!");
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const headers = [
+          "Input Row Number",
+          "Smart Card Number",
+          "Customer Name",
+          "Customer Name 2",
+          "OLD RMN",
+          "New RMN",
+          "Billing Cycle",
+          "DT Code",
+          "Distributor ID",
+          "Portal Customer Status",
+          "Status",
+          "Related Customer Name",
+          "Remark",
+          "Last Booking Date",
+          "Last Ticket No",
+          "Days Since Close",
+          "100 Day Status",
+          "Processed At",
+          "Complaint Remark",
+          "Complaint Status"
+        ];
+
+        const masterRows = [headers];
+        const dtGroups = {};
+        const issueRows = [headers];
+
+        currentMobileUpdateRecords.forEach((r, idx) => {
+          const daysSinceCloseVal = (r["Days Since Close"] !== undefined && r["Days Since Close"] !== null && r["Days Since Close"] !== "") ? r["Days Since Close"] : "";
+          const rowVals = [
+            r["Input Row Number"] || (idx + 1),
+            r["Smart Card Number"] || "",
+            r["Customer Name"] || "",
+            r["Customer Name 2"] || "",
+            r["OLD RMN"] || r["RMN"] || "",
+            r["New RMN"] || "",
+            r["Billing Cycle"] || "",
+            normalizeDtCode(r["DT Code"] || "") || r["DT Code"] || "",
+            r["Distributor ID"] || "",
+            r["Portal Customer Status"] || "",
+            r["Status"] || "",
+            r["Related Customer Name"] || "",
+            r["Remark"] || "",
+            r["Last Booking Date"] || "",
+            r["Last Ticket No"] || "",
+            daysSinceCloseVal,
+            r["100 Day Status"] || "",
+            r["Processed At"] || "",
+            r["Complaint Remark"] || "",
+            r["Complaint Status"] || ""
+          ];
+          masterRows.push(rowVals);
+
+          const dtVal = String(normalizeDtCode(r["DT Code"] || "") || r["DT Code"] || "Unknown_DT").replace(/[\/\\?*:\[\]]/g, "_").slice(0, 31).trim();
+          if (!dtGroups[dtVal]) dtGroups[dtVal] = [headers];
+          dtGroups[dtVal].push(rowVals);
+
+          const stLow = String(r["Status"] || "").toLowerCase();
+          const isIssue = (
+            !stLow.includes("success") &&
+            !stLow.includes("updated") &&
+            !stLow.includes("dry run - would update") &&
+            !stLow.includes("dry run - already updated")
+          ) || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error") || Boolean(r["Remark"]);
+
+          if (isIssue) {
+            issueRows.push(rowVals);
+          }
+        });
+
+        // Append Master sheet
+        const wsMaster = XLSX.utils.aoa_to_sheet(masterRows);
+        XLSX.utils.book_append_sheet(wb, wsMaster, "Master");
+
+        // Append one sheet per DT
+        for (const [dtName, rows] of Object.entries(dtGroups)) {
+          const wsDT = XLSX.utils.aoa_to_sheet(rows);
+          const safeTitle = dtName.slice(0, 31);
+          XLSX.utils.book_append_sheet(wb, wsDT, safeTitle);
+        }
+
+        // Append Issues sheet
+        if (issueRows.length > 1) {
+          const wsIssues = XLSX.utils.aoa_to_sheet(issueRows);
+          XLSX.utils.book_append_sheet(wb, wsIssues, "Issues");
+        }
+
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `Mobile_Update_Report_${dateStr}.xlsx`);
+        showToast("✓ Mobile Update Excel downloaded successfully!");
+      } catch (err) {
+        console.error("downloadMobileUpdateReport error:", err);
+        showToast("❌ Download failed: " + err.message);
+      }
+    }
+
+
     // Init
 
     checkDeviceAuthOnLoad();
@@ -9347,6 +10264,24 @@
                 upBtn.style.cursor = "pointer";
               }
               console.log("FreshSale run completed on cloud: upload button re-enabled");
+            }
+          });
+        }
+
+        fetchMobileUpdateQueue();
+
+        // Auto-poll GitHub Actions to re-enable Mobile Update upload button when run finishes
+        if (mobileUpdateIsRunning) {
+          getWorkflowRunStatus("mobile_update.yml").then(mobCheck => {
+            if (!mobCheck.active && !mobCheck.error) {
+              mobileUpdateIsRunning = false;
+              const upBtn = document.getElementById("btn-upload-update-mob");
+              if (upBtn) {
+                upBtn.disabled = false;
+                upBtn.style.opacity = "1";
+                upBtn.style.cursor = "pointer";
+              }
+              console.log("Mobile update run completed on cloud: upload button re-enabled");
             }
           });
         }
