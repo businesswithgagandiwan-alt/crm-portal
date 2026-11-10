@@ -3635,7 +3635,7 @@
           <!-- 6 Action Buttons -->
           <div class="action-btns-grid">
             <div class="action-row-6">
-              <button class="action-btn-3d" onclick="document.getElementById('file-upload-fresh-sale').click()">Upload<br>Excel</button>
+              <button class="action-btn-3d" id="btn-upload-fresh-sale" onclick="triggerFreshSaleUpload()">Upload<br>Excel</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
               <button class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
@@ -8713,7 +8713,24 @@
       tbody.innerHTML = html;
     }
 
+    let freshSaleIsRunning = false;
+
+    function triggerFreshSaleUpload() {
+      if (freshSaleIsRunning) {
+        showToast("⚠️ FreshSale run is currently in progress! Upload is blocked until completion.");
+        return;
+      }
+      const fileInput = document.getElementById("file-upload-fresh-sale");
+      if (fileInput) fileInput.click();
+    }
+
     async function handleFreshSaleExcelUpload(event) {
+      if (freshSaleIsRunning) {
+        showToast("⚠️ FreshSale run is currently in progress! Upload is blocked.");
+        event.target.value = "";
+        return;
+      }
+
       const file = event.target.files[0];
       if (!file) return;
       event.target.value = "";
@@ -8725,46 +8742,118 @@
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
+          // FIX 3: Read first sheet that contains a "Smart Card Number" header
+          let targetSheet = null;
+          let targetSheetName = "";
+          let smcColIdx = -1;
+          let headerRow = [];
+
+          for (const sName of workbook.SheetNames) {
+            const ws = workbook.Sheets[sName];
+            const sheetRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+            if (!sheetRows || sheetRows.length < 2) continue;
+
+            const firstRow = sheetRows[0] || [];
+            for (let c = 0; c < firstRow.length; c++) {
+              const hClean = String(firstRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                targetSheet = ws;
+                targetSheetName = sName;
+                smcColIdx = c;
+                headerRow = firstRow;
+                break;
+              }
+            }
+            if (targetSheet) break;
+          }
+
+          if (!targetSheet) {
+            targetSheetName = workbook.SheetNames[0];
+            targetSheet = workbook.Sheets[targetSheetName];
+            const sheetRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
+            headerRow = (sheetRows && sheetRows[0]) ? sheetRows[0] : [];
+            for (let c = 0; c < headerRow.length; c++) {
+              const hClean = String(headerRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                smcColIdx = c;
+                break;
+              }
+            }
+            if (smcColIdx === -1) smcColIdx = 0;
+          }
+
+          const rawRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
           if (!rawRows || rawRows.length < 2) {
             showToast("❌ Excel file is empty or missing data!");
             return;
           }
 
-          let smcCol = -1;
-          let nameCol = -1;
-          const headers = rawRows[0];
-          for (let i = 0; i < headers.length; i++) {
-            const h = String(headers[i] || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-            if (h.includes("smartcard") || h.includes("smc") || h.includes("cardno") || h.includes("scno") || h === "sc") {
-              smcCol = i;
-            } else if (h.includes("customername") || h.includes("customer") || h.includes("name") || h.includes("clientname")) {
-              nameCol = i;
-            }
-          }
+          // Exact header matching map for laptop UNIFIED_COLUMNS
+          // Customer Name is exact; Customer Name 2 and Related Customer Name are strictly separated
+          const canonicalMap = {
+            "inputrownumber": "Input Row Number",
+            "smartcardnumber": "Smart Card Number",
+            "smartcard": "Smart Card Number",
+            "smc": "Smart Card Number",
+            "smc#": "Smart Card Number",
+            "smartcardno": "Smart Card Number",
+            "customername": "Customer Name",
+            "custname": "Customer Name",
+            "customer": "Customer Name",
+            "customername2": "Customer Name 2",
+            "custname2": "Customer Name 2",
+            "oldrmn": "OLD RMN",
+            "rmn": "OLD RMN",
+            "newrmn": "New RMN",
+            "newmobile": "New RMN",
+            "newmobileno": "New RMN",
+            "billingcycle": "Billing Cycle",
+            "dtcode": "DT Code",
+            "dt": "DT Code",
+            "distributorid": "Distributor ID",
+            "distid": "Distributor ID",
+            "portalcustomerstatus": "Portal Customer Status",
+            "customerstatus": "Portal Customer Status",
+            "status": "Status",
+            "relatedcustomername": "Related Customer Name",
+            "relatedcustomer": "Related Customer Name",
+            "remark": "Remark",
+            "lastbookingdate": "Last Booking Date",
+            "lastticketno": "Last Ticket No",
+            "dayssinceclose": "Days Since Close",
+            "100daystatus": "100 Day Status",
+            "processedat": "Processed At",
+            "complaintremark": "Complaint Remark",
+            "complaintstatus": "Complaint Status"
+          };
 
-          if (smcCol === -1) {
-            // Default to first column if no named header matched
-            smcCol = 0;
-          }
+          const colToProp = {};
+          headerRow.forEach((h, colIdx) => {
+            const rawH = String(h || "").trim();
+            if (!rawH) return;
+            const normH = rawH.toLowerCase().replace(/[\s_\-#]/g, "");
+            if (canonicalMap[normH]) {
+              colToProp[colIdx] = canonicalMap[normH];
+            } else {
+              // Unknown columns are kept as-is
+              colToProp[colIdx] = rawH;
+            }
+          });
 
           const records = [];
           for (let r = 1; r < rawRows.length; r++) {
             const row = rawRows[r];
-            if (!row || row[smcCol] === undefined || String(row[smcCol]).trim() === "") continue;
-            let val = String(row[smcCol]).trim();
+            if (!row || row[smcColIdx] === undefined || String(row[smcColIdx]).trim() === "") continue;
+            let val = String(row[smcColIdx]).trim();
             if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
             val = val.replace(/\D/g, "");
             if (!val) continue;
 
-            const custName = (nameCol !== -1 && row[nameCol] !== undefined) ? String(row[nameCol]).trim() : "";
-
-            records.push({
+            const rec = {
               "Input Row Number": r,
               "Smart Card Number": val,
-              "Customer Name": custName,
+              "Customer Name": "",
               "Customer Name 2": "",
               "OLD RMN": "",
               "New RMN": "",
@@ -8782,7 +8871,26 @@
               "Processed At": "",
               "Complaint Remark": "",
               "Complaint Status": ""
+            };
+
+            // Map all row values according to colToProp
+            Object.keys(colToProp).forEach(cIdx => {
+              const prop = colToProp[cIdx];
+              let cellVal = row[cIdx];
+              if (cellVal === undefined || cellVal === null) cellVal = "";
+              cellVal = String(cellVal).trim();
+              if (prop === "Smart Card Number") {
+                rec[prop] = val;
+              } else if (prop === "OLD RMN" || prop === "New RMN") {
+                if (cellVal.endsWith(".0") && !isNaN(cellVal)) cellVal = cellVal.slice(0, -2);
+                rec[prop] = cellVal.replace(/\D/g, "");
+              } else {
+                rec[prop] = cellVal;
+              }
             });
+
+            if (!rec["Status"]) rec["Status"] = "Pending";
+            records.push(rec);
           }
 
           if (records.length === 0) {
@@ -8900,6 +9008,15 @@
       if (freshSaleLivePoll) clearInterval(freshSaleLivePoll);
       if (freshSaleTimerInterval) clearInterval(freshSaleTimerInterval);
 
+      freshSaleIsRunning = true;
+      const uploadBtn = document.getElementById("btn-upload-fresh-sale");
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.style.opacity = "0.5";
+        uploadBtn.style.cursor = "not-allowed";
+        uploadBtn.title = "Upload blocked while FreshSale run is in progress";
+      }
+
       const timeEl = document.getElementById("freshsale-stat-time");
       freshSaleSecondsElapsed = 0;
       if (timeEl) timeEl.innerText = "⏱ 00:00";
@@ -8948,6 +9065,13 @@
                 // Run finished
                 clearInterval(freshSaleLivePoll);
                 clearInterval(freshSaleTimerInterval);
+                freshSaleIsRunning = false;
+                if (uploadBtn) {
+                  uploadBtn.disabled = false;
+                  uploadBtn.style.opacity = "1.0";
+                  uploadBtn.style.cursor = "pointer";
+                  uploadBtn.title = "";
+                }
                 if (browserStatus) {
                   browserStatus.innerText = "● Idle";
                   browserStatus.className = "stacked-card-value status-idle";
@@ -9011,6 +9135,7 @@
         const issueRows = [headers];
 
         currentFreshSaleRecords.forEach((r, idx) => {
+          const daysSinceCloseVal = (r["Days Since Close"] !== undefined && r["Days Since Close"] !== null && r["Days Since Close"] !== "") ? r["Days Since Close"] : "";
           const rowVals = [
             r["Input Row Number"] || (idx + 1),
             r["Smart Card Number"] || "",
@@ -9027,7 +9152,7 @@
             r["Remark"] || "",
             r["Last Booking Date"] || "",
             r["Last Ticket No"] || "",
-            r["Days Since Close"] || "",
+            daysSinceCloseVal,
             r["100 Day Status"] || "",
             r["Processed At"] || "",
             r["Complaint Remark"] || "",
