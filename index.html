@@ -3638,9 +3638,9 @@
               <button class="action-btn-3d" id="btn-upload-fresh-sale" onclick="triggerFreshSaleUpload()">Upload<br>Excel</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
-              <button class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
+              <button id="btn-start-fresh-sale" class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
               <button class="action-btn-3d" onclick="downloadFreshSaleReport()">Download<br>Excel</button>
-              <button class="action-btn-3d action-btn-blue" onclick="fetchFreshSaleQueue(true)">☁️ Cloud<br>Sync</button>
+              <button class="action-btn-3d action-btn-blue" onclick="fetchFreshSaleQueue(true); checkAndResumeFreshSaleRun();">☁️ Cloud<br>Sync</button>
             </div>
           </div>
 
@@ -3674,7 +3674,7 @@
               </div>
               <div class="stacked-card" style="grid-column: span 2;">
                 <div class="stacked-card-title">QUEUE FILE</div>
-                <div class="stacked-card-value" style="color: #0284C7;">📁 fresh_sales_queue.json</div>
+                <div class="stacked-card-value" id="freshsale-queue-status" style="color: #0284C7;">📁 fresh_sales_queue.json</div>
               </div>
               <div class="stacked-card" style="grid-column: span 2;">
                 <div class="stacked-card-title">VALIDATION</div>
@@ -4777,7 +4777,7 @@
 
         if (freshView) freshView.style.display = "flex";
 
-        fetchFreshSaleQueue();
+        checkAndResumeFreshSaleRun();
 
       } else if (mod === "update_mob") {
 
@@ -8748,58 +8748,299 @@
     // FRESHSALE AUTOMATION CLOUD ENGINE
     // =========================================================================
     let currentFreshSaleRecords = [];
+    let currentFreshSaleEnvelope = null;
     let currentFreshSaleSha = null;
     let freshSaleLivePoll = null;
     let freshSaleTimerInterval = null;
-    let freshSaleSecondsElapsed = 0;
+    let freshSaleTrackedRunId = null;
+    let freshSaleRunStartedAt = null;
+    let freshSaleRunFinishedAt = null;
+    let freshSaleQueueFetchError = null;
+    let freshSaleIsRunning = false;
+
+    function formatIST(isoString) {
+      if (!isoString) return "";
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return "";
+        return d.toLocaleTimeString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true
+        }) + " IST";
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function formatHHMMSS(totalSeconds) {
+      const s = Math.max(0, Math.floor(totalSeconds));
+      const hrs = String(Math.floor(s / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      return `⏱ ${hrs}:${mins}:${secs}`;
+    }
+
+    function updateFreshSaleUploadBtn() {
+      const uploadBtn = document.getElementById("btn-upload-fresh-sale");
+      if (uploadBtn) {
+        if (freshSaleIsRunning) {
+          uploadBtn.disabled = true;
+          uploadBtn.style.opacity = "0.5";
+          uploadBtn.style.cursor = "not-allowed";
+          uploadBtn.title = "Upload blocked while FreshSale run is in progress";
+        } else {
+          uploadBtn.disabled = false;
+          uploadBtn.style.opacity = "1.0";
+          uploadBtn.style.cursor = "pointer";
+          uploadBtn.title = "";
+        }
+      }
+      const startBtn = document.getElementById("btn-start-fresh-sale");
+      if (startBtn) {
+        if (freshSaleIsRunning) {
+          startBtn.disabled = true;
+          startBtn.style.opacity = "0.5";
+          startBtn.style.cursor = "not-allowed";
+          startBtn.title = "FreshSale run is already live or starting";
+        } else {
+          startBtn.disabled = false;
+          startBtn.style.opacity = "1.0";
+          startBtn.style.cursor = "pointer";
+          startBtn.title = "";
+        }
+      }
+    }
 
     async function fetchFreshSaleQueue(showToastFlag = false) {
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        freshSaleQueueFetchError = "Token missing";
+        updateFreshSaleBoxes();
+        return;
+      }
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json?_t=${Date.now()}`, {
           headers: {
             "Authorization": `token ${token}`,
             "Accept": "application/vnd.github.v3+json"
-          }
+          },
+          cache: "no-store"
         });
         if (!res.ok) {
+          freshSaleQueueFetchError = res.status === 404 ? "Not found" : "Read error";
+          updateFreshSaleBoxes();
           if (showToastFlag) showToast("Could not load fresh_sales_queue.json: " + res.statusText);
           return;
         }
+        freshSaleQueueFetchError = null;
         const data = await res.json();
         currentFreshSaleSha = data.sha;
         const jsonStr = decodeURIComponent(escape(atob(data.content)));
         const qData = JSON.parse(jsonStr);
-        currentFreshSaleRecords = qData.records || [];
+        currentFreshSaleEnvelope = qData;
+        currentFreshSaleRecords = Array.isArray(qData) ? qData : (qData.records || []);
 
         updateFreshSaleUI(qData);
         if (showToastFlag) showToast(`✓ Synced ${currentFreshSaleRecords.length} FreshSale records from cloud!`);
       } catch (err) {
         console.error("fetchFreshSaleQueue error:", err);
+        freshSaleQueueFetchError = "Read error";
+        updateFreshSaleBoxes();
+      }
+    }
+
+    function updateFreshSaleBoxes(runInfo = null) {
+      const browserStatus = document.getElementById("freshsale-browser-status");
+      const portalStatus = document.getElementById("freshsale-portal-status");
+      const queueStatus = document.getElementById("freshsale-queue-status");
+      const valStatus = document.getElementById("freshsale-val-status");
+      const cardLabel = document.getElementById("freshsale-card-label");
+      const activityLabel = document.getElementById("freshsale-activity-label");
+      const timeEl = document.getElementById("freshsale-stat-time");
+
+      const runStatus = runInfo?.status;
+      const runConclusion = runInfo?.conclusion;
+      const envStatus = currentFreshSaleEnvelope?.status;
+
+      // 1. BROWSER BOX
+      if (browserStatus) {
+        if (runConclusion === "failure" || envStatus === "failed") {
+          browserStatus.innerText = "● Error";
+          browserStatus.className = "stacked-card-value status-error";
+          browserStatus.style.color = "#EF4444";
+        } else if (runStatus === "in_progress" || envStatus === "running") {
+          browserStatus.innerText = "● Running";
+          browserStatus.className = "stacked-card-value status-booked";
+          browserStatus.style.color = "";
+        } else if (runStatus === "queued" || (freshSaleIsRunning && !runStatus)) {
+          browserStatus.innerText = "● Starting";
+          browserStatus.className = "stacked-card-value status-progress";
+          browserStatus.style.color = "#EAB308";
+        } else {
+          browserStatus.innerText = "● Idle";
+          browserStatus.className = "stacked-card-value status-idle";
+          browserStatus.style.color = "";
+        }
+      }
+
+      // 2. PORTAL BOX
+      if (portalStatus) {
+        if (runStatus === "in_progress" || runStatus === "queued" || envStatus === "running" || freshSaleIsRunning) {
+          portalStatus.innerText = "● Active";
+          portalStatus.className = "stacked-card-value status-booked";
+          portalStatus.style.color = "";
+        } else {
+          portalStatus.innerText = "● Standby";
+          portalStatus.className = "stacked-card-value status-idle";
+          portalStatus.style.color = "";
+        }
+      }
+
+      // 3. QUEUE FILE BOX
+      if (queueStatus) {
+        if (freshSaleQueueFetchError) {
+          queueStatus.innerText = `📁 fresh_sales_queue.json (${freshSaleQueueFetchError})`;
+          queueStatus.style.color = "#EF4444";
+        } else if (currentFreshSaleEnvelope && currentFreshSaleEnvelope.updated_at) {
+          const istStr = formatIST(currentFreshSaleEnvelope.updated_at);
+          queueStatus.innerText = `📁 fresh_sales_queue.json${istStr ? ' (' + istStr + ')' : ''}`;
+          queueStatus.style.color = "#0284C7";
+        } else {
+          queueStatus.innerText = "📁 fresh_sales_queue.json";
+          queueStatus.style.color = "#0284C7";
+        }
+      }
+
+      // 4. VALIDATION BOX (Point 6: Do NOT treat empty DT as invalid. Validate token, queue readable, records > 0, every row has numeric card)
+      if (valStatus) {
+        const token = getToken();
+        if (!token) {
+          valStatus.innerText = "⚠️ Token Missing";
+          valStatus.style.color = "#EF4444";
+        } else if (freshSaleQueueFetchError) {
+          valStatus.innerText = `⚠️ ${freshSaleQueueFetchError}`;
+          valStatus.style.color = "#EF4444";
+        } else if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+          valStatus.innerText = "⚠️ Empty Queue";
+          valStatus.style.color = "#EAB308";
+        } else {
+          let invalidCardCount = 0;
+          for (const r of currentFreshSaleRecords) {
+            const rawCard = String(r["Smart Card Number"] || "").replace(/\D/g, "");
+            if (!rawCard) invalidCardCount++;
+          }
+          if (invalidCardCount > 0) {
+            valStatus.innerText = `⚠️ ${invalidCardCount} rows invalid Card`;
+            valStatus.style.color = "#EF4444";
+          } else {
+            valStatus.innerText = `● Ready (${currentFreshSaleRecords.length})`;
+            valStatus.style.color = "#16A34A";
+          }
+        }
+      }
+
+      // 5. SMART CARD BOX
+      if (cardLabel) {
+        const curCard = currentFreshSaleEnvelope?.current_card;
+        cardLabel.innerText = curCard ? curCard : "—";
+      }
+
+      // 6. ACTIVITY BOX (Point 5: Show "No update from cloud" ONLY when run is in_progress AND envelope status is "running" AND updated_at is older than 3 minutes. Never during Starting/queued)
+      if (activityLabel) {
+        let actText = "";
+        if (freshSaleIsRunning && !runInfo && (!currentFreshSaleEnvelope || currentFreshSaleEnvelope.status !== "running")) {
+          actText = "Starting on cloud...";
+        } else if (runConclusion === "failure" || envStatus === "failed") {
+          actText = currentFreshSaleEnvelope?.error || currentFreshSaleEnvelope?.activity || "Workflow failed on cloud";
+        } else if (runStatus === "completed" || envStatus === "completed") {
+          actText = currentFreshSaleEnvelope?.activity || "Job completed successfully";
+        } else if (currentFreshSaleEnvelope?.activity) {
+          actText = currentFreshSaleEnvelope.activity;
+        } else if (runStatus === "in_progress" || envStatus === "running" || freshSaleIsRunning) {
+          actText = "Processing records on cloud runner...";
+        } else {
+          actText = "Awaiting Input... (Upload Excel or click Start)";
+        }
+
+        // Stale warning: ONLY when Actions run is in_progress AND envelope is running AND updated_at is older than 3 minutes (180s)
+        if (runStatus === "in_progress" && envStatus === "running" && currentFreshSaleEnvelope?.updated_at) {
+          const lastUp = new Date(currentFreshSaleEnvelope.updated_at).getTime();
+          if (!isNaN(lastUp)) {
+            const diffSec = Math.floor((Date.now() - lastUp) / 1000);
+            if (diffSec >= 180) {
+              const mins = Math.floor(diffSec / 60);
+              actText += ` (⚠️ No update from cloud for ${mins} min)`;
+            }
+          }
+        }
+
+        activityLabel.innerText = actText;
+      }
+
+      // 7. TIME BOX (Point 4: Always compute TIME from envelope started_at -> finished_at (if finished) or -> now (if running), HH:MM:SS)
+      if (timeEl) {
+        if (currentFreshSaleEnvelope?.started_at) {
+          freshSaleRunStartedAt = currentFreshSaleEnvelope.started_at;
+        }
+        if (currentFreshSaleEnvelope?.started_at && currentFreshSaleEnvelope?.finished_at) {
+          const sTs = new Date(currentFreshSaleEnvelope.started_at).getTime();
+          const fTs = new Date(currentFreshSaleEnvelope.finished_at).getTime();
+          if (!isNaN(sTs) && !isNaN(fTs) && fTs >= sTs) {
+            timeEl.innerText = formatHHMMSS((fTs - sTs) / 1000);
+          }
+        } else if (freshSaleRunStartedAt && freshSaleRunFinishedAt) {
+          const sTs = new Date(freshSaleRunStartedAt).getTime();
+          const fTs = new Date(freshSaleRunFinishedAt).getTime();
+          if (!isNaN(sTs) && !isNaN(fTs) && fTs >= sTs) {
+            timeEl.innerText = formatHHMMSS((fTs - sTs) / 1000);
+          }
+        } else if (runStatus === "in_progress" || envStatus === "running" || freshSaleIsRunning) {
+          const sTs = freshSaleRunStartedAt ? new Date(freshSaleRunStartedAt).getTime() : Date.now();
+          if (!isNaN(sTs)) {
+            timeEl.innerText = formatHHMMSS(Math.max(0, (Date.now() - sTs) / 1000));
+          }
+        } else if (currentFreshSaleEnvelope?.started_at) {
+          if (currentFreshSaleEnvelope.status === "completed" || currentFreshSaleEnvelope.status === "failed") {
+            const sTs = new Date(currentFreshSaleEnvelope.started_at).getTime();
+            const fTs = currentFreshSaleEnvelope.updated_at ? new Date(currentFreshSaleEnvelope.updated_at).getTime() : sTs;
+            timeEl.innerText = formatHHMMSS(Math.max(0, (fTs - sTs) / 1000));
+          }
+        } else {
+          timeEl.innerText = "⏱ 00:00:00";
+        }
       }
     }
 
     function updateFreshSaleUI(qData) {
+      currentFreshSaleEnvelope = qData;
       const recs = currentFreshSaleRecords || [];
-      const total = recs.length;
+      const total = recs.length || (qData?.total || 0);
 
       let processed = 0;
       let success = 0;
       let failed = 0;
 
-      recs.forEach(r => {
-        const stat = String(r["Status"] || "").trim().toLowerCase();
-        if (stat && stat !== "pending" && stat !== "in progress...") {
-          processed++;
-          if (stat.startsWith("success")) {
-            success++;
-          } else {
-            failed++;
+      if (recs.length > 0) {
+        recs.forEach(r => {
+          const stat = String(r["Status"] || "").trim().toLowerCase();
+          if (stat && stat !== "pending" && stat !== "in progress...") {
+            processed++;
+            if (stat.startsWith("success")) {
+              success++;
+            } else {
+              failed++;
+            }
           }
-        }
-      });
-      const pending = total - processed;
+        });
+      } else if (qData) {
+        processed = qData.processed || 0;
+        success = qData.success || 0;
+        failed = qData.failed || 0;
+      }
+      const pending = Math.max(0, total - processed);
 
       const totalEl = document.getElementById("freshsale-stat-total");
       const procEl = document.getElementById("freshsale-stat-processed");
@@ -8819,6 +9060,7 @@
       if (pctEl) pctEl.innerText = `${pct}%`;
       if (barEl) barEl.style.width = `${pct}%`;
 
+      updateFreshSaleBoxes();
       renderFreshSaleTable();
     }
 
@@ -8834,13 +9076,14 @@
       let html = "";
       currentFreshSaleRecords.forEach((r, idx) => {
         const status = String(r["Status"] || "Pending");
-        let statusBadge = `<span style="color:#64748B; font-weight:700;">● ${status}</span>`;
+        const remarkTip = r["Remark"] ? ` title="${String(r["Remark"]).replace(/"/g, '&quot;')}"` : "";
+        let statusBadge = `<span${remarkTip} style="color:#64748B; font-weight:700;">● ${status}</span>`;
         if (status.toLowerCase().startsWith("success")) {
-          statusBadge = `<span style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
+          statusBadge = `<span${remarkTip} style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
         } else if (status.toLowerCase().includes("failed") || status.toLowerCase().includes("not found") || status.toLowerCase().includes("error")) {
-          statusBadge = `<span style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
+          statusBadge = `<span${remarkTip} style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
         } else if (status === "In Progress...") {
-          statusBadge = `<span style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
+          statusBadge = `<span${remarkTip} style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
         }
 
         const status100 = String(r["100 Day Status"] || "");
@@ -8878,22 +9121,21 @@
       tbody.innerHTML = html;
     }
 
-    let freshSaleIsRunning = false;
-
     async function getWorkflowRunStatus(workflowFile) {
       const token = getToken();
-      if (!token) return { active: false, error: "Device not authorized. Please set GitHub Token." };
+      if (!token) return { active: false, run: null, error: "Device not authorized. Please set GitHub Token." };
       try {
         const inProgRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowFile}/runs?status=in_progress&per_page=1`, {
           headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" },
           cache: "no-store"
         });
         if (!inProgRes.ok) {
-          return { active: false, error: `GitHub API error: ${inProgRes.status}` };
+          return { active: false, run: null, error: `GitHub API error: ${inProgRes.status}` };
         }
         const inProgData = await inProgRes.json();
-        if (inProgData.workflow_runs && inProgData.workflow_runs.length > 0) {
-          return { active: true, error: null };
+        const activeRun = (inProgData.workflow_runs || []).find(r => r.status === "in_progress");
+        if (activeRun) {
+          return { active: true, run: activeRun, error: null };
         }
 
         const qRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${workflowFile}/runs?status=queued&per_page=1`, {
@@ -8901,56 +9143,41 @@
           cache: "no-store"
         });
         if (!qRes.ok) {
-          return { active: false, error: `GitHub API error: ${qRes.status}` };
+          return { active: false, run: null, error: `GitHub API error: ${qRes.status}` };
         }
         const qData = await qRes.json();
-        if (qData.workflow_runs && qData.workflow_runs.length > 0) {
-          return { active: true, error: null };
+        const queuedRun = (qData.workflow_runs || []).find(r => r.status === "queued");
+        if (queuedRun) {
+          return { active: true, run: queuedRun, error: null };
         }
 
-        return { active: false, error: null };
+        return { active: false, run: null, error: null };
       } catch (err) {
-        return { active: false, error: err.message || "Network error" };
+        return { active: false, run: null, error: err.message || "Network error" };
       }
     }
 
     async function triggerFreshSaleUpload() {
       if (freshSaleIsRunning) {
-        showToast("⚠️ FreshSale run is currently in progress! Upload is blocked until completion.");
+        showToast("⚠️ FreshSale run is currently in progress! Upload is blocked.");
         return;
       }
       showToast("⏳ Checking cloud workflow status before upload...");
       const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
       if (statusCheck.error) {
-        // Fail-safe: keep upload blocked and show error
         freshSaleIsRunning = true;
-        const upBtn = document.getElementById("btn-upload-fresh-sale");
-        if (upBtn) {
-          upBtn.disabled = true;
-          upBtn.style.opacity = "0.5";
-          upBtn.style.cursor = "not-allowed";
-        }
+        updateFreshSaleUploadBtn();
         showToast(`⚠️ Could not verify run status, try again (${statusCheck.error})`, "error");
         return;
       }
       if (statusCheck.active) {
         freshSaleIsRunning = true;
-        const upBtn = document.getElementById("btn-upload-fresh-sale");
-        if (upBtn) {
-          upBtn.disabled = true;
-          upBtn.style.opacity = "0.5";
-          upBtn.style.cursor = "not-allowed";
-        }
+        updateFreshSaleUploadBtn();
         showToast("⚠️ FreshSale workflow is currently queued or running on GitHub! Upload is blocked.", "warning");
         return;
       }
       freshSaleIsRunning = false;
-      const upBtn = document.getElementById("btn-upload-fresh-sale");
-      if (upBtn) {
-        upBtn.disabled = false;
-        upBtn.style.opacity = "1";
-        upBtn.style.cursor = "pointer";
-      }
+      updateFreshSaleUploadBtn();
       const fileInput = document.getElementById("file-upload-fresh-sale");
       if (fileInput) fileInput.click();
     }
@@ -9207,6 +9434,11 @@
     }
 
     async function dispatchFreshSaleRun() {
+      if (freshSaleIsRunning) {
+        showToast("⚠️ FreshSale Automation is already running or starting on cloud!");
+        return;
+      }
+
       const token = getToken();
       if (!token) {
         showToast("❌ Device not authorized. Enter device token first.");
@@ -9218,10 +9450,22 @@
         return;
       }
 
+      const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+      if (statusCheck.active) {
+        freshSaleIsRunning = true;
+        updateFreshSaleUploadBtn();
+        showToast("⚠️ FreshSale workflow is already running or queued on GitHub!");
+        return;
+      }
+
       const dtSelect = document.getElementById("freshsale-dt-select");
       const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
 
       showToast(`🚀 Launching FreshSale Automation on cloud for ${dtCode}...`);
+
+      const dispatchTime = Date.now();
+      freshSaleIsRunning = true;
+      updateFreshSaleUploadBtn();
 
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/dispatches`, {
@@ -9241,54 +9485,53 @@
 
         if (res.ok || res.status === 204) {
           showToast(`✓ FreshSale Automation started on Cloud for ${dtCode}!`);
-          startFreshSaleTracking();
+          startFreshSaleTracking(dispatchTime);
         } else {
+          freshSaleIsRunning = false;
+          updateFreshSaleUploadBtn();
           showToast(`❌ Dispatch failed: ${res.statusText}`);
         }
       } catch (err) {
+        freshSaleIsRunning = false;
+        updateFreshSaleUploadBtn();
         console.error("dispatchFreshSaleRun error:", err);
         showToast(`❌ Error launching: ${err.message}`);
       }
     }
 
-    function startFreshSaleTracking() {
+    function startFreshSaleTracking(dispatchTime = null, knownRunId = null, knownRunCreatedAt = null, initialRun = null) {
       if (freshSaleLivePoll) clearInterval(freshSaleLivePoll);
       if (freshSaleTimerInterval) clearInterval(freshSaleTimerInterval);
 
       freshSaleIsRunning = true;
-      const uploadBtn = document.getElementById("btn-upload-fresh-sale");
-      if (uploadBtn) {
-        uploadBtn.disabled = true;
-        uploadBtn.style.opacity = "0.5";
-        uploadBtn.style.cursor = "not-allowed";
-        uploadBtn.title = "Upload blocked while FreshSale run is in progress";
-      }
+      updateFreshSaleUploadBtn();
+
+      freshSaleTrackedRunId = knownRunId;
+      freshSaleRunStartedAt = currentFreshSaleEnvelope?.started_at || initialRun?.run_started_at || knownRunCreatedAt || (dispatchTime ? new Date(dispatchTime).toISOString() : null);
+      freshSaleRunFinishedAt = null;
 
       const timeEl = document.getElementById("freshsale-stat-time");
-      freshSaleSecondsElapsed = 0;
-      if (timeEl) timeEl.innerText = "⏱ 00:00";
+      if (timeEl) {
+        const startTs = freshSaleRunStartedAt ? new Date(freshSaleRunStartedAt).getTime() : Date.now();
+        const initialElapsed = Math.max(0, (Date.now() - startTs) / 1000);
+        timeEl.innerText = formatHHMMSS(initialElapsed);
+      }
 
       freshSaleTimerInterval = setInterval(() => {
-        freshSaleSecondsElapsed++;
-        const mins = String(Math.floor(freshSaleSecondsElapsed / 60)).padStart(2, '0');
-        const secs = String(freshSaleSecondsElapsed % 60).padStart(2, '0');
-        if (timeEl) timeEl.innerText = `⏱ ${mins}:${secs}`;
+        if (!timeEl) return;
+        const startTs = freshSaleRunStartedAt
+          ? new Date(freshSaleRunStartedAt).getTime()
+          : (dispatchTime || Date.now());
+        if (isNaN(startTs)) return;
+        const elapsedSec = (Date.now() - startTs) / 1000;
+        timeEl.innerText = formatHHMMSS(elapsedSec);
       }, 1000);
 
-      const browserStatus = document.getElementById("freshsale-browser-status");
-      const portalStatus = document.getElementById("freshsale-portal-status");
-      const activityLabel = document.getElementById("freshsale-activity-label");
-      if (browserStatus) {
-        browserStatus.innerText = "● Running";
-        browserStatus.className = "stacked-card-value status-booked";
-      }
-      if (portalStatus) {
-        portalStatus.innerText = "● Active";
-        portalStatus.className = "stacked-card-value status-booked";
-      }
-      if (activityLabel) activityLabel.innerText = "Processing records on cloud runner...";
+      updateFreshSaleBoxes(initialRun);
 
       let attempts = 0;
+      let targetRunId = knownRunId;
+
       freshSaleLivePoll = setInterval(async () => {
         attempts++;
         const token = getToken();
@@ -9296,53 +9539,117 @@
 
         try {
           // Poll workflow runs
-          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/runs?per_page=1&_t=${Date.now()}`, {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/runs?per_page=5&_t=${Date.now()}`, {
             headers: {
               "Authorization": `token ${token}`,
               "Accept": "application/vnd.github.v3+json"
-            }
+            },
+            cache: "no-store"
           });
 
+          let runs = [];
           if (res.ok) {
             const rData = await res.json();
-            const run = rData.workflow_runs && rData.workflow_runs[0];
-            if (run) {
-              const isRunActive = run.status === "in_progress" || run.status === "queued";
-              if (!isRunActive && attempts > 3) {
-                // Run finished
+            runs = rData.workflow_runs || [];
+          }
+
+          let currentRun = null;
+          if (targetRunId) {
+            currentRun = runs.find(r => r.id === targetRunId) || null;
+          } else if (dispatchTime) {
+            // Find newly dispatched run: created_at >= dispatchTime - 10s
+            currentRun = runs.find(r => {
+              const runTime = new Date(r.created_at).getTime();
+              return r.event === "workflow_dispatch" && runTime >= (dispatchTime - 10000);
+            });
+            if (currentRun) {
+              targetRunId = currentRun.id;
+              freshSaleTrackedRunId = targetRunId;
+            } else {
+              // Check 3-minute timeout
+              if (attempts > 60) {
                 clearInterval(freshSaleLivePoll);
                 clearInterval(freshSaleTimerInterval);
                 freshSaleIsRunning = false;
-                if (uploadBtn) {
-                  uploadBtn.disabled = false;
-                  uploadBtn.style.opacity = "1.0";
-                  uploadBtn.style.cursor = "pointer";
-                  uploadBtn.title = "";
-                }
-                if (browserStatus) {
-                  browserStatus.innerText = "● Idle";
-                  browserStatus.className = "stacked-card-value status-idle";
-                }
-                if (portalStatus) {
-                  portalStatus.innerText = "● Standby";
-                  portalStatus.className = "stacked-card-value status-idle";
-                }
-                if (activityLabel) activityLabel.innerText = `Job completed (${run.conclusion || 'finished'})`;
-                fetchFreshSaleQueue();
-                showToast(`✓ FreshSale Automation completed (${run.conclusion || 'done'})`);
+                updateFreshSaleUploadBtn();
+                const actLabel = document.getElementById("freshsale-activity-label");
+                if (actLabel) actLabel.innerText = "⚠️ Timed out waiting for cloud run to appear. Please check Actions on GitHub.";
+                showToast("⚠️ Cloud run did not appear after 3 minutes", "error");
                 return;
               }
+              const actLabel = document.getElementById("freshsale-activity-label");
+              if (actLabel) actLabel.innerText = `Starting on cloud... (${attempts * 3}s)`;
+              updateFreshSaleBoxes();
+              return;
+            }
+          } else {
+            // Auto-resumed run: find any active run
+            currentRun = runs.find(r => r.status === "in_progress" || r.status === "queued");
+            if (currentRun) {
+              targetRunId = currentRun.id;
+              freshSaleTrackedRunId = targetRunId;
             }
           }
 
-          // Poll queue for live updates every 5s
-          if (attempts % 2 === 0) {
-            fetchFreshSaleQueue();
+          // Fetch queue file for live record updates
+          await fetchFreshSaleQueue(false);
+
+          if (currentRun) {
+            if (!freshSaleRunStartedAt) {
+              freshSaleRunStartedAt = currentFreshSaleEnvelope?.started_at || currentRun.run_started_at || currentRun.created_at;
+            }
+
+            const isRunDone = currentRun.status === "completed";
+            const isQueueDone = currentFreshSaleEnvelope && (currentFreshSaleEnvelope.status === "completed" || currentFreshSaleEnvelope.status === "failed");
+
+            if (isRunDone || (isQueueDone && currentRun.status === "completed")) {
+              // Run completed!
+              clearInterval(freshSaleLivePoll);
+              clearInterval(freshSaleTimerInterval);
+              freshSaleIsRunning = false;
+              updateFreshSaleUploadBtn();
+
+              freshSaleRunFinishedAt = currentFreshSaleEnvelope?.finished_at || currentRun.updated_at;
+              if (timeEl && freshSaleRunStartedAt && freshSaleRunFinishedAt) {
+                const elapsedSec = (new Date(freshSaleRunFinishedAt).getTime() - new Date(freshSaleRunStartedAt).getTime()) / 1000;
+                timeEl.innerText = formatHHMMSS(elapsedSec);
+              }
+
+              updateFreshSaleBoxes(currentRun);
+              const conclusion = currentRun.conclusion || (currentFreshSaleEnvelope?.status === "completed" ? "success" : "failure");
+              showToast(`✓ FreshSale Automation finished (${conclusion})`, conclusion === "success" ? "success" : "warning");
+              return;
+            } else {
+              // Run still in progress or queued
+              updateFreshSaleBoxes(currentRun);
+            }
+          } else {
+            // No current run matched yet
+            updateFreshSaleBoxes();
           }
         } catch (err) {
           console.error("FreshSale tracking error:", err);
         }
       }, 3000);
+    }
+
+    async function checkAndResumeFreshSaleRun() {
+      if (freshSaleIsRunning) return;
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        await fetchFreshSaleQueue(false);
+        const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+        if (statusCheck.active && statusCheck.run) {
+          console.log("Resuming active FreshSale cloud run:", statusCheck.run.id);
+          startFreshSaleTracking(null, statusCheck.run.id, statusCheck.run.created_at, statusCheck.run);
+        } else {
+          updateFreshSaleBoxes(statusCheck.run || null);
+        }
+      } catch (e) {
+        console.error("checkAndResumeFreshSaleRun error:", e);
+      }
     }
 
     function downloadFreshSaleReport() {
@@ -9463,7 +9770,7 @@
       }
     }
 
-
+    
 
     // ==========================================
     // MOBILE UPDATE AUTOMATION (CLOUD RUNNER)
@@ -10222,6 +10529,8 @@
 
     startScheduleCountdown();
 
+    checkAndResumeFreshSaleRun();
+
     setInterval(() => {
 
       if (isDeviceAuthorized()) {
@@ -10252,21 +10561,7 @@
 
         fetchFreshSaleQueue();
 
-        // Auto-poll GitHub Actions to re-enable FreshSale upload button when run finishes
-        if (freshSaleIsRunning) {
-          getWorkflowRunStatus("fresh_sales.yml").then(fsCheck => {
-            if (!fsCheck.active && !fsCheck.error) {
-              freshSaleIsRunning = false;
-              const upBtn = document.getElementById("btn-upload-fresh-sale");
-              if (upBtn) {
-                upBtn.disabled = false;
-                upBtn.style.opacity = "1";
-                upBtn.style.cursor = "pointer";
-              }
-              console.log("FreshSale run completed on cloud: upload button re-enabled");
-            }
-          });
-        }
+        checkAndResumeFreshSaleRun();
 
         fetchMobileUpdateQueue();
 
