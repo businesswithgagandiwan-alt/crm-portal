@@ -3638,7 +3638,7 @@
               <button class="action-btn-3d" id="btn-upload-fresh-sale" onclick="triggerFreshSaleUpload()">Upload<br>Excel</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
-              <button class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
+              <button id="btn-start-fresh-sale" class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
               <button class="action-btn-3d" onclick="downloadFreshSaleReport()">Download<br>Excel</button>
               <button class="action-btn-3d action-btn-blue" onclick="fetchFreshSaleQueue(true); checkAndResumeFreshSaleRun();">☁️ Cloud<br>Sync</button>
             </div>
@@ -8785,17 +8785,32 @@
 
     function updateFreshSaleUploadBtn() {
       const uploadBtn = document.getElementById("btn-upload-fresh-sale");
-      if (!uploadBtn) return;
-      if (freshSaleIsRunning) {
-        uploadBtn.disabled = true;
-        uploadBtn.style.opacity = "0.5";
-        uploadBtn.style.cursor = "not-allowed";
-        uploadBtn.title = "Upload blocked while FreshSale run is in progress";
-      } else {
-        uploadBtn.disabled = false;
-        uploadBtn.style.opacity = "1.0";
-        uploadBtn.style.cursor = "pointer";
-        uploadBtn.title = "";
+      if (uploadBtn) {
+        if (freshSaleIsRunning) {
+          uploadBtn.disabled = true;
+          uploadBtn.style.opacity = "0.5";
+          uploadBtn.style.cursor = "not-allowed";
+          uploadBtn.title = "Upload blocked while FreshSale run is in progress";
+        } else {
+          uploadBtn.disabled = false;
+          uploadBtn.style.opacity = "1.0";
+          uploadBtn.style.cursor = "pointer";
+          uploadBtn.title = "";
+        }
+      }
+      const startBtn = document.getElementById("btn-start-fresh-sale");
+      if (startBtn) {
+        if (freshSaleIsRunning) {
+          startBtn.disabled = true;
+          startBtn.style.opacity = "0.5";
+          startBtn.style.cursor = "not-allowed";
+          startBtn.title = "FreshSale run is already live or starting";
+        } else {
+          startBtn.disabled = false;
+          startBtn.style.opacity = "1.0";
+          startBtn.style.cursor = "pointer";
+          startBtn.title = "";
+        }
       }
     }
 
@@ -8899,7 +8914,7 @@
         }
       }
 
-      // 4. VALIDATION BOX
+      // 4. VALIDATION BOX (Point 6: Do NOT treat empty DT as invalid. Validate token, queue readable, records > 0, every row has numeric card)
       if (valStatus) {
         const token = getToken();
         if (!token) {
@@ -8912,14 +8927,14 @@
           valStatus.innerText = "⚠️ Empty Queue";
           valStatus.style.color = "#EAB308";
         } else {
-          let invalidDtCount = 0;
+          let invalidCardCount = 0;
           for (const r of currentFreshSaleRecords) {
-            const dt = normalizeDtCode(r["DT Code"] || "");
-            if (!dt) invalidDtCount++;
+            const rawCard = String(r["Smart Card Number"] || "").replace(/\D/g, "");
+            if (!rawCard) invalidCardCount++;
           }
-          if (invalidDtCount > 0) {
-            valStatus.innerText = `⚠️ ${invalidDtCount} rows invalid DT`;
-            valStatus.style.color = "#EAB308";
+          if (invalidCardCount > 0) {
+            valStatus.innerText = `⚠️ ${invalidCardCount} rows invalid Card`;
+            valStatus.style.color = "#EF4444";
           } else {
             valStatus.innerText = `● Ready (${currentFreshSaleRecords.length})`;
             valStatus.style.color = "#16A34A";
@@ -8933,7 +8948,7 @@
         cardLabel.innerText = curCard ? curCard : "—";
       }
 
-      // 6. ACTIVITY BOX
+      // 6. ACTIVITY BOX (Point 5: Show "No update from cloud" ONLY when run is in_progress AND envelope status is "running" AND updated_at is older than 3 minutes. Never during Starting/queued)
       if (activityLabel) {
         let actText = "";
         if (freshSaleIsRunning && !runInfo && (!currentFreshSaleEnvelope || currentFreshSaleEnvelope.status !== "running")) {
@@ -8950,8 +8965,8 @@
           actText = "Awaiting Input... (Upload Excel or click Start)";
         }
 
-        // Stale warning: if running and updated_at has not changed for > 3 minutes (180s)
-        if ((runStatus === "in_progress" || envStatus === "running" || freshSaleIsRunning) && currentFreshSaleEnvelope?.updated_at) {
+        // Stale warning: ONLY when Actions run is in_progress AND envelope is running AND updated_at is older than 3 minutes (180s)
+        if (runStatus === "in_progress" && envStatus === "running" && currentFreshSaleEnvelope?.updated_at) {
           const lastUp = new Date(currentFreshSaleEnvelope.updated_at).getTime();
           if (!isNaN(lastUp)) {
             const diffSec = Math.floor((Date.now() - lastUp) / 1000);
@@ -8963,6 +8978,39 @@
         }
 
         activityLabel.innerText = actText;
+      }
+
+      // 7. TIME BOX (Point 4: Always compute TIME from envelope started_at -> finished_at (if finished) or -> now (if running), HH:MM:SS)
+      if (timeEl) {
+        if (currentFreshSaleEnvelope?.started_at) {
+          freshSaleRunStartedAt = currentFreshSaleEnvelope.started_at;
+        }
+        if (currentFreshSaleEnvelope?.started_at && currentFreshSaleEnvelope?.finished_at) {
+          const sTs = new Date(currentFreshSaleEnvelope.started_at).getTime();
+          const fTs = new Date(currentFreshSaleEnvelope.finished_at).getTime();
+          if (!isNaN(sTs) && !isNaN(fTs) && fTs >= sTs) {
+            timeEl.innerText = formatHHMMSS((fTs - sTs) / 1000);
+          }
+        } else if (freshSaleRunStartedAt && freshSaleRunFinishedAt) {
+          const sTs = new Date(freshSaleRunStartedAt).getTime();
+          const fTs = new Date(freshSaleRunFinishedAt).getTime();
+          if (!isNaN(sTs) && !isNaN(fTs) && fTs >= sTs) {
+            timeEl.innerText = formatHHMMSS((fTs - sTs) / 1000);
+          }
+        } else if (runStatus === "in_progress" || envStatus === "running" || freshSaleIsRunning) {
+          const sTs = freshSaleRunStartedAt ? new Date(freshSaleRunStartedAt).getTime() : Date.now();
+          if (!isNaN(sTs)) {
+            timeEl.innerText = formatHHMMSS(Math.max(0, (Date.now() - sTs) / 1000));
+          }
+        } else if (currentFreshSaleEnvelope?.started_at) {
+          if (currentFreshSaleEnvelope.status === "completed" || currentFreshSaleEnvelope.status === "failed") {
+            const sTs = new Date(currentFreshSaleEnvelope.started_at).getTime();
+            const fTs = currentFreshSaleEnvelope.updated_at ? new Date(currentFreshSaleEnvelope.updated_at).getTime() : sTs;
+            timeEl.innerText = formatHHMMSS(Math.max(0, (fTs - sTs) / 1000));
+          }
+        } else {
+          timeEl.innerText = "⏱ 00:00:00";
+        }
       }
     }
 
@@ -9028,13 +9076,14 @@
       let html = "";
       currentFreshSaleRecords.forEach((r, idx) => {
         const status = String(r["Status"] || "Pending");
-        let statusBadge = `<span style="color:#64748B; font-weight:700;">● ${status}</span>`;
+        const remarkTip = r["Remark"] ? ` title="${String(r["Remark"]).replace(/"/g, '&quot;')}"` : "";
+        let statusBadge = `<span${remarkTip} style="color:#64748B; font-weight:700;">● ${status}</span>`;
         if (status.toLowerCase().startsWith("success")) {
-          statusBadge = `<span style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
+          statusBadge = `<span${remarkTip} style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
         } else if (status.toLowerCase().includes("failed") || status.toLowerCase().includes("not found") || status.toLowerCase().includes("error")) {
-          statusBadge = `<span style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
+          statusBadge = `<span${remarkTip} style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
         } else if (status === "In Progress...") {
-          statusBadge = `<span style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
+          statusBadge = `<span${remarkTip} style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
         }
 
         const status100 = String(r["100 Day Status"] || "");
@@ -9046,27 +9095,29 @@
         } else if (status100 === "Already Open") {
           badge100 = `<span style="background:#FFFBEB; color:#B45309; border:1px solid #FCD34D; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Already Open</span>`;
         } else if (status100 === "No Previous Complaint") {
-          badge100 = `<span style="color:#64748B; font-weight:600; font-size:10px;">No Prev</span>`;
+          badge100 = `<span style="background:#F8FAFC; color:#475569; border:1px solid #CBD5E1; border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px;">No Prev Comp</span>`;
         } else if (status100) {
-          badge100 = `<span style="color:#64748B; font-size:10px;">${status100}</span>`;
+          badge100 = `<span style="font-size:10px; color:#64748B;">${status100}</span>`;
         }
 
-        const daysVal = (r["Days Since Close"] !== undefined && r["Days Since Close"] !== null && r["Days Since Close"] !== "") ? `${r["Days Since Close"]}d` : "—";
+        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+        const daysVal = (r["Days Since Close"] !== "" && r["Days Since Close"] !== undefined && r["Days Since Close"] !== null) ? r["Days Since Close"] : "—";
+        const ticketVal = r["LastTicketNo"] || r["Last Ticket No"] || "";
+        const daysWithTicket = ticketVal ? `${daysVal} (${ticketVal})` : `${daysVal}`;
 
-        html += `<tr>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; text-align:center; color:#64748B;">${r["Input Row Number"] || (idx + 1)}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; font-weight:700; color:#0F172A;">${r["Smart Card Number"] || "—"}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; color:#1E293B;">${r["Customer Name"] || "—"}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; color:#1E293B;">${r["Customer Name 2"] || "—"}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; font-weight:600; color:#0284C7;">${r["DT Code"] || "—"}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; font-weight:600; color:#475569;">${r["Distributor ID"] || "—"}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; text-align:center;">${badge100}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; text-align:center; color:#64748B; font-size:11px;">${daysVal}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0;">${statusBadge}</td>
-          <td style="padding:6px 8px; border-bottom:1px solid #E2E8F0; color:#64748B; font-size:11px;">${r["Remark"] || "—"}</td>
+        html += `<tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+          <td style="padding:5px 8px; font-weight:700; color:#475569;">${r["Input Row Number"] || (idx + 1)}</td>
+          <td style="padding:5px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
+          <td style="padding:5px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
+          <td style="padding:5px 8px; color:#0284C7;">${r["Customer Name 2"] || "—"}</td>
+          <td style="padding:5px 8px; font-weight:600; color:#0F172A;">${r["DT Code"] || "—"}</td>
+          <td style="padding:5px 8px; color:#475569;">${r["Distributor ID"] || "—"}</td>
+          <td style="padding:5px 8px;">${badge100}</td>
+          <td style="padding:5px 8px; color:#475569; font-size:10.5px;">${daysWithTicket}</td>
+          <td style="padding:5px 8px; color:#475569; font-size:10px;">${r["Last Booking Date"] || "—"}</td>
+          <td style="padding:5px 8px;">${statusBadge}</td>
         </tr>`;
       });
-
       tbody.innerHTML = html;
     }
 
@@ -9140,158 +9191,254 @@
       const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
       if (statusCheck.error || statusCheck.active) {
         freshSaleIsRunning = true;
-        updateFreshSaleUploadBtn();
+        const upBtn = document.getElementById("btn-upload-fresh-sale");
+        if (upBtn) {
+          upBtn.disabled = true;
+          upBtn.style.opacity = "0.5";
+          upBtn.style.cursor = "not-allowed";
+        }
         const msg = statusCheck.error ? `Could not verify run status, try again (${statusCheck.error})` : "FreshSale workflow is currently queued or running on GitHub! Upload is blocked.";
         showToast("⚠️ " + msg, "error");
         if (event && event.target) event.target.value = "";
         return;
       }
 
-      const file = event.target.files && event.target.files[0];
+      const file = event.target.files[0];
       if (!file) return;
       event.target.value = "";
-
-      const token = getToken();
-      if (!token) {
-        showToast("❌ Device not authorized. Enter device token first.");
-        return;
-      }
 
       showToast(`Uploading '${file.name}' to FreshSale Queue...`);
 
       const reader = new FileReader();
-      reader.onload = async function (e) {
+      reader.onload = async function(e) {
         try {
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+          const workbook = XLSX.read(data, { type: 'array' });
 
-          if (!rows || rows.length === 0) {
-            showToast("❌ Uploaded Excel file is empty!");
+          // FIX 3: Read first sheet that contains a "Smart Card Number" header
+          let targetSheet = null;
+          let targetSheetName = "";
+          let smcColIdx = -1;
+          let headerRow = [];
+
+          for (const sName of workbook.SheetNames) {
+            const ws = workbook.Sheets[sName];
+            const sheetRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+            if (!sheetRows || sheetRows.length < 2) continue;
+
+            const firstRow = sheetRows[0] || [];
+            for (let c = 0; c < firstRow.length; c++) {
+              const hClean = String(firstRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                targetSheet = ws;
+                targetSheetName = sName;
+                smcColIdx = c;
+                headerRow = firstRow;
+                break;
+              }
+            }
+            if (targetSheet) break;
+          }
+
+          if (!targetSheet) {
+            targetSheetName = workbook.SheetNames[0];
+            targetSheet = workbook.Sheets[targetSheetName];
+            const sheetRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
+            headerRow = (sheetRows && sheetRows[0]) ? sheetRows[0] : [];
+            for (let c = 0; c < headerRow.length; c++) {
+              const hClean = String(headerRow[c] || "").trim().toLowerCase().replace(/[\s_\-#]/g, "");
+              if (hClean === "smartcardnumber" || hClean === "smartcard" || hClean === "smc" || hClean === "smc#" || hClean === "smartcardno") {
+                smcColIdx = c;
+                break;
+              }
+            }
+            if (smcColIdx === -1) smcColIdx = 0;
+          }
+
+          const rawRows = XLSX.utils.sheet_to_json(targetSheet, { header: 1, defval: "" });
+          if (!rawRows || rawRows.length < 2) {
+            showToast("❌ Excel file is empty or missing data!");
             return;
           }
 
-          const records = [];
-          rows.forEach((r, idx) => {
-            let smartCard = "";
-            let custName = "";
-            let dtCode = "";
+          // Exact header matching map for laptop UNIFIED_COLUMNS
+          // Customer Name is exact; Customer Name 2 and Related Customer Name are strictly separated
+          const canonicalMap = {
+            "inputrownumber": "Input Row Number",
+            "smartcardnumber": "Smart Card Number",
+            "smartcard": "Smart Card Number",
+            "smc": "Smart Card Number",
+            "smc#": "Smart Card Number",
+            "smartcardno": "Smart Card Number",
+            "customername": "Customer Name",
+            "custname": "Customer Name",
+            "customer": "Customer Name",
+            "customername2": "Customer Name 2",
+            "custname2": "Customer Name 2",
+            "oldrmn": "OLD RMN",
+            "rmn": "OLD RMN",
+            "newrmn": "New RMN",
+            "newmobile": "New RMN",
+            "newmobileno": "New RMN",
+            "billingcycle": "Billing Cycle",
+            "dtcode": "DT Code",
+            "dt": "DT Code",
+            "distributorid": "Distributor ID",
+            "distid": "Distributor ID",
+            "portalcustomerstatus": "Portal Customer Status",
+            "customerstatus": "Portal Customer Status",
+            "status": "Status",
+            "relatedcustomername": "Related Customer Name",
+            "relatedcustomer": "Related Customer Name",
+            "remark": "Remark",
+            "lastbookingdate": "Last Booking Date",
+            "lastticketno": "Last Ticket No",
+            "dayssinceclose": "Days Since Close",
+            "100daystatus": "100 Day Status",
+            "processedat": "Processed At",
+            "complaintremark": "Complaint Remark",
+            "complaintstatus": "Complaint Status"
+          };
 
-            for (const [k, v] of Object.entries(r)) {
-              const cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, "");
-              const cleanVal = String(v).trim();
-              if (cleanKey.includes("smartcard") || cleanKey.includes("cardno") || cleanKey === "card") {
-                smartCard = cleanVal;
-              }
-              const exactK = k.trim().toLowerCase();
-              if (exactK === "customer name" || exactK === "name" || exactK === "subscriber name") {
-                custName = cleanVal;
-              }
-              if (cleanKey.includes("dtcode") || cleanKey === "dt") {
-                dtCode = cleanVal;
-              }
-            }
-
-            if (smartCard) {
-              const recordObj = {
-                "Input Row Number": idx + 1,
-                "Smart Card Number": smartCard,
-                "Customer Name": custName,
-                "Customer Name 2": "",
-                "OLD RMN": String(r["OLD RMN"] || r["RMN"] || "").trim(),
-                "New RMN": String(r["New RMN"] || "").trim(),
-                "Billing Cycle": String(r["Billing Cycle"] || "").trim(),
-                "DT Code": dtCode,
-                "Distributor ID": "",
-                "Portal Customer Status": "",
-                "Status": "Pending",
-                "Related Customer Name": "",
-                "Remark": "",
-                "Last Booking Date": "",
-                "Last Ticket No": "",
-                "Days Since Close": "",
-                "100 Day Status": "",
-                "Processed At": ""
-              };
-              for (const [k, v] of Object.entries(r)) {
-                if (!(k in recordObj)) {
-                  recordObj[k] = v;
-                }
-              }
-              records.push(recordObj);
+          const colToProp = {};
+          headerRow.forEach((h, colIdx) => {
+            const rawH = String(h || "").trim();
+            if (!rawH) return;
+            const normH = rawH.toLowerCase().replace(/[\s_\-#]/g, "");
+            if (canonicalMap[normH]) {
+              colToProp[colIdx] = canonicalMap[normH];
+            } else {
+              // Unknown columns are kept as-is
+              colToProp[colIdx] = rawH;
             }
           });
 
-          if (records.length === 0) {
-            showToast("❌ No valid Smart Card Number columns found in Excel!");
-            return;
+          const records = [];
+          for (let r = 1; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || row[smcColIdx] === undefined || String(row[smcColIdx]).trim() === "") continue;
+            let val = String(row[smcColIdx]).trim();
+            if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
+            val = val.replace(/\D/g, "");
+            if (!val) continue;
+
+            const rec = {
+              "Input Row Number": r,
+              "Smart Card Number": val,
+              "Customer Name": "",
+              "Customer Name 2": "",
+              "OLD RMN": "",
+              "New RMN": "",
+              "Billing Cycle": "",
+              "DT Code": "",
+              "Distributor ID": "",
+              "Portal Customer Status": "",
+              "Status": "Pending",
+              "Related Customer Name": "",
+              "Remark": "",
+              "Last Booking Date": "",
+              "Last Ticket No": "",
+              "Days Since Close": "",
+              "100 Day Status": "",
+              "Processed At": "",
+              "Complaint Remark": "",
+              "Complaint Status": ""
+            };
+
+            // Map all row values according to colToProp
+            Object.keys(colToProp).forEach(cIdx => {
+              const prop = colToProp[cIdx];
+              let cellVal = row[cIdx];
+              if (cellVal === undefined || cellVal === null) cellVal = "";
+              cellVal = String(cellVal).trim();
+              if (prop === "Smart Card Number") {
+                rec[prop] = val;
+              } else if (prop === "OLD RMN" || prop === "New RMN") {
+                if (cellVal.endsWith(".0") && !isNaN(cellVal)) cellVal = cellVal.slice(0, -2);
+                rec[prop] = cellVal.replace(/\D/g, "");
+              } else if (prop === "Status") {
+                // FIX 8: Do NOT copy Status column from uploaded Excel into queue; starts as Pending
+              } else {
+                rec[prop] = cellVal;
+              }
+            });
+
+            rec["Status"] = "Pending";
+            records.push(rec);
           }
 
-          showToast(`Committing ${records.length} records to GitHub fresh_sales_queue.json...`);
-
-          let sha = null;
-          try {
-            const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
-              headers: { "Authorization": `token ${token}` }
-            });
-            if (chk.ok) {
-              const cdata = await chk.json();
-              sha = cdata.sha;
-            }
-          } catch (e) {}
+          if (records.length === 0) {
+            showToast("❌ No valid Smart Card Numbers found in Excel!");
+            return;
+          }
 
           const queuePayload = {
             records: records,
             status: "idle",
-            run_id: "",
-            started_at: "",
-            finished_at: "",
-            updated_at: new Date().toISOString(),
             total: records.length,
             processed: 0,
             pending: records.length,
-            success: 0,
-            failed: 0,
-            current_card: "",
-            activity: "Ready to process",
-            error: null,
-            completed: false
+            updated_at: new Date().toISOString()
           };
 
-          const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
+          const token = getToken();
+          const jsonStr = JSON.stringify(queuePayload, null, 2);
+          const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
+          // Check latest SHA
+          let sha = currentFreshSaleSha;
+          if (!sha) {
+            try {
+              const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
+                headers: { "Authorization": `token ${token}` }
+              });
+              if (chk.ok) {
+                const cdata = await chk.json();
+                sha = cdata.sha;
+              }
+            } catch(e) {}
+          }
+
+          const bodyObj = {
+            message: `Upload ${records.length} Smart Cards to FreshSale Queue via Portal [skip ci]`,
+            content: b64,
+            branch: "main"
+          };
+          if (sha) bodyObj.sha = sha;
+
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
             method: "PUT",
             headers: {
               "Authorization": `token ${token}`,
               "Content-Type": "application/json",
               "Accept": "application/vnd.github.v3+json"
             },
-            body: JSON.stringify({
-              message: `chore: upload ${records.length} records to fresh_sales_queue.json [portal] [skip ci]`,
-              content: btoa(unescape(encodeURIComponent(JSON.stringify(queuePayload, null, 2)))),
-              sha: sha,
-              branch: "main"
-            })
+            body: JSON.stringify(bodyObj)
           });
 
-          if (putRes.ok) {
-            showToast(`✅ Successfully uploaded ${records.length} rows to FreshSale Queue!`);
+          if (res.ok) {
+            const respJson = await res.json();
+            currentFreshSaleSha = respJson.content?.sha;
             currentFreshSaleRecords = records;
-            currentFreshSaleEnvelope = queuePayload;
-            freshSaleQueueFetchError = null;
+            showToast(`✓ Uploaded ${records.length} Smart Cards to FreshSale Queue!`);
             updateFreshSaleUI(queuePayload);
           } else {
-            showToast(`❌ Failed to commit queue: ${putRes.statusText}`);
+            showToast(`❌ Upload failed: ${res.statusText}`);
           }
         } catch (err) {
-          console.error("Excel parse error:", err);
-          showToast(`❌ Failed to read Excel file: ${err.message}`);
+          console.error("FreshSale upload error:", err);
+          showToast(`❌ Error: ${err.message}`);
         }
       };
       reader.readAsArrayBuffer(file);
     }
 
     async function dispatchFreshSaleRun() {
+      if (freshSaleIsRunning) {
+        showToast("⚠️ FreshSale Automation is already running or starting on cloud!");
+        return;
+      }
+
       const token = getToken();
       if (!token) {
         showToast("❌ Device not authorized. Enter device token first.");
@@ -9303,12 +9450,22 @@
         return;
       }
 
+      const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+      if (statusCheck.active) {
+        freshSaleIsRunning = true;
+        updateFreshSaleUploadBtn();
+        showToast("⚠️ FreshSale workflow is already running or queued on GitHub!");
+        return;
+      }
+
       const dtSelect = document.getElementById("freshsale-dt-select");
       const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
 
       showToast(`🚀 Launching FreshSale Automation on cloud for ${dtCode}...`);
 
       const dispatchTime = Date.now();
+      freshSaleIsRunning = true;
+      updateFreshSaleUploadBtn();
 
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/dispatches`, {
@@ -9330,9 +9487,13 @@
           showToast(`✓ FreshSale Automation started on Cloud for ${dtCode}!`);
           startFreshSaleTracking(dispatchTime);
         } else {
+          freshSaleIsRunning = false;
+          updateFreshSaleUploadBtn();
           showToast(`❌ Dispatch failed: ${res.statusText}`);
         }
       } catch (err) {
+        freshSaleIsRunning = false;
+        updateFreshSaleUploadBtn();
         console.error("dispatchFreshSaleRun error:", err);
         showToast(`❌ Error launching: ${err.message}`);
       }
@@ -9522,6 +9683,7 @@
           "Complaint Status"
         ];
 
+        // 1. Master Sheet
         const masterRows = [headers];
         const dtGroups = {};
         const issueRows = [headers];
@@ -9533,7 +9695,7 @@
             r["Smart Card Number"] || "",
             r["Customer Name"] || "",
             r["Customer Name 2"] || "",
-            r["OLD RMN"] || r["RMN"] || "",
+            r["OLD RMN"] || "",
             r["New RMN"] || "",
             r["Billing Cycle"] || "",
             r["DT Code"] || "",
@@ -9552,26 +9714,48 @@
           ];
           masterRows.push(rowVals);
 
-          const dtVal = String(r["DT Code"] || "Unknown_DT").replace(/[\/\?*:\[\]]/g, "_").slice(0, 31).trim();
-          if (!dtGroups[dtVal]) dtGroups[dtVal] = [headers];
-          dtGroups[dtVal].push(rowVals);
+          // DT Grouping
+          let dtKey = String(r["DT Code"] || "").trim();
+          const distKey = String(r["Distributor ID"] || "").trim().toLowerCase();
+          const statKey = String(r["Status"] || "").trim().toLowerCase();
 
-          const stLow = String(r["Status"] || "").toLowerCase();
-          const isIssue = !stLow.startsWith("success") || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error") || Boolean(r["Remark"]);
+          if (distKey.includes("it-ops") || dtKey.toLowerCase().includes("it-ops") || statKey.includes("it-ops")) {
+            dtKey = "IT-Ops";
+          } else if (dtKey.toLowerCase().includes("customer not found") || statKey.includes("customer not found")) {
+            dtKey = "Customer Not Found";
+          } else if (!dtKey || dtKey.toLowerCase().includes("not found")) {
+            dtKey = "DT Not Found";
+          } else {
+            dtKey = dtKey.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 31);
+          }
+
+          if (!dtGroups[dtKey]) dtGroups[dtKey] = [headers];
+          dtGroups[dtKey].push(rowVals);
+
+          // Issues
+          const isIssue = (
+            statKey !== "success" &&
+            statKey !== "success (dt only)" &&
+            statKey !== "success (distributor id only)"
+          ) || statKey.includes("failed") || statKey.includes("not found") || statKey.includes("error") || Boolean(r["Remark"]);
+
           if (isIssue) {
             issueRows.push(rowVals);
           }
         });
 
+        // Append Master sheet
         const wsMaster = XLSX.utils.aoa_to_sheet(masterRows);
         XLSX.utils.book_append_sheet(wb, wsMaster, "Master");
 
+        // Append one sheet per DT
         for (const [dtName, rows] of Object.entries(dtGroups)) {
           const wsDT = XLSX.utils.aoa_to_sheet(rows);
           const safeTitle = dtName.slice(0, 31);
           XLSX.utils.book_append_sheet(wb, wsDT, safeTitle);
         }
 
+        // Append Issues sheet
         if (issueRows.length > 1) {
           const wsIssues = XLSX.utils.aoa_to_sheet(issueRows);
           XLSX.utils.book_append_sheet(wb, wsIssues, "Issues");
@@ -9585,6 +9769,8 @@
         showToast("❌ Download failed: " + err.message);
       }
     }
+
+    
 
     // ==========================================
     // MOBILE UPDATE AUTOMATION (CLOUD RUNNER)
