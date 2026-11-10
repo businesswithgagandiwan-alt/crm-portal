@@ -2258,6 +2258,27 @@
 
     }
 
+    .period-btn {
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .period-btn:hover {
+      background: #F1F5F9;
+      border-color: #94A3B8;
+    }
+    .period-btn.active {
+      background: #0284C7;
+      border-color: #0284C7;
+      color: #FFFFFF;
+      font-weight: 700;
+    }
   </style>
 
 
@@ -3011,222 +3032,178 @@
         <!-- ================= MODULE 2: ASSIGN COMPLAINT ================= -->
 
         <div class="group-box" id="view-assign_complaint" style="display: none;">
-
           <div class="group-box-title">Assign Complaint</div>
 
-
-
           <!-- 11 Action Buttons -->
-
           <div class="action-btns-grid">
-
             <div class="action-row-6">
-
-              <button class="action-btn-3d" onclick="showToast('Excel Data Bank loaded!')">Upload<br>Excel</button>
-
-              <button class="action-btn-3d" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
-
+              <button class="action-btn-3d" id="btn-assign-fake-upload" disabled title="Not available on cloud" style="opacity:0.5; cursor:not-allowed;">Upload<br>Excel</button>
+              <button class="action-btn-3d" id="btn-assign-open-browser" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
-
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
-
-              <button class="action-btn-3d" onclick="openAssignDTDialog()">Start<br>Processing</button>
-
-              <button class="action-btn-3d" onclick="downloadReport()">Select Existing<br>Output</button>
-
+              <button class="action-btn-3d" id="btn-start-assign" onclick="openAssignDTDialog()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadAssignReport()">Select Existing<br>Output</button>
             </div>
-
             <div class="action-row-5">
-
-              <button class="action-btn-3d" onclick="showToast('Pause signal sent')">Pause</button>
-
-              <button class="action-btn-3d" onclick="openAssignDTDialog()">Resume</button>
-
-              <button class="action-btn-3d" onclick="showToast('Cancel signal sent')">Cancel</button>
-
-              <button class="action-btn-3d" onclick="downloadReport()">Open<br>Output</button>
-
+              <button class="action-btn-3d" id="btn-assign-fake-pause" disabled title="Not available on cloud" style="opacity:0.5; cursor:not-allowed;">Pause</button>
+              <button class="action-btn-3d" id="btn-resume-assign" onclick="openAssignDTDialog()">Resume</button>
+              <button class="action-btn-3d" id="btn-assign-fake-cancel" disabled title="Not available on cloud" style="opacity:0.5; cursor:not-allowed;">Cancel</button>
+              <button class="action-btn-3d" onclick="downloadAssignReport()">Open<br>Output</button>
               <button class="action-btn-3d action-btn-blue" onclick="cloudSync()">☁️ Cloud<br>Sync</button>
-
               <button class="action-btn-3d" onclick="showToast('App running in cloud')">Exit</button>
-
             </div>
-
           </div>
-
-
 
           <!-- Exact Qt App 3-Row Status Strip -->
-
           <div class="status-strip-frame">
-
             <!-- Row 0: Session & Input -->
-
             <div class="status-strip-row session-row">
-
               <div class="strip-heading">Session & Input</div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">BROWSER</div>
-
                 <div class="stacked-card-value status-idle" id="assign-browser-status">● Idle</div>
-
               </div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">PORTAL</div>
-
                 <div class="stacked-card-value status-idle" id="assign-portal-status">● Standby</div>
-
               </div>
-
               <div class="stacked-card" style="grid-column: span 2;">
-
                 <div class="stacked-card-title">PATH</div>
-
-                <div class="stacked-card-value" style="color: #0284C7;">📁 Saved Direct Queue</div>
-
+                <div class="stacked-card-value" id="assign-path-status" style="color: #0284C7; font-size:11px;">📁 assign_run_state.json</div>
               </div>
-
               <div class="stacked-card" style="grid-column: span 2;">
-
                 <div class="stacked-card-title">VALIDATION</div>
-
-                <div class="stacked-card-value" style="color: #16A34A;">● Direct Queue Active</div>
-
+                <div class="stacked-card-value" id="assign-val-status" style="color: #16A34A;">● Ready</div>
               </div>
-
             </div>
-
-
 
             <!-- Row 1: Current Processing -->
-
             <div class="status-strip-row proc-row">
-
               <div class="strip-heading">Current Processing</div>
-
               <div class="stacked-card" style="grid-column: span 2;">
-
                 <div class="stacked-card-title">SMART CARD</div>
-
-                <div class="stacked-card-value" id="assign-card-label">—</div>
-
+                <div class="stacked-card-value" id="assign-card-label" style="font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">—</div>
               </div>
-
               <div class="stacked-card" style="grid-column: span 2;">
-
                 <div class="stacked-card-title">ACTIVITY</div>
-
-                <div class="stacked-card-value" id="assign-activity-label">Awaiting Input... (Click Start Processing to Assign)</div>
-
+                <div class="stacked-card-value" id="assign-activity-label" style="font-size:11px;">Awaiting Input... (Click Start Processing to Assign)</div>
               </div>
-
               <div class="stacked-card" style="grid-column: span 2;">
-
                 <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
-
                   <span>PROGRESS</span>
-
                   <span id="assign-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
-
                 </div>
-
                 <div class="progress-track" id="assign-progress-track">
-
                   <div class="progress-bar" id="assign-progress-bar" style="width:0%;"></div>
-
                 </div>
-
               </div>
-
             </div>
 
-
-
-            <!-- Row 2: Statistics -->
-
-            <div class="status-strip-row stats-row">
-
+            <!-- Row 2: Statistics (7 columns) -->
+            <div class="status-strip-row stats-row" style="grid-template-columns: repeat(7, 1fr);">
               <div class="strip-heading">Statistics</div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">TOTAL</div>
-
                 <div class="stacked-card-value" id="assign-stat-total">● 0</div>
-
               </div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">PROCESSED</div>
-
                 <div class="stacked-card-value" id="assign-stat-processed">● 0</div>
-
               </div>
-
               <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
-
                 <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
-
-                <div class="stacked-card-value" id="assign-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
-
+                <div class="stacked-card-value" id="assign-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">—</div>
               </div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">SUCCESS</div>
-
-                <div class="stacked-card-value status-booked" id="assign-stat-booked">● 0</div>
-
+                <div class="stacked-card-value status-booked" id="assign-stat-success">● 0</div>
               </div>
-
               <div class="stacked-card">
-
                 <div class="stacked-card-title">FAILED</div>
-
                 <div class="stacked-card-value" id="assign-stat-failed">● 0</div>
-
               </div>
-
               <div class="stacked-card">
-
-                <div class="stacked-card-title">TIME</div>
-
-                <div class="stacked-card-value" id="assign-stat-time">⏱ 00:00</div>
-
+                <div class="stacked-card-title">SKIPPED</div>
+                <div class="stacked-card-value" id="assign-stat-skipped" style="color:#64748B;">● 0</div>
               </div>
-
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="assign-stat-time">⏱ 00:00:00</div>
+              </div>
             </div>
-
           </div>
 
+          <!-- Last Run Summary Line -->
+          <div id="assign-last-run-summary" style="font-size:11.5px; color:#475569; margin:6px 0 6px 4px; font-weight:600;">Last run: —</div>
 
-
-          <!-- Direct Queue Engineer Card -->
-
-          <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:8px 12px; margin-top:4px; display:flex; justify-content:space-around; align-items:center; font-size:11.5px;">
-
-            <div><b>DT-2016272:</b> <span style="color:#15803D; font-weight:700;">MonuDubey</span></div>
-
-            <div style="color:#94A3B8;">|</div>
-
-            <div><b>DT-2017416:</b> <span style="color:#7C3AED; font-weight:700;">Pavan KumarSharma</span></div>
-
+          <!-- Analytics Controls: Period Selector & Success Rate -->
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#F8FAFC; border:1px solid #E2E8F0; border-radius:6px; padding:6px 12px; margin-bottom:8px;">
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span style="font-size:11.5px; font-weight:700; color:#334155; margin-right:4px;">Period:</span>
+              <button class="period-btn active" id="btn-period-today" onclick="setAssignPeriod('today')">Today</button>
+              <button class="period-btn" id="btn-period-yesterday" onclick="setAssignPeriod('yesterday')">Yesterday</button>
+              <button class="period-btn" id="btn-period-7days" onclick="setAssignPeriod('7days')">Last 7 days</button>
+              <button class="period-btn" id="btn-period-all" onclick="setAssignPeriod('all')">All kept history</button>
+            </div>
+            <div id="assign-period-rate" style="font-size:11.5px; font-weight:800; color:#15803D; background:#F0FDF4; border:1px solid #86EFAC; border-radius:4px; padding:2px 8px;">Success Rate: —</div>
           </div>
 
+          <!-- Per-DT / Engineer Summary Breakdown Table -->
+          <div id="assign-dt-summary-container" style="margin-bottom:10px;"></div>
 
+          <!-- Live Tickets Processing Table (Active during run) -->
+          <div id="assign-live-tickets-container" style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; margin-bottom:10px; overflow:hidden; display:none;">
+            <div style="background:#0F172A; color:#FFFFFF; padding:6px 10px; font-size:11.5px; font-weight:700; display:flex; justify-content:space-between;">
+              <span>⚡ Live Run Processed Tickets</span>
+              <span id="assign-live-tickets-count" style="font-size:10.5px; color:#94A3B8;">0 tickets</span>
+            </div>
+            <div style="max-height:160px; overflow-y:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+                <thead>
+                  <tr style="background:#1E293B; color:#94A3B8; position:sticky; top:0;">
+                    <th style="padding:4px 8px;">#</th>
+                    <th style="padding:4px 8px;">Ticket ID</th>
+                    <th style="padding:4px 8px;">Subject</th>
+                    <th style="padding:4px 8px;">Status</th>
+                    <th style="padding:4px 8px;">Message</th>
+                    <th style="padding:4px 8px;">Time (IST)</th>
+                  </tr>
+                </thead>
+                <tbody id="assign-live-tickets-body">
+                  <tr><td colspan="6" style="padding:10px; text-align:center; color:#94A3B8;">No tickets in current run.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-          <!-- Activity Log Box removed as requested -->
-
+          <!-- Run-History Table (Newest first, lists all runs) -->
+          <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; overflow:hidden;">
+            <div style="background:#F1F5F9; border-bottom:1px solid #CBD5E1; color:#1E293B; padding:6px 10px; font-size:11.5px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
+              <span>📜 Assign Run History</span>
+              <span id="assign-history-count" style="font-size:10.5px; color:#64748B;">Showing 0 runs</span>
+            </div>
+            <div style="max-height:220px; overflow-y:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+                <thead>
+                  <tr style="background:#F8FAFC; color:#64748B; border-bottom:1px solid #E2E8F0; position:sticky; top:0; z-index:2;">
+                    <th style="padding:6px 8px;">#</th>
+                    <th style="padding:6px 8px;">Date & Time (IST)</th>
+                    <th style="padding:6px 8px;">DT Code</th>
+                    <th style="padding:6px 8px;">Engineer</th>
+                    <th style="padding:6px 8px; text-align:center;">Processed</th>
+                    <th style="padding:6px 8px; text-align:center;">Success</th>
+                    <th style="padding:6px 8px; text-align:center;">Failed</th>
+                    <th style="padding:6px 8px; text-align:center;">Skipped</th>
+                    <th style="padding:6px 8px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="assign-history-table-body">
+                  <tr><td colspan="9" style="padding:16px; text-align:center; color:#94A3B8;">Loading history...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-
-
-
-        <!-- ================= MODULE 3: CLOSE COMPLAINT ================= -->
 
         <div class="group-box" id="view-close_complaint" style="display: none;">
 
@@ -4761,6 +4738,8 @@
 
         document.getElementById("view-assign_complaint").style.display = "flex";
 
+        checkAndResumeAssignRun();
+
       } else if (mod === "close_complaint") {
 
         document.getElementById("view-close_complaint").style.display = "flex";
@@ -5723,83 +5702,916 @@
 
     // Trigger Complaint Assign via GitHub Actions
 
+    
+    // ==========================================
+    // ASSIGN COMPLAINT LIVE DASHBOARD & ANALYTICS
+    // ==========================================
+    let assignIsRunning = false;
+    let assignPollInterval = null;
+    let assignTimerInterval = null;
+    let assignCurrentPeriod = "today";
+    let assignRawHistory = [];
+    let assignCurrentState = null;
+
+    function formatAssignIST(tsStr) {
+      if (!tsStr) return null;
+      let s = String(tsStr).trim();
+      if (!s.endsWith('Z') && !s.includes('+')) {
+        s += 'Z';
+      }
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return null;
+      const istTime = d.getTime() + (5.5 * 3600 * 1000);
+      const istDate = new Date(istTime);
+      let hours = istDate.getUTCHours();
+      const minutes = String(istDate.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(istDate.getUTCSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const time12 = `${hours}:${minutes} ${ampm}`;
+      const timeWithSec = `${hours}:${minutes}:${seconds} ${ampm}`;
+      const dateStr = istDate.toISOString().slice(0, 10);
+      return {
+        dateObj: d,
+        istDateObj: istDate,
+        dateStr: dateStr,
+        time12: time12,
+        timeWithSec: timeWithSec,
+        formattedFull: `${dateStr} ${time12}`
+      };
+    }
+
+    function formatDurationHHMMSS(ms) {
+      if (!ms || ms < 0) ms = 0;
+      const totalSec = Math.floor(ms / 1000);
+      const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+      const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+      const ss = String(totalSec % 60).padStart(2, '0');
+      return `${hh}:${mm}:${ss}`;
+    }
+
+    function updateAssignPathAndValBoxes(fetchError = null) {
+      const pathBox = document.getElementById("assign-path-status");
+      const valBox = document.getElementById("assign-val-status");
+
+      // PATH box: show assign_run_state.json last updated (IST) or error
+      if (pathBox) {
+        if (fetchError) {
+          pathBox.innerText = `📁 assign_run_state.json (${fetchError})`;
+          pathBox.style.color = "#EF4444";
+        } else if (assignCurrentState && assignCurrentState.updated_at) {
+          const ist = formatAssignIST(assignCurrentState.updated_at);
+          const tStr = ist ? ist.time12 : "";
+          pathBox.innerText = `📁 assign_run_state.json${tStr ? ' (' + tStr + ' IST)' : ''}`;
+          pathBox.style.color = "#0284C7";
+        } else {
+          pathBox.innerText = "📁 assign_run_state.json";
+          pathBox.style.color = "#0284C7";
+        }
+      }
+
+      // VALIDATION box: real validation (token present, files readable, last run not failed)
+      if (valBox) {
+        const token = getToken();
+        if (!token) {
+          valBox.innerText = "● No Token";
+          valBox.style.color = "#EF4444";
+        } else if (fetchError) {
+          valBox.innerText = "● Read Error";
+          valBox.style.color = "#EF4444";
+        } else {
+          const lastRunStatus = (assignCurrentState && assignCurrentState.status) || (assignRawHistory.length > 0 ? assignRawHistory[0].status : null);
+          if (lastRunStatus === "failed") {
+            valBox.innerText = "● Last Run Failed";
+            valBox.style.color = "#DC2626";
+          } else {
+            valBox.innerText = "● Ready";
+            valBox.style.color = "#16A34A";
+          }
+        }
+      }
+    }
+
+    function setAssignPeriod(period) {
+      assignCurrentPeriod = period;
+      ['today', 'yesterday', '7days', 'all'].forEach(p => {
+        const btn = document.getElementById(`btn-period-${p}`);
+        if (btn) {
+          if (p === period) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+      renderAssignAnalytics();
+    }
+
+    function getFilteredAssignHistory() {
+      if (!Array.isArray(assignRawHistory) || assignRawHistory.length === 0) return [];
+      const nowIST = new Date(Date.now() + 5.5 * 3600 * 1000);
+      const todayISTStr = nowIST.toISOString().slice(0, 10);
+
+      const yestDate = new Date(nowIST.getTime() - 24 * 3600 * 1000);
+      const yesterdayISTStr = yestDate.toISOString().slice(0, 10);
+
+      const sevenDaysAgoDate = new Date(nowIST.getTime() - 7 * 24 * 3600 * 1000);
+      const sevenDaysAgoStr = sevenDaysAgoDate.toISOString().slice(0, 10);
+
+      return assignRawHistory.filter(r => {
+        const ts = r.timestamp || r.finished_at || r.started_at;
+        const ist = formatAssignIST(ts);
+        if (!ist) return false;
+        if (assignCurrentPeriod === "today") {
+          return ist.dateStr === todayISTStr;
+        } else if (assignCurrentPeriod === "yesterday") {
+          return ist.dateStr === yesterdayISTStr;
+        } else if (assignCurrentPeriod === "7days") {
+          return ist.dateStr >= sevenDaysAgoStr;
+        } else {
+          return true; // all kept history
+        }
+      });
+    }
+
+    function renderAssignAnalytics() {
+      const filtered = getFilteredAssignHistory();
+      let totProc = 0, totSucc = 0, totFail = 0, totSkip = 0;
+      const dtGroups = {};
+
+      filtered.forEach(r => {
+        const p = r.processed || 0;
+        const s = r.success || 0;
+        const f = r.failed || 0;
+        const sk = r.skipped_other_dt || 0;
+        totProc += p;
+        totSucc += s;
+        totFail += f;
+        totSkip += sk;
+
+        const dtKey = r.dt_code || "Unknown";
+        if (!dtGroups[dtKey]) {
+          dtGroups[dtKey] = {
+            dt_code: dtKey,
+            engineer: r.engineer || (dtKey.includes("2016272") ? "MonuDubey" : "Pavan KumarSharma"),
+            runsCount: 0,
+            processed: 0,
+            success: 0,
+            failed: 0,
+            skipped: 0
+          };
+        }
+        dtGroups[dtKey].runsCount += 1;
+        dtGroups[dtKey].processed += p;
+        dtGroups[dtKey].success += s;
+        dtGroups[dtKey].failed += f;
+        dtGroups[dtKey].skipped += sk;
+      });
+
+      // Update Success Rate badge
+      const rateEl = document.getElementById("assign-period-rate");
+      if (rateEl) {
+        if (totProc > 0) {
+          const ratePct = ((totSucc / totProc) * 100).toFixed(1);
+          rateEl.innerText = `Success Rate: ${ratePct}% (${totSucc} / ${totProc})`;
+          rateEl.style.color = "#15803D";
+          rateEl.style.background = "#F0FDF4";
+          rateEl.style.borderColor = "#86EFAC";
+        } else {
+          rateEl.innerText = "Success Rate: —";
+          rateEl.style.color = "#64748B";
+          rateEl.style.background = "#F8FAFC";
+          rateEl.style.borderColor = "#CBD5E1";
+        }
+      }
+
+      // If NOT running, update status boxes to show selected period totals
+      if (!assignIsRunning) {
+        const tEl = document.getElementById("assign-stat-total");
+        const pEl = document.getElementById("assign-stat-processed");
+        const rEl = document.getElementById("assign-stat-pending");
+        const sEl = document.getElementById("assign-stat-success");
+        const fEl = document.getElementById("assign-stat-failed");
+        const skEl = document.getElementById("assign-stat-skipped");
+        if (tEl) tEl.innerText = `● ${totProc}`;
+        if (pEl) pEl.innerText = `● ${totProc}`;
+        if (rEl) rEl.innerText = `—`;
+        if (sEl) sEl.innerText = `● ${totSucc}`;
+        if (fEl) fEl.innerText = `● ${totFail}`;
+        if (skEl) skEl.innerText = `● ${totSkip}`;
+      }
+
+      // Render Per-DT Summary breakdown
+      const dtContainer = document.getElementById("assign-dt-summary-container");
+      if (dtContainer) {
+        const dtList = Object.values(dtGroups);
+        if (dtList.length === 0) {
+          dtContainer.innerHTML = `
+            <div style="background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:6px; padding:10px; font-size:11px; text-align:center; color:#64748B;">
+              No assign runs found for selected period (${assignCurrentPeriod}).
+            </div>`;
+        } else {
+          let rowsHtml = '';
+          dtList.forEach(item => {
+            const dtRate = item.processed > 0 ? ((item.success / item.processed) * 100).toFixed(1) + '%' : '—';
+            rowsHtml += `
+              <tr style="border-bottom:1px solid #E2E8F0;">
+                <td style="padding:6px 10px; font-weight:700; color:#0F172A;">${item.dt_code}</td>
+                <td style="padding:6px 10px; color:#475569;">${item.engineer}</td>
+                <td style="padding:6px 10px; text-align:center; color:#334155; font-weight:600;">${item.runsCount}</td>
+                <td style="padding:6px 10px; text-align:center; font-weight:700; color:#0284C7;">${item.processed}</td>
+                <td style="padding:6px 10px; text-align:center; font-weight:700; color:#16A34A;">${item.success}</td>
+                <td style="padding:6px 10px; text-align:center; font-weight:700; color:${item.failed > 0 ? '#DC2626' : '#94A3B8'};">${item.failed}</td>
+                <td style="padding:6px 10px; text-align:center; font-weight:600; color:#64748B;">${item.skipped}</td>
+                <td style="padding:6px 10px; text-align:center; font-weight:800; color:#15803D;">${dtRate}</td>
+              </tr>`;
+          });
+          dtContainer.innerHTML = `
+            <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; overflow:hidden;">
+              <div style="background:#F1F5F9; border-bottom:1px solid #CBD5E1; padding:5px 10px; font-size:11.5px; font-weight:700; color:#1E293B;">
+                📊 Engineer / DT Breakdown (${assignCurrentPeriod})
+              </div>
+              <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+                <thead>
+                  <tr style="background:#F8FAFC; color:#64748B; border-bottom:1px solid #E2E8F0;">
+                    <th style="padding:5px 10px;">DT Code</th>
+                    <th style="padding:5px 10px;">Engineer</th>
+                    <th style="padding:5px 10px; text-align:center;">Runs</th>
+                    <th style="padding:5px 10px; text-align:center;">Processed</th>
+                    <th style="padding:5px 10px; text-align:center;">Success</th>
+                    <th style="padding:5px 10px; text-align:center;">Failed</th>
+                    <th style="padding:5px 10px; text-align:center;">Skipped</th>
+                    <th style="padding:5px 10px; text-align:center;">Rate</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>`;
+        }
+      }
+
+      // Render Run-History table with dark readable text matching DT breakdown
+      const histBody = document.getElementById("assign-history-table-body");
+      const histCount = document.getElementById("assign-history-count");
+      if (histCount) histCount.innerText = `Showing ${filtered.length} runs`;
+      if (histBody) {
+        if (filtered.length === 0) {
+          histBody.innerHTML = `<tr><td colspan="9" style="padding:16px; text-align:center; color:#94A3B8;">No runs in ${assignCurrentPeriod}</td></tr>`;
+        } else {
+          let rows = '';
+          filtered.forEach((r, idx) => {
+            const ts = r.timestamp || r.finished_at || r.started_at;
+            const ist = formatAssignIST(ts);
+            const dateStr = ist ? `${ist.dateStr} ${ist.time12}` : '—';
+            const st = r.status || 'completed';
+            const stBadge = st === 'completed'
+              ? `<span style="background:#DCFCE7; color:#15803D; padding:2px 6px; border-radius:3px; font-weight:700;">Completed</span>`
+              : st === 'running'
+              ? `<span style="background:#E0F2FE; color:#0369A1; padding:2px 6px; border-radius:3px; font-weight:700;">Running</span>`
+              : `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 6px; border-radius:3px; font-weight:700;">${st}</span>`;
+
+            rows += `
+              <tr style="border-bottom:1px solid #E2E8F0;">
+                <td style="padding:6px 8px; color:#64748B;">${idx + 1}</td>
+                <td style="padding:6px 8px; font-weight:600; color:#334155;">${dateStr}</td>
+                <td style="padding:6px 8px; font-weight:700; color:#0284C7;">${r.dt_code || '—'}</td>
+                <td style="padding:6px 8px; color:#475569;">${r.engineer || '—'}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:#0284C7;">${r.processed || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:#16A34A;">${r.success || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:${(r.failed || 0) > 0 ? '#DC2626' : '#94A3B8'};">${r.failed || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:600; color:#64748B;">${r.skipped_other_dt || 0}</td>
+                <td style="padding:6px 8px;">${stBadge}</td>
+              </tr>`;
+          });
+          histBody.innerHTML = rows;
+        }
+      }
+    }
+
+    function renderAssignLiveTickets(tickets) {
+      const container = document.getElementById("assign-live-tickets-container");
+      const body = document.getElementById("assign-live-tickets-body");
+      const countEl = document.getElementById("assign-live-tickets-count");
+      if (!container || !body) return;
+
+      if (!Array.isArray(tickets) || tickets.length === 0) {
+        if (!assignIsRunning) {
+          container.style.display = "none";
+        } else {
+          container.style.display = "block";
+          if (countEl) countEl.innerText = "0 tickets";
+          body.innerHTML = `<tr><td colspan="6" style="padding:10px; text-align:center; color:#94A3B8;">Processing starting...</td></tr>`;
+        }
+        return;
+      }
+
+      container.style.display = "block";
+      if (countEl) countEl.innerText = `${tickets.length} ticket${tickets.length > 1 ? 's' : ''}`;
+
+      let rows = '';
+      tickets.forEach((t, i) => {
+        const ist = formatAssignIST(t.time || t.assigned_at || t.timestamp);
+        const timeStr = ist ? ist.timeWithSec : '—';
+        const st = String(t.status || '').toLowerCase();
+        let stBadge = `<span style="background:#F1F5F9; color:#475569; padding:2px 5px; border-radius:3px;">${t.status || 'Processed'}</span>`;
+        if (st.includes('success')) {
+          stBadge = `<span style="background:#DCFCE7; color:#15803D; padding:2px 5px; border-radius:3px; font-weight:700;">✓ Success</span>`;
+        } else if (st.includes('fail') || st.includes('error')) {
+          stBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 5px; border-radius:3px; font-weight:700;">✗ Failed</span>`;
+        } else if (st.includes('skip')) {
+          stBadge = `<span style="background:#F1F5F9; color:#64748B; padding:2px 5px; border-radius:3px; font-weight:700;">↷ Skipped</span>`;
+        }
+
+        rows += `
+          <tr style="border-bottom:1px solid #E2E8F0;">
+            <td style="padding:4px 8px; color:#64748B;">${i + 1}</td>
+            <td style="padding:4px 8px; font-weight:700; color:#0284C7;">#${t.ticket_id || '—'}</td>
+            <td style="padding:4px 8px; color:#1E293B; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${t.subject || ''}">${t.subject || '—'}</td>
+            <td style="padding:4px 8px;">${stBadge}</td>
+            <td style="padding:4px 8px; color:#475569; font-size:10.5px;">${t.message || t.remark || '—'}</td>
+            <td style="padding:4px 8px; color:#64748B; font-size:10.5px;">${timeStr}</td>
+          </tr>`;
+      });
+      body.innerHTML = rows;
+    }
+
+    function setAssignActionButtonsDisabled(disabled) {
+      const bStart = document.getElementById("btn-start-assign");
+      const bResume = document.getElementById("btn-resume-assign");
+      const bSubmit = document.getElementById("btn-submit-assign");
+      const bOpenBrowser = document.getElementById("btn-assign-open-browser");
+      [bStart, bResume, bSubmit, bOpenBrowser].forEach(btn => {
+        if (btn) {
+          btn.disabled = disabled;
+          btn.style.opacity = disabled ? "0.5" : "1";
+          btn.style.cursor = disabled ? "not-allowed" : "pointer";
+        }
+      });
+    }
+
+    function openAssignDTDialog() {
+      if (assignIsRunning) {
+        showToast("⚠️ An Assign run is currently active!");
+        return;
+      }
+      document.getElementById("assign-dialog").style.display = "flex";
+    }
+
+    async function fetchAssignHistory() {
+      const token = getToken();
+      if (!token) {
+        updateAssignPathAndValBoxes();
+        return;
+      }
+
+      let fetchErr = null;
+      try {
+        // 1. Fetch assign_history.json
+        const hRes = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_history.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (hRes.ok) {
+          const apiJson = await hRes.json();
+          let hist = [];
+          if (apiJson.content && apiJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            hist = JSON.parse(rawUtf8);
+          } else if (Array.isArray(apiJson)) {
+            hist = apiJson;
+          }
+          if (Array.isArray(hist)) {
+            assignRawHistory = hist;
+          }
+        } else {
+          fetchErr = `HTTP ${hRes.status}`;
+        }
+
+        // 2. Fetch assign_run_state.json
+        const sRes = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_run_state.json?_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (sRes.ok) {
+          const sJson = await sRes.json();
+          if (sJson.content && sJson.encoding === "base64") {
+            const rawUtf8 = decodeURIComponent(escape(atob(sJson.content.replace(/\s/g, ''))));
+            assignCurrentState = JSON.parse(rawUtf8);
+          }
+        } else if (!fetchErr) {
+          fetchErr = `HTTP ${sRes.status}`;
+        }
+
+        // Update PATH & VALIDATION status boxes
+        updateAssignPathAndValBoxes(fetchErr);
+
+        // 3. Update Last Run summary line
+        const lastRunLine = document.getElementById("assign-last-run-summary");
+        if (lastRunLine && assignRawHistory.length > 0) {
+          const last = assignRawHistory[0];
+          const ist = formatAssignIST(last.timestamp || last.finished_at || last.started_at);
+          const timeStr = ist ? ist.time12 : "—";
+          lastRunLine.innerText = `Last run: ${last.dt_code || '—'} / ${last.engineer || '—'} at ${timeStr} IST - ${last.processed || 0} processed (${last.success || 0} success, ${last.failed || 0} failed, ${last.skipped_other_dt || 0} skipped)`;
+        }
+
+        // 4. Update Time box with frozen duration of latest run if idle
+        if (!assignIsRunning && assignCurrentState) {
+          const timeBox = document.getElementById("assign-stat-time");
+          if (timeBox && assignCurrentState.started_at) {
+            const sTime = new Date(assignCurrentState.started_at).getTime();
+            const fTime = assignCurrentState.finished_at ? new Date(assignCurrentState.finished_at).getTime() : sTime;
+            timeBox.innerText = `⏱ ${formatDurationHHMMSS(fTime - sTime)}`;
+          }
+        }
+
+        // 5. Render analytics
+        renderAssignAnalytics();
+
+      } catch (e) {
+        console.error("Assign history/state fetch error", e);
+        updateAssignPathAndValBoxes("Network Error");
+      }
+    }
+
     async function submitAssignDT() {
+      if (assignIsRunning) {
+        showToast("⚠️ An Assign run is already in progress!");
+        return;
+      }
 
       const dt = document.getElementById("assign-dt-select").value;
-
       closeModal("assign-dialog");
 
+      const token = getToken();
+      if (!token) {
+        showToast("✗ Missing GitHub Token! Click Settings to configure.");
+        return;
+      }
 
+      // Check getWorkflowRunStatus for active assign run before dispatching
+      try {
+        const actCheck = await getWorkflowRunStatus("assign_complaints.yml");
+        if (actCheck && actCheck.active) {
+          showToast(`⚠️ An Assign run is already active on GitHub Actions (#${actCheck.run?.id || ''})!`);
+          checkAndResumeAssignRun();
+          return;
+        }
+      } catch (chkErr) {
+        console.warn("Could not check workflow run status before dispatch", chkErr);
+      }
+
+      setAssignActionButtonsDisabled(true);
+      assignIsRunning = true;
 
       showToast(`🚀 Dispatched Assign Complaints for ${dt} on Cloud!`);
-
       document.getElementById("assign-browser-status").innerText = "● Running (Headless)";
-
       document.getElementById("assign-browser-status").className = "stacked-card-value status-running";
-
       document.getElementById("assign-portal-status").innerText = "● Processing (Freshdesk)";
-
       document.getElementById("assign-portal-status").className = "stacked-card-value status-running";
-
-      document.getElementById("assign-activity-label").innerText = `Assigning tickets for ${dt}...`;
-
-
+      document.getElementById("assign-activity-label").innerText = `Starting workflow for ${dt}...`;
 
       const pBar = document.getElementById("assign-progress-bar");
-
       const pPct = document.getElementById("assign-progress-pct");
+      if (pBar) {
+        pBar.style.width = "40%";
+        pBar.classList.add("progress-indeterminate");
+      }
+      if (pPct) pPct.innerText = "Running...";
 
-      if (pBar) pBar.style.width = "15%";
-
-      if (pPct) pPct.innerText = "15%";
-
-
-
-      const token = getToken();
+      const dispatchTime = Date.now();
 
       try {
-
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/dispatches`, {
-
           method: "POST",
-
           headers: {
-
             "Authorization": `token ${token}`,
-
             "Accept": "application/vnd.github.v3+json",
-
             "Content-Type": "application/json"
-
           },
-
           body: JSON.stringify({ ref: "main", inputs: { dt_code: dt } })
-
         });
 
         if (res.status === 204) {
-
           showToast(`✓ GitHub Actions assign workflow started for ${dt}!`);
-
-          startLiveRunTracking("assign");
-
+          startAssignTracking(dispatchTime, dt);
         } else {
-
-          showToast(`✗ Error: ${res.statusText}`);
-
+          assignIsRunning = false;
+          setAssignActionButtonsDisabled(false);
+          if (pBar) {
+            pBar.style.width = "0%";
+            pBar.classList.remove("progress-indeterminate");
+          }
+          if (pPct) pPct.innerText = "0%";
+          showToast(`✗ Failed to dispatch workflow: ${res.statusText}`);
         }
-
       } catch (e) {
-
+        assignIsRunning = false;
+        setAssignActionButtonsDisabled(false);
+        if (pBar) {
+          pBar.style.width = "0%";
+          pBar.classList.remove("progress-indeterminate");
+        }
+        if (pPct) pPct.innerText = "0%";
         showToast(`✗ Exception: ${e.message}`);
-
       }
-
     }
 
+    function startAssignTracking(dispatchTime, dtHint, existingRunId) {
+      if (assignPollInterval) clearInterval(assignPollInterval);
+      if (assignTimerInterval) clearInterval(assignTimerInterval);
 
+      setAssignActionButtonsDisabled(true);
+      assignIsRunning = true;
 
-    // Trigger Close Complaint via GitHub Actions
+      const pBar = document.getElementById("assign-progress-bar");
+      const pPct = document.getElementById("assign-progress-pct");
+      if (pBar) {
+        pBar.style.width = "40%";
+        pBar.classList.add("progress-indeterminate");
+      }
+      if (pPct) pPct.innerText = "Running...";
+
+      const timeBox = document.getElementById("assign-stat-time");
+      let runStartTime = dispatchTime || Date.now();
+
+      assignTimerInterval = setInterval(() => {
+        if (timeBox) {
+          const elapsed = Date.now() - runStartTime;
+          timeBox.innerText = `⏱ ${formatDurationHHMMSS(elapsed)}`;
+        }
+      }, 1000);
+
+      const maxDuration = 70 * 60 * 1000;
+      let targetRunId = existingRunId || null;
+
+      const pollAssign = async () => {
+        const token = getToken();
+        if (!token) return;
+
+        // Check if workflow run has not appeared on cloud within ~3 minutes
+        if (!targetRunId) {
+          if (dispatchTime && (Date.now() - dispatchTime > 3 * 60 * 1000)) {
+            clearInterval(assignPollInterval);
+            clearInterval(assignTimerInterval);
+            assignIsRunning = false;
+            setAssignActionButtonsDisabled(false);
+            if (pBar) {
+              pBar.style.width = "0%";
+              pBar.classList.remove("progress-indeterminate");
+            }
+            if (pPct) pPct.innerText = "0%";
+            const bStatus = document.getElementById("assign-browser-status");
+            const pStatus = document.getElementById("assign-portal-status");
+            const aLabel = document.getElementById("assign-activity-label");
+            if (bStatus) { bStatus.innerText = "● Idle"; bStatus.className = "stacked-card-value status-idle"; }
+            if (pStatus) { pStatus.innerText = "● Standby"; pStatus.className = "stacked-card-value status-idle"; }
+            if (aLabel) aLabel.innerText = "Run did not start on cloud - try again";
+            showToast("Run did not start on cloud - try again");
+            return;
+          }
+        } else {
+          // Keep 70 min max only once run is found
+          if (Date.now() - runStartTime > maxDuration) {
+            clearInterval(assignPollInterval);
+            clearInterval(assignTimerInterval);
+            assignIsRunning = false;
+            setAssignActionButtonsDisabled(false);
+            showToast("⏱ Assign run tracking timed out (70 min max).");
+            return;
+          }
+        }
+
+        try {
+          // 1. Locate workflow run if not yet found
+          if (!targetRunId) {
+            const rRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/runs?per_page=5&_t=${Date.now()}`, {
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            });
+            if (rRes.ok) {
+              const rData = await rRes.json();
+              const match = (rData.workflow_runs || []).find(r => {
+                const cTime = new Date(r.created_at).getTime();
+                return r.event === "workflow_dispatch" && cTime >= (dispatchTime - 15000);
+              });
+              if (match) {
+                targetRunId = match.id;
+                runStartTime = new Date(match.created_at).getTime();
+              }
+            }
+          }
+
+          let runStatus = "in_progress";
+          let runConclusion = null;
+
+          if (targetRunId) {
+            const runRes = await fetch(`https://api.github.com/repos/${REPO}/actions/runs/${targetRunId}?_t=${Date.now()}`, {
+              headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+            });
+            if (runRes.ok) {
+              const runObj = await runRes.json();
+              runStatus = runObj.status;
+              runConclusion = runObj.conclusion;
+            }
+          }
+
+          // 2. Fetch assign_run_state.json for live progress
+          const stateRes = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_run_state.json?_t=${Date.now()}`, {
+            headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+          });
+          let state = null;
+          if (stateRes.ok) {
+            const sData = await stateRes.json();
+            if (sData.content && sData.encoding === "base64") {
+              const rawUtf8 = decodeURIComponent(escape(atob(sData.content.replace(/\s/g, ''))));
+              state = JSON.parse(rawUtf8);
+              assignCurrentState = state;
+            }
+            updateAssignPathAndValBoxes(null);
+          } else {
+            updateAssignPathAndValBoxes(`HTTP ${stateRes.status}`);
+          }
+
+          // Update Status Strip Elements
+          const bStatus = document.getElementById("assign-browser-status");
+          const pStatus = document.getElementById("assign-portal-status");
+          const cLabel = document.getElementById("assign-card-label");
+          const aLabel = document.getElementById("assign-activity-label");
+          const totEl = document.getElementById("assign-stat-total");
+          const prcEl = document.getElementById("assign-stat-processed");
+          const remEl = document.getElementById("assign-stat-pending");
+          const scsEl = document.getElementById("assign-stat-success");
+          const fldEl = document.getElementById("assign-stat-failed");
+          const skpEl = document.getElementById("assign-stat-skipped");
+
+          if (state) {
+            if (state.started_at) {
+              runStartTime = new Date(state.started_at).getTime();
+            }
+
+            if (totEl) totEl.innerText = `● ${state.processed || 0}`;
+            if (prcEl) prcEl.innerText = `● ${state.processed || 0}`;
+            if (remEl) remEl.innerText = `—`;
+            if (scsEl) scsEl.innerText = `● ${state.success || 0}`;
+            if (fldEl) fldEl.innerText = `● ${state.failed || 0}`;
+            if (skpEl) skpEl.innerText = `● ${state.skipped_other_dt || 0}`;
+
+            if (cLabel) {
+              if (state.current_ticket_id) {
+                cLabel.innerText = `#${state.current_ticket_id} - ${state.current_subject || ''}`;
+                cLabel.title = `#${state.current_ticket_id} - ${state.current_subject || ''}`;
+              } else {
+                cLabel.innerText = "—";
+              }
+            }
+
+            if (aLabel) {
+              let act = state.activity || "Processing tickets...";
+              // Stale detection: if runStatus is in_progress, envelope status is running, AND updated_at > 3 min
+              if (runStatus === "in_progress" && state.status === "running" && state.updated_at) {
+                const updatedTime = new Date(state.updated_at).getTime();
+                if (Date.now() - updatedTime > 3 * 60 * 1000) {
+                  act += " ⚠️ Stale (runner may be stuck)";
+                }
+              }
+              aLabel.innerText = act;
+            }
+
+            // Render live tickets
+            if (Array.isArray(state.tickets)) {
+              renderAssignLiveTickets(state.tickets);
+            }
+          }
+
+          // Check if finished
+          if (runStatus === "completed") {
+            clearInterval(assignPollInterval);
+            clearInterval(assignTimerInterval);
+            assignIsRunning = false;
+            setAssignActionButtonsDisabled(false);
+
+            if (pBar) {
+              pBar.style.width = "100%";
+              pBar.classList.remove("progress-indeterminate");
+            }
+            if (pPct) pPct.innerText = "100%";
+
+            if (runConclusion === "success") {
+              if (bStatus) {
+                bStatus.innerText = "● Completed";
+                bStatus.className = "stacked-card-value status-booked";
+              }
+              if (pStatus) {
+                pStatus.innerText = "● Standby";
+                pStatus.className = "stacked-card-value status-idle";
+              }
+              if (aLabel && state) {
+                aLabel.innerText = `Run finished. Processed: ${state.processed || 0}, Success: ${state.success || 0}, Failed: ${state.failed || 0}, Skipped: ${state.skipped_other_dt || 0}`;
+              }
+              showToast("✓ Assign Complaint run completed successfully!");
+            } else {
+              if (bStatus) {
+                bStatus.innerText = "● Failed";
+                bStatus.className = "stacked-card-value status-failed";
+              }
+              if (pStatus) {
+                pStatus.innerText = "● Error";
+                pStatus.className = "stacked-card-value status-failed";
+              }
+              if (aLabel && state && state.error) {
+                aLabel.innerText = `Run failed: ${state.error}`;
+              }
+              showToast(`✗ Assign run ${runConclusion || 'failed'}`);
+            }
+
+            // Freeze elapsed time
+            if (timeBox && state && state.started_at && state.finished_at) {
+              const dur = new Date(state.finished_at).getTime() - new Date(state.started_at).getTime();
+              timeBox.innerText = `⏱ ${formatDurationHHMMSS(dur)}`;
+            }
+
+            // Refresh history and analytics
+            setTimeout(fetchAssignHistory, 1500);
+          }
+
+        } catch (e) {
+          console.error("Assign tracking poll error", e);
+        }
+      };
+
+      pollAssign();
+      assignPollInterval = setInterval(pollAssign, 5000);
+    }
+
+    async function checkAndResumeAssignRun() {
+      if (assignIsRunning) return;
+      const token = getToken();
+      if (!token) {
+        updateAssignPathAndValBoxes();
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/runs?per_page=3&_t=${Date.now()}`, {
+          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const activeRun = (data.workflow_runs || []).find(r => r.status === "in_progress" || r.status === "queued");
+          if (activeRun) {
+            console.log("Resuming active Assign run:", activeRun.id);
+            const startTime = new Date(activeRun.created_at).getTime();
+            document.getElementById("assign-browser-status").innerText = "● Running (Headless)";
+            document.getElementById("assign-browser-status").className = "stacked-card-value status-running";
+            document.getElementById("assign-portal-status").innerText = "● Processing (Freshdesk)";
+            document.getElementById("assign-portal-status").className = "stacked-card-value status-running";
+            startAssignTracking(startTime, null, activeRun.id);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error("Error checking active assign run", e);
+      }
+
+      // If no active run, load history & state
+      fetchAssignHistory();
+    }
+
+    function downloadAssignReport() {
+      if (typeof XLSX === "undefined") {
+        showToast("✗ SheetJS (XLSX) library not loaded!");
+        return;
+      }
+
+      showToast("Generating Assign Complaints Report...");
+      const wb = XLSX.utils.book_new();
+
+      // 1. Summary Sheet
+      const filtered = getFilteredAssignHistory();
+      let totProc = 0, totSucc = 0, totFail = 0, totSkip = 0;
+      const dtGroups = {};
+
+      filtered.forEach(r => {
+        totProc += (r.processed || 0);
+        totSucc += (r.success || 0);
+        totFail += (r.failed || 0);
+        totSkip += (r.skipped_other_dt || 0);
+        const dtKey = r.dt_code || "Unknown";
+        if (!dtGroups[dtKey]) {
+          dtGroups[dtKey] = { dt_code: dtKey, engineer: r.engineer || '', runs: 0, processed: 0, success: 0, failed: 0, skipped: 0 };
+        }
+        dtGroups[dtKey].runs += 1;
+        dtGroups[dtKey].processed += (r.processed || 0);
+        dtGroups[dtKey].success += (r.success || 0);
+        dtGroups[dtKey].failed += (r.failed || 0);
+        dtGroups[dtKey].skipped += (r.skipped_other_dt || 0);
+      });
+
+      const rateStr = totProc > 0 ? ((totSucc / totProc) * 100).toFixed(1) + '%' : '0.0%';
+
+      const summaryRows = [
+        ["ASSIGN COMPLAINTS EXECUTION SUMMARY"],
+        ["Generated At (IST)", new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 19)],
+        ["Filter Period", assignCurrentPeriod],
+        ["Total Runs", filtered.length],
+        ["Total Processed", totProc],
+        ["Total Success", totSucc],
+        ["Total Failed", totFail],
+        ["Total Skipped", totSkip],
+        ["Overall Success Rate", rateStr],
+        [],
+        ["PER-ENGINEER / DT BREAKDOWN"],
+        ["DT Code", "Engineer", "Runs Count", "Processed", "Success", "Failed", "Skipped", "Success Rate"]
+      ];
+
+      Object.values(dtGroups).forEach(g => {
+        const gRate = g.processed > 0 ? ((g.success / g.processed) * 100).toFixed(1) + '%' : '0.0%';
+        summaryRows.push([g.dt_code, g.engineer, g.runs, g.processed, g.success, g.failed, g.skipped, gRate]);
+      });
+
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+
+      // 2. Runs Sheet
+      const runsHeader = ["#", "Date & Time (IST)", "DT Code", "Engineer", "Processed", "Success", "Failed", "Skipped", "Status", "Duration", "Run ID"];
+      const runsRows = [runsHeader];
+      filtered.forEach((r, idx) => {
+        const ist = formatAssignIST(r.timestamp || r.finished_at || r.started_at);
+        const dateStr = ist ? `${ist.dateStr} ${ist.time12}` : '—';
+        let durStr = '—';
+        if (r.started_at && r.finished_at) {
+          durStr = formatDurationHHMMSS(new Date(r.finished_at).getTime() - new Date(r.started_at).getTime());
+        }
+        runsRows.push([
+          idx + 1,
+          dateStr,
+          r.dt_code || '',
+          r.engineer || '',
+          r.processed || 0,
+          r.success || 0,
+          r.failed || 0,
+          r.skipped_other_dt || 0,
+          r.status || 'completed',
+          durStr,
+          r.run_id || ''
+        ]);
+      });
+      const wsRuns = XLSX.utils.aoa_to_sheet(runsRows);
+      XLSX.utils.book_append_sheet(wb, wsRuns, "Runs");
+
+      // 3. Tickets Sheet (All)
+      const allTickets = [];
+      // Combine tickets from assignCurrentState and history runs
+      if (assignCurrentState && Array.isArray(assignCurrentState.tickets)) {
+        assignCurrentState.tickets.forEach(t => allTickets.push({ ...t, source: 'current_run' }));
+      }
+      filtered.forEach(r => {
+        if (Array.isArray(r.tickets)) {
+          r.tickets.forEach(t => allTickets.push({ ...t, source: r.dt_code }));
+        }
+      });
+
+      const ticketHeader = ["#", "Ticket ID", "Subject", "Status", "DT Code", "Engineer", "Message", "Time (IST)"];
+      const ticketRows = [ticketHeader];
+      const failedRows = [ticketHeader];
+      const skippedRows = [ticketHeader];
+
+      allTickets.forEach((t, idx) => {
+        // Read "time" field written by runner, falling back to assigned_at/timestamp
+        const ist = formatAssignIST(t.time || t.assigned_at || t.timestamp);
+        const timeStr = ist ? ist.formattedFull : '—';
+        const row = [
+          idx + 1,
+          t.ticket_id || '',
+          t.subject || '',
+          t.status || '',
+          t.dt_code || t.source || '',
+          t.engineer || '',
+          t.message || t.remark || '',
+          timeStr
+        ];
+        ticketRows.push(row);
+        const stLower = String(t.status || '').toLowerCase();
+        if (stLower.includes('fail') || stLower.includes('error')) {
+          failedRows.push(row);
+        } else if (stLower.includes('skip')) {
+          skippedRows.push(row);
+        }
+      });
+
+      const wsTickets = XLSX.utils.aoa_to_sheet(ticketRows);
+      XLSX.utils.book_append_sheet(wb, wsTickets, "Tickets (All)");
+
+      // 4. Failed Sheet
+      const wsFailed = XLSX.utils.aoa_to_sheet(failedRows.length > 1 ? failedRows : [ticketHeader, ["No failed tickets found"]]);
+      XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+
+      // 5. Skipped Sheet
+      const wsSkipped = XLSX.utils.aoa_to_sheet(skippedRows.length > 1 ? skippedRows : [ticketHeader, ["No skipped tickets found"]]);
+      XLSX.utils.book_append_sheet(wb, wsSkipped, "Skipped");
+
+      // Generate filename with timestamp
+      const nowStr = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().replace(/[-:T]/g, '').slice(0, 12);
+      const filename = `Assign_Complaints_Report_${nowStr}.xlsx`;
+      XLSX.writeFile(wb, filename);
+      showToast(`✓ Report downloaded: ${filename}`);
+    }
+
 
     async function submitCloseDT() {
 
@@ -6909,76 +7721,6 @@
 
 
 
-    async function fetchAssignHistory() {
-
-      const token = getToken();
-
-      if (!token) return;
-
-      try {
-
-        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_history.json?_t=${Date.now()}`, {
-
-          headers: { "Authorization": `token ${token}`, "Accept": "application/vnd.github.v3+json" }
-
-        });
-
-        if (res.ok) {
-
-          const apiJson = await res.json();
-
-          let hist = [];
-
-          if (apiJson.content && apiJson.encoding === "base64") {
-
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
-
-            hist = JSON.parse(rawUtf8);
-
-          } else if (Array.isArray(apiJson)) {
-
-            hist = apiJson;
-
-          }
-
-          if (Array.isArray(hist) && hist.length > 0) {
-
-            const last = hist[0];
-
-            const tot = document.getElementById("assign-stat-total");
-
-            const prc = document.getElementById("assign-stat-processed");
-
-            const scs = document.getElementById("assign-stat-booked");
-
-            const fld = document.getElementById("assign-stat-failed");
-
-            const rem = document.getElementById("assign-stat-pending");
-
-            if (tot) tot.innerText = `● ${last.processed || 0}`;
-
-            if (prc) prc.innerText = `● ${last.processed || 0}`;
-
-            if (scs) scs.innerText = `● ${last.success || 0}`;
-
-            if (fld) fld.innerText = `● ${last.failed || 0}`;
-
-            if (rem) rem.innerText = `● 0`;
-
-          }
-
-        }
-
-      } catch (e) {
-
-        console.error("Assign history fetch error", e);
-
-      }
-
-    }
-
-
-
     async function fetchCloseHistory() {
 
       const token = getToken();
@@ -7549,7 +8291,7 @@
 
               const wfName = (latest.name || "").toLowerCase();
 
-              if (wfName.includes("assign")) startLiveRunTracking("assign");
+              if (wfName.includes("assign")) checkAndResumeAssignRun();
 
               else if (wfName.includes("close")) startLiveRunTracking("close");
 
@@ -7598,6 +8340,8 @@
       fetchCloseHistory();
 
       fetchTransferHistory();
+
+      checkAndResumeAssignRun();
 
       setTimeout(() => showToast("✓ Cloud Data & Queue in Sync!"), 1200);
 
@@ -10530,6 +11274,8 @@
     startScheduleCountdown();
 
     checkAndResumeFreshSaleRun();
+
+    checkAndResumeAssignRun();
 
     setInterval(() => {
 
