@@ -3038,7 +3038,7 @@
           <div class="action-btns-grid">
             <div class="action-row-6">
               <button class="action-btn-3d" id="btn-assign-fake-upload" disabled title="Not available on cloud" style="opacity:0.5; cursor:not-allowed;">Upload<br>Excel</button>
-              <button class="action-btn-3d" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
+              <button class="action-btn-3d" id="btn-assign-open-browser" onclick="openAssignDTDialog()">Open Fresh<br>Browser</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
               <button class="action-btn-3d" id="btn-start-assign" onclick="openAssignDTDialog()">Start<br>Processing</button>
@@ -3178,23 +3178,23 @@
 
           <!-- Run-History Table (Newest first, lists all runs) -->
           <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; overflow:hidden;">
-            <div style="background:#0F172A; color:#FFFFFF; padding:6px 10px; font-size:11.5px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
+            <div style="background:#F1F5F9; border-bottom:1px solid #CBD5E1; color:#1E293B; padding:6px 10px; font-size:11.5px; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
               <span>📜 Assign Run History</span>
-              <span id="assign-history-count" style="font-size:10.5px; color:#94A3B8;">Showing 0 runs</span>
+              <span id="assign-history-count" style="font-size:10.5px; color:#64748B;">Showing 0 runs</span>
             </div>
             <div style="max-height:220px; overflow-y:auto;">
               <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
                 <thead>
-                  <tr style="background:#1E293B; color:#94A3B8; position:sticky; top:0; z-index:2;">
-                    <th style="padding:5px 8px;">#</th>
-                    <th style="padding:5px 8px;">Date & Time (IST)</th>
-                    <th style="padding:5px 8px;">DT Code</th>
-                    <th style="padding:5px 8px;">Engineer</th>
-                    <th style="padding:5px 8px; text-align:center;">Processed</th>
-                    <th style="padding:5px 8px; text-align:center;">Success</th>
-                    <th style="padding:5px 8px; text-align:center;">Failed</th>
-                    <th style="padding:5px 8px; text-align:center;">Skipped</th>
-                    <th style="padding:5px 8px;">Status</th>
+                  <tr style="background:#F8FAFC; color:#64748B; border-bottom:1px solid #E2E8F0; position:sticky; top:0; z-index:2;">
+                    <th style="padding:6px 8px;">#</th>
+                    <th style="padding:6px 8px;">Date & Time (IST)</th>
+                    <th style="padding:6px 8px;">DT Code</th>
+                    <th style="padding:6px 8px;">Engineer</th>
+                    <th style="padding:6px 8px; text-align:center;">Processed</th>
+                    <th style="padding:6px 8px; text-align:center;">Success</th>
+                    <th style="padding:6px 8px; text-align:center;">Failed</th>
+                    <th style="padding:6px 8px; text-align:center;">Skipped</th>
+                    <th style="padding:6px 8px;">Status</th>
                   </tr>
                 </thead>
                 <tbody id="assign-history-table-body">
@@ -5751,6 +5751,48 @@
       return `${hh}:${mm}:${ss}`;
     }
 
+    function updateAssignPathAndValBoxes(fetchError = null) {
+      const pathBox = document.getElementById("assign-path-status");
+      const valBox = document.getElementById("assign-val-status");
+
+      // PATH box: show assign_run_state.json last updated (IST) or error
+      if (pathBox) {
+        if (fetchError) {
+          pathBox.innerText = `📁 assign_run_state.json (${fetchError})`;
+          pathBox.style.color = "#EF4444";
+        } else if (assignCurrentState && assignCurrentState.updated_at) {
+          const ist = formatAssignIST(assignCurrentState.updated_at);
+          const tStr = ist ? ist.time12 : "";
+          pathBox.innerText = `📁 assign_run_state.json${tStr ? ' (' + tStr + ' IST)' : ''}`;
+          pathBox.style.color = "#0284C7";
+        } else {
+          pathBox.innerText = "📁 assign_run_state.json";
+          pathBox.style.color = "#0284C7";
+        }
+      }
+
+      // VALIDATION box: real validation (token present, files readable, last run not failed)
+      if (valBox) {
+        const token = getToken();
+        if (!token) {
+          valBox.innerText = "● No Token";
+          valBox.style.color = "#EF4444";
+        } else if (fetchError) {
+          valBox.innerText = "● Read Error";
+          valBox.style.color = "#EF4444";
+        } else {
+          const lastRunStatus = (assignCurrentState && assignCurrentState.status) || (assignRawHistory.length > 0 ? assignRawHistory[0].status : null);
+          if (lastRunStatus === "failed") {
+            valBox.innerText = "● Last Run Failed";
+            valBox.style.color = "#DC2626";
+          } else {
+            valBox.innerText = "● Ready";
+            valBox.style.color = "#16A34A";
+          }
+        }
+      }
+    }
+
     function setAssignPeriod(period) {
       assignCurrentPeriod = period;
       ['today', 'yesterday', '7days', 'all'].forEach(p => {
@@ -5906,7 +5948,7 @@
         }
       }
 
-      // Render Run-History table
+      // Render Run-History table with dark readable text matching DT breakdown
       const histBody = document.getElementById("assign-history-table-body");
       const histCount = document.getElementById("assign-history-count");
       if (histCount) histCount.innerText = `Showing ${filtered.length} runs`;
@@ -5927,16 +5969,16 @@
               : `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 6px; border-radius:3px; font-weight:700;">${st}</span>`;
 
             rows += `
-              <tr style="border-bottom:1px solid #334155; color:#E2E8F0;">
-                <td style="padding:5px 8px; color:#94A3B8;">${idx + 1}</td>
-                <td style="padding:5px 8px; font-weight:600;">${dateStr}</td>
-                <td style="padding:5px 8px; font-weight:700; color:#38BDF8;">${r.dt_code || '—'}</td>
-                <td style="padding:5px 8px;">${r.engineer || '—'}</td>
-                <td style="padding:5px 8px; text-align:center; font-weight:700;">${r.processed || 0}</td>
-                <td style="padding:5px 8px; text-align:center; font-weight:700; color:#4ADE80;">${r.success || 0}</td>
-                <td style="padding:5px 8px; text-align:center; font-weight:700; color:${(r.failed || 0) > 0 ? '#F87171' : '#94A3B8'};">${r.failed || 0}</td>
-                <td style="padding:5px 8px; text-align:center; color:#94A3B8;">${r.skipped_other_dt || 0}</td>
-                <td style="padding:5px 8px;">${stBadge}</td>
+              <tr style="border-bottom:1px solid #E2E8F0;">
+                <td style="padding:6px 8px; color:#64748B;">${idx + 1}</td>
+                <td style="padding:6px 8px; font-weight:600; color:#334155;">${dateStr}</td>
+                <td style="padding:6px 8px; font-weight:700; color:#0284C7;">${r.dt_code || '—'}</td>
+                <td style="padding:6px 8px; color:#475569;">${r.engineer || '—'}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:#0284C7;">${r.processed || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:#16A34A;">${r.success || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:700; color:${(r.failed || 0) > 0 ? '#DC2626' : '#94A3B8'};">${r.failed || 0}</td>
+                <td style="padding:6px 8px; text-align:center; font-weight:600; color:#64748B;">${r.skipped_other_dt || 0}</td>
+                <td style="padding:6px 8px;">${stBadge}</td>
               </tr>`;
           });
           histBody.innerHTML = rows;
@@ -5966,7 +6008,7 @@
 
       let rows = '';
       tickets.forEach((t, i) => {
-        const ist = formatAssignIST(t.assigned_at || t.timestamp);
+        const ist = formatAssignIST(t.time || t.assigned_at || t.timestamp);
         const timeStr = ist ? ist.timeWithSec : '—';
         const st = String(t.status || '').toLowerCase();
         let stBadge = `<span style="background:#F1F5F9; color:#475569; padding:2px 5px; border-radius:3px;">${t.status || 'Processed'}</span>`;
@@ -5995,7 +6037,8 @@
       const bStart = document.getElementById("btn-start-assign");
       const bResume = document.getElementById("btn-resume-assign");
       const bSubmit = document.getElementById("btn-submit-assign");
-      [bStart, bResume, bSubmit].forEach(btn => {
+      const bOpenBrowser = document.getElementById("btn-assign-open-browser");
+      [bStart, bResume, bSubmit, bOpenBrowser].forEach(btn => {
         if (btn) {
           btn.disabled = disabled;
           btn.style.opacity = disabled ? "0.5" : "1";
@@ -6004,10 +6047,22 @@
       });
     }
 
+    function openAssignDTDialog() {
+      if (assignIsRunning) {
+        showToast("⚠️ An Assign run is currently active!");
+        return;
+      }
+      document.getElementById("assign-dialog").style.display = "flex";
+    }
+
     async function fetchAssignHistory() {
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        updateAssignPathAndValBoxes();
+        return;
+      }
 
+      let fetchErr = null;
       try {
         // 1. Fetch assign_history.json
         const hRes = await fetch(`https://api.github.com/repos/${REPO}/contents/assign_history.json?_t=${Date.now()}`, {
@@ -6025,6 +6080,8 @@
           if (Array.isArray(hist)) {
             assignRawHistory = hist;
           }
+        } else {
+          fetchErr = `HTTP ${hRes.status}`;
         }
 
         // 2. Fetch assign_run_state.json
@@ -6037,7 +6094,12 @@
             const rawUtf8 = decodeURIComponent(escape(atob(sJson.content.replace(/\s/g, ''))));
             assignCurrentState = JSON.parse(rawUtf8);
           }
+        } else if (!fetchErr) {
+          fetchErr = `HTTP ${sRes.status}`;
         }
+
+        // Update PATH & VALIDATION status boxes
+        updateAssignPathAndValBoxes(fetchErr);
 
         // 3. Update Last Run summary line
         const lastRunLine = document.getElementById("assign-last-run-summary");
@@ -6063,6 +6125,7 @@
 
       } catch (e) {
         console.error("Assign history/state fetch error", e);
+        updateAssignPathAndValBoxes("Network Error");
       }
     }
 
@@ -6079,6 +6142,18 @@
       if (!token) {
         showToast("✗ Missing GitHub Token! Click Settings to configure.");
         return;
+      }
+
+      // Check getWorkflowRunStatus for active assign run before dispatching
+      try {
+        const actCheck = await getWorkflowRunStatus("assign_complaints.yml");
+        if (actCheck && actCheck.active) {
+          showToast(`⚠️ An Assign run is already active on GitHub Actions (#${actCheck.run?.id || ''})!`);
+          checkAndResumeAssignRun();
+          return;
+        }
+      } catch (chkErr) {
+        console.warn("Could not check workflow run status before dispatch", chkErr);
       }
 
       setAssignActionButtonsDisabled(true);
@@ -6169,13 +6244,37 @@
         const token = getToken();
         if (!token) return;
 
-        if (Date.now() - dispatchTime > maxDuration) {
-          clearInterval(assignPollInterval);
-          clearInterval(assignTimerInterval);
-          assignIsRunning = false;
-          setAssignActionButtonsDisabled(false);
-          showToast("⏱ Assign run tracking timed out (70 min max).");
-          return;
+        // Check if workflow run has not appeared on cloud within ~3 minutes
+        if (!targetRunId) {
+          if (dispatchTime && (Date.now() - dispatchTime > 3 * 60 * 1000)) {
+            clearInterval(assignPollInterval);
+            clearInterval(assignTimerInterval);
+            assignIsRunning = false;
+            setAssignActionButtonsDisabled(false);
+            if (pBar) {
+              pBar.style.width = "0%";
+              pBar.classList.remove("progress-indeterminate");
+            }
+            if (pPct) pPct.innerText = "0%";
+            const bStatus = document.getElementById("assign-browser-status");
+            const pStatus = document.getElementById("assign-portal-status");
+            const aLabel = document.getElementById("assign-activity-label");
+            if (bStatus) { bStatus.innerText = "● Idle"; bStatus.className = "stacked-card-value status-idle"; }
+            if (pStatus) { pStatus.innerText = "● Standby"; pStatus.className = "stacked-card-value status-idle"; }
+            if (aLabel) aLabel.innerText = "Run did not start on cloud - try again";
+            showToast("Run did not start on cloud - try again");
+            return;
+          }
+        } else {
+          // Keep 70 min max only once run is found
+          if (Date.now() - runStartTime > maxDuration) {
+            clearInterval(assignPollInterval);
+            clearInterval(assignTimerInterval);
+            assignIsRunning = false;
+            setAssignActionButtonsDisabled(false);
+            showToast("⏱ Assign run tracking timed out (70 min max).");
+            return;
+          }
         }
 
         try {
@@ -6223,6 +6322,9 @@
               state = JSON.parse(rawUtf8);
               assignCurrentState = state;
             }
+            updateAssignPathAndValBoxes(null);
+          } else {
+            updateAssignPathAndValBoxes(`HTTP ${stateRes.status}`);
           }
 
           // Update Status Strip Elements
@@ -6339,7 +6441,10 @@
     async function checkAndResumeAssignRun() {
       if (assignIsRunning) return;
       const token = getToken();
-      if (!token) return;
+      if (!token) {
+        updateAssignPathAndValBoxes();
+        return;
+      }
 
       try {
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/assign_complaints.yml/runs?per_page=3&_t=${Date.now()}`, {
@@ -6467,7 +6572,8 @@
       const skippedRows = [ticketHeader];
 
       allTickets.forEach((t, idx) => {
-        const ist = formatAssignIST(t.assigned_at || t.timestamp);
+        // Read "time" field written by runner, falling back to assigned_at/timestamp
+        const ist = formatAssignIST(t.time || t.assigned_at || t.timestamp);
         const timeStr = ist ? ist.formattedFull : '—';
         const row = [
           idx + 1,
