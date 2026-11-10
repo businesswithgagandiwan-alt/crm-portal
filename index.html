@@ -3628,7 +3628,146 @@
 
 
 
-        <!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
+                <!-- ================= MODULE: FRESHSALE AUTOMATION ================= -->
+        <div class="group-box" id="view-fresh_sale" style="display: none;">
+          <div class="group-box-title">🌐 FreshSale Automation ☁️</div>
+
+          <!-- 6 Action Buttons -->
+          <div class="action-btns-grid">
+            <div class="action-row-6">
+              <button class="action-btn-3d" onclick="document.getElementById('file-upload-fresh-sale').click()">Upload<br>Excel</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
+              <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
+              <button class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
+              <button class="action-btn-3d" onclick="downloadFreshSaleReport()">Download<br>Excel</button>
+              <button class="action-btn-3d action-btn-blue" onclick="fetchFreshSaleQueue(true)">☁️ Cloud<br>Sync</button>
+            </div>
+          </div>
+
+          <!-- DT Profile & 100-Day Rule Banner -->
+          <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:6px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:11.5px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:700; color:#15803D;">Target DT Profile:</span>
+              <select id="freshsale-dt-select" style="font-weight:700; padding:2px 8px; border-radius:4px; border:1px solid #16A34A; background:#FFFFFF; color:#0F172A;">
+                <option value="DT-2016272" selected>DT-2016272 (MonuDubey)</option>
+                <option value="DT-2017416">DT-2017416 (Pavan KumarSharma)</option>
+              </select>
+            </div>
+            <div style="font-size:11px; color:#475569; display:flex; align-items:center; gap:4px;">
+              <span>🛡️</span>
+              <b>100-Day Rule Active</b> (SR Tickets Only, IST)
+            </div>
+          </div>
+
+          <!-- Exact Qt App 3-Row Status Strip -->
+          <div class="status-strip-frame">
+            <!-- Row 0: Session & Input -->
+            <div class="status-strip-row session-row">
+              <div class="strip-heading">Session & Input</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">BROWSER</div>
+                <div class="stacked-card-value status-idle" id="freshsale-browser-status">● Idle</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PORTAL</div>
+                <div class="stacked-card-value status-idle" id="freshsale-portal-status">● Standby</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">QUEUE FILE</div>
+                <div class="stacked-card-value" style="color: #0284C7;">📁 fresh_sales_queue.json</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">VALIDATION</div>
+                <div class="stacked-card-value" id="freshsale-val-status" style="color: #16A34A;">● Ready</div>
+              </div>
+            </div>
+
+            <!-- Row 1: Current Processing -->
+            <div class="status-strip-row proc-row">
+              <div class="strip-heading">Current Processing</div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">SMART CARD</div>
+                <div class="stacked-card-value" id="freshsale-card-label">—</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title">ACTIVITY</div>
+                <div class="stacked-card-value" id="freshsale-activity-label">Awaiting Input... (Upload Excel or click Start)</div>
+              </div>
+              <div class="stacked-card" style="grid-column: span 2;">
+                <div class="stacked-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>PROGRESS</span>
+                  <span id="freshsale-progress-pct" style="color:#0284C7; font-weight:bold;">0%</span>
+                </div>
+                <div class="progress-track" id="freshsale-progress-track">
+                  <div class="progress-bar" id="freshsale-progress-bar" style="width:0%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Statistics -->
+            <div class="status-strip-row stats-row">
+              <div class="strip-heading">Statistics</div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TOTAL</div>
+                <div class="stacked-card-value" id="freshsale-stat-total">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">PROCESSED</div>
+                <div class="stacked-card-value" id="freshsale-stat-processed">● 0</div>
+              </div>
+              <div class="stacked-card" style="border-color:#F59E0B; background-color:#FFFBEB;">
+                <div class="stacked-card-title" style="color:#B45309;">REMAINING</div>
+                <div class="stacked-card-value" id="freshsale-stat-pending" style="color:#D97706; font-size:11px; font-weight:800;">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">SUCCESS</div>
+                <div class="stacked-card-value status-booked" id="freshsale-stat-success">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">FAILED</div>
+                <div class="stacked-card-value" id="freshsale-stat-failed">● 0</div>
+              </div>
+              <div class="stacked-card">
+                <div class="stacked-card-title">TIME</div>
+                <div class="stacked-card-value" id="freshsale-stat-time">⏱ 00:00</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real Results Table Container -->
+          <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:6px; margin-top:10px; overflow:hidden;">
+            <div style="padding:6px 12px; background:#F8FAFC; border-bottom:1px solid #E2E8F0; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:11px; font-weight:700; color:#334155;">📊 Live Results Table</span>
+              <button class="action-btn-3d" style="padding:2px 8px; font-size:10px;" onclick="downloadFreshSaleReport()">📥 Download Excel</button>
+            </div>
+            <div style="max-height:280px; overflow-y:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:left;">
+                <thead>
+                  <tr style="background:#0F172A; color:#FFFFFF; position:sticky; top:0; z-index:10;">
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">#</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Smart Card</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Customer Name</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Customer Name 2</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">DT Code</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Distributor ID</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">100 Day Status</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Days</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Last Booking Date</th>
+                    <th style="padding:6px 8px; border-bottom:1px solid #334155;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="freshsale-table-body">
+                  <tr>
+                    <td colspan="10" style="padding:20px; text-align:center; color:#94A3B8;">No records loaded. Upload an Excel file or Sync from Cloud.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
+<!-- ================= GENERIC MODULE VIEW FOR OTHER MODULES ================= -->
 
         <div class="group-box" id="view-generic" style="display: none;">
 
@@ -3667,6 +3806,7 @@
   <input type="file" id="file-add-more-data" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event, 'append')">
 
   <input type="file" id="file-upload-rbuzz" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleRbuzzExcelUpload(event)">
+  <input type="file" id="file-upload-fresh-sale" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFreshSaleExcelUpload(event)">
 
 
 
@@ -4444,6 +4584,8 @@
 
       document.getElementById("view-rbuzz").style.display = "none";
 
+      const freshView = document.getElementById("view-fresh_sale");
+      if (freshView) freshView.style.display = "none";
       document.getElementById("view-generic").style.display = "none";
 
 
@@ -4472,6 +4614,12 @@
 
         checkRbuzzSession();
 
+      } else if (mod === "fresh_sale") {
+
+        if (freshView) freshView.style.display = "flex";
+
+        fetchFreshSaleQueue();
+
       } else {
 
         const genView = document.getElementById("view-generic");
@@ -4482,7 +4630,7 @@
 
           fetch_data: { title: "Fatch Data", icon: "📥", name: "Fatch Data Module" },
 
-          fresh_sale: { title: "FreshSale Atomation", icon: "🌐", name: "FreshSale Atomation ☁️" },
+          
 
           update_mob: { title: "Update Mob no", icon: "📱", name: "Update Mob no ☁️" },
 
@@ -8428,6 +8576,520 @@
 
     }
 
+
+
+    
+    // =========================================================================
+    // FRESHSALE AUTOMATION CLOUD ENGINE
+    // =========================================================================
+    let currentFreshSaleRecords = [];
+    let currentFreshSaleSha = null;
+    let freshSaleLivePoll = null;
+    let freshSaleTimerInterval = null;
+    let freshSaleSecondsElapsed = 0;
+
+    async function fetchFreshSaleQueue(showToastFlag = false) {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json?_t=${Date.now()}`, {
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json"
+          }
+        });
+        if (!res.ok) {
+          if (showToastFlag) showToast("Could not load fresh_sales_queue.json: " + res.statusText);
+          return;
+        }
+        const data = await res.json();
+        currentFreshSaleSha = data.sha;
+        const jsonStr = decodeURIComponent(escape(atob(data.content)));
+        const qData = JSON.parse(jsonStr);
+        currentFreshSaleRecords = qData.records || [];
+
+        updateFreshSaleUI(qData);
+        if (showToastFlag) showToast(`✓ Synced ${currentFreshSaleRecords.length} FreshSale records from cloud!`);
+      } catch (err) {
+        console.error("fetchFreshSaleQueue error:", err);
+      }
+    }
+
+    function updateFreshSaleUI(qData) {
+      const recs = currentFreshSaleRecords || [];
+      const total = recs.length;
+
+      let processed = 0;
+      let success = 0;
+      let failed = 0;
+
+      recs.forEach(r => {
+        const stat = String(r["Status"] || "").trim().toLowerCase();
+        if (stat && stat !== "pending" && stat !== "in progress...") {
+          processed++;
+          if (stat.startsWith("success")) {
+            success++;
+          } else {
+            failed++;
+          }
+        }
+      });
+      const pending = total - processed;
+
+      const totalEl = document.getElementById("freshsale-stat-total");
+      const procEl = document.getElementById("freshsale-stat-processed");
+      const pendEl = document.getElementById("freshsale-stat-pending");
+      const succEl = document.getElementById("freshsale-stat-success");
+      const failEl = document.getElementById("freshsale-stat-failed");
+      const pctEl = document.getElementById("freshsale-progress-pct");
+      const barEl = document.getElementById("freshsale-progress-bar");
+
+      if (totalEl) totalEl.innerText = `● ${total}`;
+      if (procEl) procEl.innerText = `● ${processed}`;
+      if (pendEl) pendEl.innerText = `● ${pending}`;
+      if (succEl) succEl.innerText = `● ${success}`;
+      if (failEl) failEl.innerText = `● ${failed}`;
+
+      const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+      if (pctEl) pctEl.innerText = `${pct}%`;
+      if (barEl) barEl.style.width = `${pct}%`;
+
+      renderFreshSaleTable();
+    }
+
+    function renderFreshSaleTable() {
+      const tbody = document.getElementById("freshsale-table-body");
+      if (!tbody) return;
+
+      if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="padding:20px; text-align:center; color:#94A3B8;">No records loaded. Upload an Excel file or Sync from Cloud.</td></tr>';
+        return;
+      }
+
+      let html = "";
+      currentFreshSaleRecords.forEach((r, idx) => {
+        const status = String(r["Status"] || "Pending");
+        let statusBadge = `<span style="color:#64748B; font-weight:700;">● ${status}</span>`;
+        if (status.toLowerCase().startsWith("success")) {
+          statusBadge = `<span style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
+        } else if (status.toLowerCase().includes("failed") || status.toLowerCase().includes("not found") || status.toLowerCase().includes("error")) {
+          statusBadge = `<span style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
+        } else if (status === "In Progress...") {
+          statusBadge = `<span style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
+        }
+
+        const status100 = String(r["100 Day Status"] || "");
+        let badge100 = "—";
+        if (status100 === "Under 100 Days") {
+          badge100 = `<span style="background:#FEF2F2; color:#DC2626; border:1px solid #F87171; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Under 100</span>`;
+        } else if (status100 === "Eligible") {
+          badge100 = `<span style="background:#F0FDF4; color:#15803D; border:1px solid #86EFAC; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Eligible</span>`;
+        } else if (status100 === "Already Open") {
+          badge100 = `<span style="background:#FFFBEB; color:#B45309; border:1px solid #FCD34D; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Already Open</span>`;
+        } else if (status100 === "No Previous Complaint") {
+          badge100 = `<span style="background:#F8FAFC; color:#475569; border:1px solid #CBD5E1; border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px;">No Prev Comp</span>`;
+        } else if (status100) {
+          badge100 = `<span style="font-size:10px; color:#64748B;">${status100}</span>`;
+        }
+
+        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+        const daysVal = (r["Days Since Close"] !== "" && r["Days Since Close"] !== undefined && r["Days Since Close"] !== null) ? r["Days Since Close"] : "—";
+        const ticketVal = r["LastTicketNo"] || r["Last Ticket No"] || "";
+        const daysWithTicket = ticketVal ? `${daysVal} (${ticketVal})` : `${daysVal}`;
+
+        html += `<tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+          <td style="padding:5px 8px; font-weight:700; color:#475569;">${r["Input Row Number"] || (idx + 1)}</td>
+          <td style="padding:5px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
+          <td style="padding:5px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
+          <td style="padding:5px 8px; color:#0284C7;">${r["Customer Name 2"] || "—"}</td>
+          <td style="padding:5px 8px; font-weight:600; color:#0F172A;">${r["DT Code"] || "—"}</td>
+          <td style="padding:5px 8px; color:#475569;">${r["Distributor ID"] || "—"}</td>
+          <td style="padding:5px 8px;">${badge100}</td>
+          <td style="padding:5px 8px; color:#475569; font-size:10.5px;">${daysWithTicket}</td>
+          <td style="padding:5px 8px; color:#475569; font-size:10px;">${r["Last Booking Date"] || "—"}</td>
+          <td style="padding:5px 8px;">${statusBadge}</td>
+        </tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    async function handleFreshSaleExcelUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      event.target.value = "";
+
+      showToast(`Uploading '${file.name}' to FreshSale Queue...`);
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+          if (!rawRows || rawRows.length < 2) {
+            showToast("❌ Excel file is empty or missing data!");
+            return;
+          }
+
+          let smcCol = -1;
+          let nameCol = -1;
+          const headers = rawRows[0];
+          for (let i = 0; i < headers.length; i++) {
+            const h = String(headers[i] || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (h.includes("smartcard") || h.includes("smc") || h.includes("cardno") || h.includes("scno") || h === "sc") {
+              smcCol = i;
+            } else if (h.includes("customername") || h.includes("customer") || h.includes("name") || h.includes("clientname")) {
+              nameCol = i;
+            }
+          }
+
+          if (smcCol === -1) {
+            // Default to first column if no named header matched
+            smcCol = 0;
+          }
+
+          const records = [];
+          for (let r = 1; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || row[smcCol] === undefined || String(row[smcCol]).trim() === "") continue;
+            let val = String(row[smcCol]).trim();
+            if (val.endsWith(".0") && !isNaN(val)) val = val.slice(0, -2);
+            val = val.replace(/\D/g, "");
+            if (!val) continue;
+
+            const custName = (nameCol !== -1 && row[nameCol] !== undefined) ? String(row[nameCol]).trim() : "";
+
+            records.push({
+              "Input Row Number": r,
+              "Smart Card Number": val,
+              "Customer Name": custName,
+              "Customer Name 2": "",
+              "OLD RMN": "",
+              "New RMN": "",
+              "Billing Cycle": "",
+              "DT Code": "",
+              "Distributor ID": "",
+              "Portal Customer Status": "",
+              "Status": "Pending",
+              "Related Customer Name": "",
+              "Remark": "",
+              "Last Booking Date": "",
+              "Last Ticket No": "",
+              "Days Since Close": "",
+              "100 Day Status": "",
+              "Processed At": "",
+              "Complaint Remark": "",
+              "Complaint Status": ""
+            });
+          }
+
+          if (records.length === 0) {
+            showToast("❌ No valid Smart Card Numbers found in Excel!");
+            return;
+          }
+
+          const queuePayload = {
+            records: records,
+            status: "idle",
+            total: records.length,
+            processed: 0,
+            pending: records.length,
+            updated_at: new Date().toISOString()
+          };
+
+          const token = getToken();
+          const jsonStr = JSON.stringify(queuePayload, null, 2);
+          const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
+          // Check latest SHA
+          let sha = currentFreshSaleSha;
+          if (!sha) {
+            try {
+              const chk = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
+                headers: { "Authorization": `token ${token}` }
+              });
+              if (chk.ok) {
+                const cdata = await chk.json();
+                sha = cdata.sha;
+              }
+            } catch(e) {}
+          }
+
+          const bodyObj = {
+            message: `Upload ${records.length} Smart Cards to FreshSale Queue via Portal [skip ci]`,
+            content: b64,
+            branch: "main"
+          };
+          if (sha) bodyObj.sha = sha;
+
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `token ${token}`,
+              "Content-Type": "application/json",
+              "Accept": "application/vnd.github.v3+json"
+            },
+            body: JSON.stringify(bodyObj)
+          });
+
+          if (res.ok) {
+            const respJson = await res.json();
+            currentFreshSaleSha = respJson.content?.sha;
+            currentFreshSaleRecords = records;
+            showToast(`✓ Uploaded ${records.length} Smart Cards to FreshSale Queue!`);
+            updateFreshSaleUI(queuePayload);
+          } else {
+            showToast(`❌ Upload failed: ${res.statusText}`);
+          }
+        } catch (err) {
+          console.error("FreshSale upload error:", err);
+          showToast(`❌ Error: ${err.message}`);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function dispatchFreshSaleRun() {
+      const token = getToken();
+      if (!token) {
+        showToast("❌ Device not authorized. Enter device token first.");
+        return;
+      }
+
+      if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+        showToast("❌ No records in queue. Upload an Excel file first.");
+        return;
+      }
+
+      const dtSelect = document.getElementById("freshsale-dt-select");
+      const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
+
+      showToast(`🚀 Launching FreshSale Automation on cloud for ${dtCode}...`);
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          },
+          body: JSON.stringify({
+            ref: "main",
+            inputs: {
+              dt_code: dtCode
+            }
+          })
+        });
+
+        if (res.ok || res.status === 204) {
+          showToast(`✓ FreshSale Automation started on Cloud for ${dtCode}!`);
+          startFreshSaleTracking();
+        } else {
+          showToast(`❌ Dispatch failed: ${res.statusText}`);
+        }
+      } catch (err) {
+        console.error("dispatchFreshSaleRun error:", err);
+        showToast(`❌ Error launching: ${err.message}`);
+      }
+    }
+
+    function startFreshSaleTracking() {
+      if (freshSaleLivePoll) clearInterval(freshSaleLivePoll);
+      if (freshSaleTimerInterval) clearInterval(freshSaleTimerInterval);
+
+      const timeEl = document.getElementById("freshsale-stat-time");
+      freshSaleSecondsElapsed = 0;
+      if (timeEl) timeEl.innerText = "⏱ 00:00";
+
+      freshSaleTimerInterval = setInterval(() => {
+        freshSaleSecondsElapsed++;
+        const mins = String(Math.floor(freshSaleSecondsElapsed / 60)).padStart(2, '0');
+        const secs = String(freshSaleSecondsElapsed % 60).padStart(2, '0');
+        if (timeEl) timeEl.innerText = `⏱ ${mins}:${secs}`;
+      }, 1000);
+
+      const browserStatus = document.getElementById("freshsale-browser-status");
+      const portalStatus = document.getElementById("freshsale-portal-status");
+      const activityLabel = document.getElementById("freshsale-activity-label");
+      if (browserStatus) {
+        browserStatus.innerText = "● Running";
+        browserStatus.className = "stacked-card-value status-booked";
+      }
+      if (portalStatus) {
+        portalStatus.innerText = "● Active";
+        portalStatus.className = "stacked-card-value status-booked";
+      }
+      if (activityLabel) activityLabel.innerText = "Processing records on cloud runner...";
+
+      let attempts = 0;
+      freshSaleLivePoll = setInterval(async () => {
+        attempts++;
+        const token = getToken();
+        if (!token) return;
+
+        try {
+          // Poll workflow runs
+          const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/runs?per_page=1&_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+
+          if (res.ok) {
+            const rData = await res.json();
+            const run = rData.workflow_runs && rData.workflow_runs[0];
+            if (run) {
+              const isRunActive = run.status === "in_progress" || run.status === "queued";
+              if (!isRunActive && attempts > 3) {
+                // Run finished
+                clearInterval(freshSaleLivePoll);
+                clearInterval(freshSaleTimerInterval);
+                if (browserStatus) {
+                  browserStatus.innerText = "● Idle";
+                  browserStatus.className = "stacked-card-value status-idle";
+                }
+                if (portalStatus) {
+                  portalStatus.innerText = "● Standby";
+                  portalStatus.className = "stacked-card-value status-idle";
+                }
+                if (activityLabel) activityLabel.innerText = `Job completed (${run.conclusion || 'finished'})`;
+                fetchFreshSaleQueue();
+                showToast(`✓ FreshSale Automation completed (${run.conclusion || 'done'})`);
+                return;
+              }
+            }
+          }
+
+          // Poll queue for live updates every 5s
+          if (attempts % 2 === 0) {
+            fetchFreshSaleQueue();
+          }
+        } catch (err) {
+          console.error("FreshSale tracking error:", err);
+        }
+      }, 3000);
+    }
+
+    function downloadFreshSaleReport() {
+      try {
+        if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+          showToast("❌ No records available to download!");
+          return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const headers = [
+          "Input Row Number",
+          "Smart Card Number",
+          "Customer Name",
+          "Customer Name 2",
+          "OLD RMN",
+          "New RMN",
+          "Billing Cycle",
+          "DT Code",
+          "Distributor ID",
+          "Portal Customer Status",
+          "Status",
+          "Related Customer Name",
+          "Remark",
+          "Last Booking Date",
+          "Last Ticket No",
+          "Days Since Close",
+          "100 Day Status",
+          "Processed At",
+          "Complaint Remark",
+          "Complaint Status"
+        ];
+
+        // 1. Master Sheet
+        const masterRows = [headers];
+        const dtGroups = {};
+        const issueRows = [headers];
+
+        currentFreshSaleRecords.forEach((r, idx) => {
+          const rowVals = [
+            r["Input Row Number"] || (idx + 1),
+            r["Smart Card Number"] || "",
+            r["Customer Name"] || "",
+            r["Customer Name 2"] || "",
+            r["OLD RMN"] || "",
+            r["New RMN"] || "",
+            r["Billing Cycle"] || "",
+            r["DT Code"] || "",
+            r["Distributor ID"] || "",
+            r["Portal Customer Status"] || "",
+            r["Status"] || "",
+            r["Related Customer Name"] || "",
+            r["Remark"] || "",
+            r["Last Booking Date"] || "",
+            r["Last Ticket No"] || "",
+            r["Days Since Close"] || "",
+            r["100 Day Status"] || "",
+            r["Processed At"] || "",
+            r["Complaint Remark"] || "",
+            r["Complaint Status"] || ""
+          ];
+          masterRows.push(rowVals);
+
+          // DT Grouping
+          let dtKey = String(r["DT Code"] || "").trim();
+          const distKey = String(r["Distributor ID"] || "").trim().toLowerCase();
+          const statKey = String(r["Status"] || "").trim().toLowerCase();
+
+          if (distKey.includes("it-ops") || dtKey.toLowerCase().includes("it-ops") || statKey.includes("it-ops")) {
+            dtKey = "IT-Ops";
+          } else if (dtKey.toLowerCase().includes("customer not found") || statKey.includes("customer not found")) {
+            dtKey = "Customer Not Found";
+          } else if (!dtKey || dtKey.toLowerCase().includes("not found")) {
+            dtKey = "DT Not Found";
+          } else {
+            dtKey = dtKey.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 31);
+          }
+
+          if (!dtGroups[dtKey]) dtGroups[dtKey] = [headers];
+          dtGroups[dtKey].push(rowVals);
+
+          // Issues
+          const isIssue = (
+            statKey !== "success" &&
+            statKey !== "success (dt only)" &&
+            statKey !== "success (distributor id only)"
+          ) || statKey.includes("failed") || statKey.includes("not found") || statKey.includes("error") || Boolean(r["Remark"]);
+
+          if (isIssue) {
+            issueRows.push(rowVals);
+          }
+        });
+
+        // Append Master sheet
+        const wsMaster = XLSX.utils.aoa_to_sheet(masterRows);
+        XLSX.utils.book_append_sheet(wb, wsMaster, "Master");
+
+        // Append one sheet per DT
+        for (const [dtName, rows] of Object.entries(dtGroups)) {
+          const wsDT = XLSX.utils.aoa_to_sheet(rows);
+          const safeTitle = dtName.slice(0, 31);
+          XLSX.utils.book_append_sheet(wb, wsDT, safeTitle);
+        }
+
+        // Append Issues sheet
+        if (issueRows.length > 1) {
+          const wsIssues = XLSX.utils.aoa_to_sheet(issueRows);
+          XLSX.utils.book_append_sheet(wb, wsIssues, "Issues");
+        }
+
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        XLSX.writeFile(wb, `Freshsales_Automation_Report_${dateStr}.xlsx`);
+        showToast("✓ FreshSale Excel downloaded successfully!");
+      } catch (err) {
+        console.error("downloadFreshSaleReport error:", err);
+        showToast("❌ Download failed: " + err.message);
+      }
+    }
 
 
     // Init
