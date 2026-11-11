@@ -28,7 +28,161 @@
 
   <!-- SheetJS library for direct Excel parsing and 'Add More Data' in browser -->
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
+    // ================= BOOKING LIVE RESULTS TABLE & DATE FILTER LOGIC =================
+    let bookingFilterMode = "today"; // "today", "yesterday", "all", or "custom"
+    let bookingCustomDate = "";
+
+    function setBookingDateFilter(mode, dateVal = "") {
+      bookingFilterMode = mode;
+      if (dateVal) bookingCustomDate = dateVal;
+
+      // Update button active styling
+      const bToday = document.getElementById("btn-booking-filter-today");
+      const bYest = document.getElementById("btn-booking-filter-yesterday");
+      const bAll = document.getElementById("btn-booking-filter-all");
+      const dateInp = document.getElementById("booking-date-picker");
+
+      if (bToday) bToday.className = "btn-bfilter-tag" + (mode === "today" ? " active" : "");
+      if (bYest) bYest.className = "btn-bfilter-tag" + (mode === "yesterday" ? " active" : "");
+      if (bAll) bAll.className = "btn-bfilter-tag" + (mode === "all" ? " active" : "");
+      if (dateInp && mode !== "custom") dateInp.value = "";
+
+      renderBookingLiveTable();
+    }
+
+    function getRecDateISO(rec) {
+      const raw = rec["Processed At"] || rec["processed_at"] || "";
+      if (!raw) return "";
+      try {
+        const d = new Date(raw.includes("Z") ? raw : (raw.replace(" ", "T") + "Z"));
+        if (isNaN(d.getTime())) return "";
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const da = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${da}`;
+      } catch(e) {
+        return "";
+      }
+    }
+
+    function getFilteredBookingRecords() {
+      const recs = currentQueueRecords || [];
+      if (bookingFilterMode === "all") {
+        return recs;
+      }
+
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const da = String(now.getDate()).padStart(2, '0');
+      const todayISO = `${yr}-${mo}-${da}`;
+
+      const yest = new Date(now.getTime() - 86400000);
+      const yYr = yest.getFullYear();
+      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
+      const yDa = String(yest.getDate()).padStart(2, '0');
+      const yestISO = `${yYr}-${yMo}-${yDa}`;
+
+      let targetDate = todayISO;
+      if (bookingFilterMode === "yesterday") targetDate = yestISO;
+      if (bookingFilterMode === "custom") targetDate = bookingCustomDate;
+
+      return recs.filter(r => {
+        const dStr = getRecDateISO(r);
+        if (dStr === targetDate) return true;
+        // In today view, also show pending records so the user sees live execution progress!
+        if (bookingFilterMode === "today" && !dStr) {
+          const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
+          return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
+        }
+        return false;
+      });
+    }
+
+    function renderBookingLiveTable() {
+      const tbody = document.getElementById("booking-live-table-body");
+      if (!tbody) return;
+
+      const records = getFilteredBookingRecords();
+      if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">No complaint records found for the selected date filter.</td></tr>';
+        return;
+      }
+
+      let rowsHtml = "";
+      records.forEach((r, idx) => {
+        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+        const rawStatus = String(r["Complaint Status"] || r["Status"] || "Pending").trim();
+        const lowStatus = rawStatus.toLowerCase();
+
+        let statusBadge = `<span style="color:#64748B; font-weight:700;">● Pending</span>`;
+        if (lowStatus.includes("submitted") || lowStatus.includes("success") || lowStatus.includes("booked") || lowStatus.includes("done")) {
+          statusBadge = `<span style="background:#DCFCE7; color:#15803D; padding:2px 6px; border-radius:3px; font-weight:700;">Submitted</span>`;
+        } else if (lowStatus.includes("in progress") || lowStatus.includes("processing") || lowStatus.includes("submitting")) {
+          statusBadge = `<span style="background:#E0F2FE; color:#0369A1; padding:2px 6px; border-radius:3px; font-weight:700;">In Progress</span>`;
+        } else if (lowStatus.includes("fail") || lowStatus.includes("error") || lowStatus.includes("not found")) {
+          statusBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 6px; border-radius:3px; font-weight:700;">Failed</span>`;
+        }
+
+        const dtCode = r["DT Code"] || r["dt_code"] || "—";
+        const distId = r["Distributor ID"] || r["distributor_id"] || dtCode;
+        const processedTime = formatISTTime(r["Processed At"] || r["processed_at"] || "");
+        const cid = r["Complaint ID"] || r["complaint_id"] || (lowStatus.includes("submitted") ? "#CMP-" + (r["Smart Card Number"] || "").slice(-6) : "—");
+        const remark = r["Complaint Remark"] || r["Remark"] || (lowStatus.includes("submitted") ? "Submitted successfully" : "—");
+
+        rowsHtml += `
+          <tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+            <td class="bcol-sr">${idx + 1}</td>
+            <td class="bcol-card">${escapeHtml(r["Smart Card Number"] || "—")}</td>
+            <td class="bcol-name" title="${escapeHtml(r["Customer Name"] || "")}">${escapeHtml(r["Customer Name"] || "—")}</td>
+            <td class="bcol-rmn">${escapeHtml(r["OLD RMN"] || r["RMN"] || "—")}</td>
+            <td class="bcol-dt"><span style="display:inline-block; white-space:nowrap; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px;">${escapeHtml(dtCode)}</span></td>
+            <td class="bcol-dist"><span style="display:inline-block; white-space:nowrap; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px;">${escapeHtml(distId)}</span></td>
+            <td class="bcol-billing" title="${escapeHtml(r["Billing Cycle"] || "")}">${escapeHtml(r["Billing Cycle"] || "—")}</td>
+            <td class="bcol-time">${escapeHtml(processedTime)}</td>
+            <td class="bcol-status">${statusBadge}</td>
+            <td class="bcol-cid">${escapeHtml(cid)}</td>
+            <td class="bcol-remark" title="${escapeHtml(remark)}">${escapeHtml(remark)}</td>
+          </tr>`;
+      });
+
+      tbody.innerHTML = rowsHtml;
+    }
+
+    function exportBookingLiveReport() {
+      const records = getFilteredBookingRecords();
+      if (!records || records.length === 0) {
+        showToast("⚠️ No records to export for selected filter!");
+        return;
+      }
+      try {
+        const exportData = records.map((r, i) => ({
+          "Sr No": i + 1,
+          "Smart Card Number": r["Smart Card Number"] || "",
+          "Customer Name": r["Customer Name"] || "",
+          "Mobile / RMN": r["OLD RMN"] || r["RMN"] || "",
+          "DT Code": r["DT Code"] || "",
+          "Distributor ID": r["Distributor ID"] || r["DT Code"] || "",
+          "Billing Cycle": r["Billing Cycle"] || "",
+          "Processed At": r["Processed At"] || r["processed_at"] || "",
+          "Status": r["Complaint Status"] || r["Status"] || "Pending",
+          "Complaint ID": r["Complaint ID"] || "",
+          "Remark": r["Complaint Remark"] || r["Remark"] || ""
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Complaint_Report");
+        const dateStr = new Date().toISOString().split("T")[0];
+        XLSX.writeFile(wb, `Complaint_Booking_Report_${dateStr}.xlsx`);
+        showToast("✓ Report downloaded successfully!");
+      } catch (err) {
+        console.error("Export error", err);
+        showToast("❌ Export failed: " + err.message);
+      }
+    }
+
+  </script>
 
   <style>
 
@@ -726,6 +880,22 @@
 
       border-bottom: 3.5px solid #0C4A6E !important;
 
+    }
+
+    .action-btn-green {
+      background: linear-gradient(180deg, #16A34A 0%, #15803D 100%) !important;
+      border-top: 1.5px solid #86EFAC !important;
+      border-left: 1.5px solid #86EFAC !important;
+      border-right: 2px solid #14532D !important;
+      border-bottom: 3.5px solid #14532D !important;
+    }
+
+    .action-btn-orange {
+      background: linear-gradient(180deg, #EA580C 0%, #C2410C 100%) !important;
+      border-top: 1.5px solid #FDBA74 !important;
+      border-left: 1.5px solid #FDBA74 !important;
+      border-right: 2px solid #7C2D12 !important;
+      border-bottom: 3.5px solid #7C2D12 !important;
     }
 
 
@@ -2279,6 +2449,182 @@
       color: #FFFFFF;
       font-weight: 700;
     }
+  
+    /* ================= COMPACT LEFT-ALIGNED AUTO-SCHEDULE & LIVE RESULTS TABLE ================= */
+    .schedule-toolbar-left {
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 7px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .sched-field-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .sched-field-title {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .sched-switch-box {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 27px;
+    }
+    .sched-ctrl-input {
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #0F172A;
+      background: #FFFFFF;
+      text-align: center;
+      height: 27px;
+    }
+    .sched-ctrl-input:focus {
+      border-color: #0284C7;
+      outline: none;
+    }
+    .sched-input-time { width: 85px; }
+    .sched-input-num { width: 68px; }
+    .sched-input-target { width: 75px; border-color: #0284C7; color: #0284C7; font-weight: 800; background: #F0F9FF; }
+    .btn-sched-save-clean {
+      height: 27px;
+      padding: 0 16px;
+      background: #0F172A;
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid #0F172A;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-sched-save-clean:hover { background: #1E293B; }
+
+    /* Live Results Table Styling */
+    .booking-live-table-box {
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 7px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .booking-table-toolbar-left {
+      background: #F1F5F9;
+      border-bottom: 1px solid #CBD5E1;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+    }
+    .booking-table-heading {
+      font-size: 12px;
+      font-weight: 800;
+      color: #0F172A;
+      letter-spacing: 0.3px;
+      padding-right: 8px;
+      border-right: 1.5px solid #CBD5E1;
+    }
+    .booking-filter-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .btn-bfilter-tag {
+      padding: 2px 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #E2E8F0;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #334155;
+      height: 26px;
+    }
+    .btn-bfilter-tag.active {
+      background: #0284C7;
+      color: #FFFFFF;
+      border-color: #0369A1;
+    }
+    .booking-date-input {
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      background: #FFFFFF;
+      color: #0F172A;
+      height: 26px;
+    }
+    .btn-booking-download-clean {
+      padding: 2px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #0F172A;
+      height: 26px;
+      margin-left: 8px;
+    }
+
+    /* Column widths & layout */
+    .table-booking-live {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    .table-booking-live thead tr {
+      background: #0F172A;
+    }
+    .table-booking-live th {
+      padding: 7px 8px;
+      font-weight: 700;
+      font-size: 10px;
+      color: #FFFFFF !important;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid #1E293B;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .table-booking-live tbody tr { border-bottom: 1px solid #E2E8F0; }
+    .table-booking-live tbody tr:nth-child(even) { background: #F8FAFC; }
+    .table-booking-live tbody tr:hover { background: #F1F5F9; }
+    .table-booking-live td {
+      padding: 6px 8px;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+    .bcol-sr { width: 46px; text-align: center; }
+    .bcol-card { width: 108px; font-family: monospace; font-weight: 800; color: #0F172A; }
+    .bcol-name { width: 135px; font-weight: 700; color: #0F172A; }
+    .bcol-rmn { width: 92px; font-family: monospace; }
+    .bcol-dt { width: 95px; }
+    .bcol-dist { width: 105px; }
+    .bcol-billing { width: 125px; font-size: 10.5px; color: #475569; }
+    .bcol-time { width: 85px; font-size: 10.5px; color: #0284C7; font-weight: 600; text-align: center; }
+    .bcol-status { width: 90px; text-align: center; }
+    .bcol-cid { width: 95px; font-family: monospace; font-weight: 700; color: #0F172A; }
+    .bcol-remark { width: auto; font-size: 10.5px; color: #475569; }
+
   </style>
 
 
@@ -2691,126 +3037,101 @@
 
 
 
-          <!-- Auto-Schedule Card (Dynamic Random Delay & Working Hours) -->
-
-          <div class="schedule-card">
-
-            <div class="schedule-header">
-
-              <div class="schedule-title">
-
-                <span>⏰ Auto-Schedule Complaint Booking</span>
-
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 8px;">
-
-                <span id="schedule-switch-label" style="font-size: 11px; font-weight: 800; color: #64748B;">OFF</span>
-
-                <label class="switch-toggle">
-
+                    <!-- LEFT-ALIGNED COMPACT AUTO-SCHEDULE TOOLBAR (NO EMOJIS, LABELS ON TOP, CLEAN) -->
+          <div class="schedule-toolbar-left">
+            <!-- 1. Switch -->
+            <div class="sched-field-col">
+              <span class="sched-field-title">Auto-Schedule</span>
+              <div class="sched-switch-box">
+                <label class="switch-toggle" style="position:relative; width:34px; height:18px;">
                   <input type="checkbox" id="switch-auto-schedule" onchange="handleScheduleToggle(this.checked)">
-
                   <span class="slider"></span>
-
                 </label>
-
+                <span id="schedule-switch-label" style="font-size:11px; font-weight:800; color:#64748B;">OFF</span>
               </div>
-
             </div>
 
-
-
-            <div class="schedule-grid">
-
-              <div class="schedule-input-group">
-
-                <label>🌅 Start Time (Morning)</label>
-
-                <input type="time" id="sched-start-time" value="09:00">
-
-              </div>
-
-              <div class="schedule-input-group">
-
-                <label>🌙 End Time (Night)</label>
-
-                <input type="time" id="sched-end-time" value="21:30">
-
-              </div>
-
-              <div class="schedule-input-group">
-
-                <label>🎲 Min Random Delay (Mins)</label>
-
-                <input type="number" id="sched-min-delay" value="5" min="1" max="180">
-
-              </div>
-
-              <div class="schedule-input-group">
-
-                <label>🎲 Max Random Delay (Mins)</label>
-
-                <input type="number" id="sched-max-delay" value="10" min="1" max="180">
-
-              </div>
-
-              <div class="schedule-input-group" style="grid-column: span 2; background: #FFF1F2; padding: 6px 10px; border-radius: 6px; border: 1px solid #FECDD3;">
-
-                <label style="color: #9F1239; font-weight: 800;">🎯 Schedule Target Quantity (आज कुल कितनी Complaints बुक करनी हैं?)</label>
-
-                <input type="number" id="sched-target-qty" value="2" min="1" max="500" placeholder="e.g. 2" style="font-weight: 800; font-size: 15px; color: #BE185D;">
-
-              </div>
-
+            <!-- 2. Start Time -->
+            <div class="sched-field-col">
+              <label class="sched-field-title">Start Time</label>
+              <input type="time" id="sched-start-time" class="sched-ctrl-input sched-input-time" value="08:00">
             </div>
 
-
-
-            <div class="schedule-footer">
-
-              <div class="schedule-status-badge badge-paused" id="sched-status-badge">
-
-                <span id="sched-status-dot">⚪</span>
-
-                <span id="sched-status-text">Schedule Paused</span>
-
-              </div>
-
-              <button class="schedule-save-btn" onclick="saveScheduleSettings()">
-
-                💾 Save Schedule
-
-              </button>
-
+            <!-- 3. End Time -->
+            <div class="sched-field-col">
+              <label class="sched-field-title">End Time</label>
+              <input type="time" id="sched-end-time" class="sched-ctrl-input sched-input-time" value="21:30">
             </div>
 
+            <!-- 4. Min Delay (No M) -->
+            <div class="sched-field-col">
+              <label class="sched-field-title">Min Delay</label>
+              <input type="number" id="sched-min-delay" class="sched-ctrl-input sched-input-num" value="5" min="1" max="180">
+            </div>
+
+            <!-- 5. Max Delay (No M) -->
+            <div class="sched-field-col">
+              <label class="sched-field-title">Max Delay</label>
+              <input type="number" id="sched-max-delay" class="sched-ctrl-input sched-input-num" value="6" min="1" max="180">
+            </div>
+
+            <!-- 6. Target Qty -->
+            <div class="sched-field-col">
+              <label class="sched-field-title">Target Qty</label>
+              <input type="number" id="sched-target-qty" class="sched-ctrl-input sched-input-target" value="2" min="1" max="500">
+            </div>
+
+            <!-- 7. Save Schedule Button -->
+            <div class="sched-field-col">
+              <label class="sched-field-title" style="opacity:0;">Action</label>
+              <button class="btn-sched-save-clean" onclick="saveScheduleSettings()">Save Schedule</button>
+            </div>
           </div>
 
+          <!-- HIDDEN STATUS TEXT (preserves JS refs for updateScheduleCountdown) -->
+          <div id="sched-status-badge" style="display:none;"><span id="sched-status-dot"></span><span id="sched-status-text"></span></div>
+          <input type="checkbox" id="cb-timer-delay" checked style="display:none;">
+          <span id="timer-status-label" style="display:none;"></span>
 
+          <!-- REFINED LIVE RESULTS TABLE (REPORT VIEW, LEFT-ALIGNED DATE FILTER, NO HORIZONTAL SCROLL) -->
+          <div class="booking-live-table-box">
+            <div class="booking-table-toolbar-left">
+              <div class="booking-table-heading">Live Results Table</div>
+              <div class="booking-filter-wrapper">
+                <span style="font-weight:700; color:#475569;">Date Filter:</span>
+                <button id="btn-booking-filter-today" class="btn-bfilter-tag active" onclick="setBookingDateFilter('today')">Today</button>
+                <button id="btn-booking-filter-yesterday" class="btn-bfilter-tag" onclick="setBookingDateFilter('yesterday')">Yesterday</button>
+                <button id="btn-booking-filter-all" class="btn-bfilter-tag" onclick="setBookingDateFilter('all')">All Records</button>
+                <input type="date" id="booking-date-picker" class="booking-date-input" onchange="setBookingDateFilter('custom', this.value)">
+                <button class="btn-booking-download-clean" onclick="exportBookingLiveReport()">Download Excel</button>
+              </div>
+            </div>
 
-          <!-- Timer Delay Banner (Exact Laptop App Replica) -->
-
-          <div class="timer-banner">
-
-            <label class="timer-cb-wrapper">
-
-              <input type="checkbox" id="cb-timer-delay" checked onchange="toggleTimerDelay(this.checked)">
-
-              <span>⏱️ Timer Delay (1-2m)</span>
-
-            </label>
-
-            <div class="timer-status-pill" id="timer-status-label">⏱️ Timer Delay Active (Standby)</div>
-
-            <button class="next-now-btn" onclick="showToast('⚡ Instant Mode: Next Ticket Active')">⚡ Next Now</button>
-
+            <div style="max-height:280px; overflow-y:auto; overflow-x:hidden;">
+              <table class="table-booking-live">
+                <thead>
+                  <tr>
+                    <th class="bcol-sr">Sr No</th>
+                    <th class="bcol-card">Smart Card</th>
+                    <th class="bcol-name">Customer Name</th>
+                    <th class="bcol-rmn">Mobile / RMN</th>
+                    <th class="bcol-dt">DT Code</th>
+                    <th class="bcol-dist">Distributor ID</th>
+                    <th class="bcol-billing">Billing Cycle</th>
+                    <th class="bcol-time">Processed At</th>
+                    <th class="bcol-status">Status</th>
+                    <th class="bcol-cid">Complaint ID</th>
+                    <th class="bcol-remark">Remark</th>
+                  </tr>
+                </thead>
+                <tbody id="booking-live-table-body">
+                  <tr>
+                    <td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">Loading complaints queue data...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-
-
-
-          <!-- Activity Log Box has been removed as per User Request #1 -->
-
         </div>
 
 
@@ -3609,19 +3930,20 @@
         <div class="group-box" id="view-fresh_sale" style="display: none;">
           <div class="group-box-title">🌐 FreshSale Automation ☁️</div>
 
-          <!-- 6 Action Buttons -->
+          <!-- 7 Action Buttons -->
           <div class="action-btns-grid">
-            <div class="action-row-6">
+            <div class="action-row-7">
               <button class="action-btn-3d" id="btn-upload-fresh-sale" onclick="triggerFreshSaleUpload()">Upload<br>Excel</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2016272')">User id/ Pass/<br>2016272 ▾</button>
               <button class="action-btn-3d" onclick="openCredsPopup('2017416')">User id/ Pass/<br>2017416 ▾</button>
               <button id="btn-start-fresh-sale" class="action-btn-3d action-btn-green" onclick="dispatchFreshSaleRun()">Start<br>Processing</button>
+              <button id="btn-retry-fresh-sale" class="action-btn-3d action-btn-orange" onclick="retryFailedFreshSale()">Retry<br>Failed</button>
               <button class="action-btn-3d" onclick="downloadFreshSaleReport()">Download<br>Excel</button>
               <button class="action-btn-3d action-btn-blue" onclick="fetchFreshSaleQueue(true); checkAndResumeFreshSaleRun();">☁️ Cloud<br>Sync</button>
             </div>
           </div>
 
-          <!-- DT Profile & 100-Day Rule Banner -->
+          <!-- Target DT Profile Selector -->
           <div style="background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:6px; padding:6px 12px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:11.5px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-weight:700; color:#15803D;">Target DT Profile:</span>
@@ -3629,10 +3951,6 @@
                 <option value="DT-2016272" selected>DT-2016272 (MonuDubey)</option>
                 <option value="DT-2017416">DT-2017416 (Pavan KumarSharma)</option>
               </select>
-            </div>
-            <div style="font-size:11px; color:#475569; display:flex; align-items:center; gap:4px;">
-              <span>🛡️</span>
-              <b>100-Day Rule Active</b> (SR Tickets Only, IST)
             </div>
           </div>
 
@@ -6894,6 +7212,7 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
     function updateBreakdown(records) {
+      setTimeout(renderBookingLiveTable, 0);
 
       currentQueueRecords = records;
 
@@ -9539,6 +9858,7 @@ const VALID_TOKEN = _T_PARTS.join("");
     let freshSaleRunFinishedAt = null;
     let freshSaleQueueFetchError = null;
     let freshSaleIsRunning = false;
+    let freshSaleDispatching = false;
 
     function formatIST(isoString) {
       if (!isoString) return "";
@@ -9566,33 +9886,27 @@ const VALID_TOKEN = _T_PARTS.join("");
     }
 
     function updateFreshSaleUploadBtn() {
+      const isBusy = freshSaleIsRunning || freshSaleDispatching;
       const uploadBtn = document.getElementById("btn-upload-fresh-sale");
       if (uploadBtn) {
-        if (freshSaleIsRunning) {
-          uploadBtn.disabled = true;
-          uploadBtn.style.opacity = "0.5";
-          uploadBtn.style.cursor = "not-allowed";
-          uploadBtn.title = "Upload blocked while FreshSale run is in progress";
-        } else {
-          uploadBtn.disabled = false;
-          uploadBtn.style.opacity = "1.0";
-          uploadBtn.style.cursor = "pointer";
-          uploadBtn.title = "";
-        }
+        uploadBtn.disabled = isBusy;
+        uploadBtn.style.opacity = isBusy ? "0.5" : "1.0";
+        uploadBtn.style.cursor = isBusy ? "not-allowed" : "pointer";
+        uploadBtn.title = isBusy ? "Upload blocked while FreshSale run is in progress" : "";
       }
       const startBtn = document.getElementById("btn-start-fresh-sale");
       if (startBtn) {
-        if (freshSaleIsRunning) {
-          startBtn.disabled = true;
-          startBtn.style.opacity = "0.5";
-          startBtn.style.cursor = "not-allowed";
-          startBtn.title = "FreshSale run is already live or starting";
-        } else {
-          startBtn.disabled = false;
-          startBtn.style.opacity = "1.0";
-          startBtn.style.cursor = "pointer";
-          startBtn.title = "";
-        }
+        startBtn.disabled = isBusy;
+        startBtn.style.opacity = isBusy ? "0.5" : "1.0";
+        startBtn.style.cursor = isBusy ? "not-allowed" : "pointer";
+        startBtn.title = isBusy ? "FreshSale run is already live or starting" : "";
+      }
+      const retryBtn = document.getElementById("btn-retry-fresh-sale");
+      if (retryBtn) {
+        retryBtn.disabled = isBusy;
+        retryBtn.style.opacity = isBusy ? "0.5" : "1.0";
+        retryBtn.style.cursor = isBusy ? "not-allowed" : "pointer";
+        retryBtn.title = isBusy ? "Retry blocked while FreshSale run is in progress" : "";
       }
     }
 
@@ -9726,8 +10040,14 @@ const VALID_TOKEN = _T_PARTS.join("");
 
       // 5. SMART CARD BOX
       if (cardLabel) {
-        const curCard = currentFreshSaleEnvelope?.current_card;
-        cardLabel.innerText = curCard ? curCard : "—";
+        const envStat = String(currentFreshSaleEnvelope?.status || "").toLowerCase();
+        const isFinished = envStat === "completed" || envStat === "failed" || envStat === "cancelled" || !freshSaleIsRunning;
+        if (isFinished) {
+          cardLabel.innerText = "—";
+        } else {
+          const curCard = currentFreshSaleEnvelope?.current_card;
+          cardLabel.innerText = curCard ? curCard : "—";
+        }
       }
 
       // 6. ACTIVITY BOX (Point 5: Show "No update from cloud" ONLY when run is in_progress AND envelope status is "running" AND updated_at is older than 3 minutes. Never during Starting/queued)
@@ -9838,9 +10158,17 @@ const VALID_TOKEN = _T_PARTS.join("");
       if (succEl) succEl.innerText = `● ${success}`;
       if (failEl) failEl.innerText = `● ${failed}`;
 
-      const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
-      if (pctEl) pctEl.innerText = `${pct}%`;
-      if (barEl) barEl.style.width = `${pct}%`;
+      const envStat = String(qData?.status || "").toLowerCase();
+      const isFinished = envStat === "completed" || envStat === "failed" || envStat === "cancelled" || (!freshSaleIsRunning && processed === total && total > 0);
+
+      if (isFinished) {
+        if (pctEl) pctEl.innerText = `0%`;
+        if (barEl) barEl.style.width = `0%`;
+      } else {
+        const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+        if (pctEl) pctEl.innerText = `${pct}%`;
+        if (barEl) barEl.style.width = `${pct}%`;
+      }
 
       updateFreshSaleBoxes();
       renderFreshSaleTable();
@@ -9858,12 +10186,22 @@ const VALID_TOKEN = _T_PARTS.join("");
       let html = "";
       currentFreshSaleRecords.forEach((r, idx) => {
         const status = String(r["Status"] || "Pending");
-        const remarkTip = r["Remark"] ? ` title="${String(r["Remark"]).replace(/"/g, '&quot;')}"` : "";
-        let statusBadge = `<span${remarkTip} style="color:#64748B; font-weight:700;">● ${status}</span>`;
-        if (status.toLowerCase().startsWith("success")) {
-          statusBadge = `<span${remarkTip} style="color:#16A34A; font-weight:700;">✓ ${status}</span>`;
-        } else if (status.toLowerCase().includes("failed") || status.toLowerCase().includes("not found") || status.toLowerCase().includes("error")) {
-          statusBadge = `<span${remarkTip} style="color:#DC2626; font-weight:700;">✗ ${status}</span>`;
+        const remark = String(r["Remark"] || "").trim();
+        const remarkTip = remark ? ` title="${escapeHtml(remark)}"` : "";
+        let statusBadge = `<span${remarkTip} style="color:#64748B; font-weight:700;">● ${escapeHtml(status)}</span>`;
+        const statLower = status.toLowerCase();
+
+        if (statLower.startsWith("success")) {
+          statusBadge = `<span${remarkTip} style="color:#16A34A; font-weight:700;">✓ ${escapeHtml(status)}</span>`;
+        } else if (
+          statLower.includes("failed") ||
+          statLower.includes("not found") ||
+          statLower.includes("error") ||
+          statLower.includes("skipped") ||
+          statLower.includes("needs recheck")
+        ) {
+          const reasonText = remark ? ` (${escapeHtml(remark)})` : (statLower.startsWith("failed") ? "" : ` (${escapeHtml(status)})`);
+          statusBadge = `<span${remarkTip} style="color:#DC2626; font-weight:700;">✗ Failed${reasonText}</span>`;
         } else if (status === "In Progress...") {
           statusBadge = `<span${remarkTip} style="color:#0284C7; font-weight:700;">⏳ In Progress...</span>`;
         }
@@ -9878,25 +10216,27 @@ const VALID_TOKEN = _T_PARTS.join("");
           badge100 = `<span style="background:#FFFBEB; color:#B45309; border:1px solid #FCD34D; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Already Open</span>`;
         } else if (status100 === "No Previous Complaint") {
           badge100 = `<span style="background:#F8FAFC; color:#475569; border:1px solid #CBD5E1; border-radius:4px; padding:1px 6px; font-weight:600; font-size:10px;">No Prev Comp</span>`;
+        } else if (status100 === "Needs Recheck") {
+          badge100 = `<span style="background:#FEF2F2; color:#B91C1C; border:1px solid #FCA5A5; border-radius:4px; padding:1px 6px; font-weight:700; font-size:10px;">Needs Recheck</span>`;
         } else if (status100) {
-          badge100 = `<span style="font-size:10px; color:#64748B;">${status100}</span>`;
+          badge100 = `<span style="font-size:10px; color:#64748B;">${escapeHtml(status100)}</span>`;
         }
 
         const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
         const daysVal = (r["Days Since Close"] !== "" && r["Days Since Close"] !== undefined && r["Days Since Close"] !== null) ? r["Days Since Close"] : "—";
         const ticketVal = r["LastTicketNo"] || r["Last Ticket No"] || "";
-        const daysWithTicket = ticketVal ? `${daysVal} (${ticketVal})` : `${daysVal}`;
+        const daysWithTicket = ticketVal ? `${daysVal} (${escapeHtml(ticketVal)})` : `${daysVal}`;
 
         html += `<tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
-          <td style="padding:5px 8px; font-weight:700; color:#475569;">${r["Input Row Number"] || (idx + 1)}</td>
-          <td style="padding:5px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
-          <td style="padding:5px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
-          <td style="padding:5px 8px; color:#0284C7;">${r["Customer Name 2"] || "—"}</td>
-          <td style="padding:5px 8px; font-weight:600; color:#0F172A;">${r["DT Code"] || "—"}</td>
-          <td style="padding:5px 8px; color:#475569;">${r["Distributor ID"] || "—"}</td>
+          <td style="padding:5px 8px; font-weight:700; color:#475569;">${escapeHtml(r["Input Row Number"] || (idx + 1))}</td>
+          <td style="padding:5px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${escapeHtml(r["Smart Card Number"] || "—")}</td>
+          <td style="padding:5px 8px; color:#1E293B;">${escapeHtml(r["Customer Name"] || "—")}</td>
+          <td style="padding:5px 8px; color:#0284C7;">${escapeHtml(r["Customer Name 2"] || "—")}</td>
+          <td style="padding:5px 8px; font-weight:600; color:#0F172A;">${escapeHtml(r["DT Code"] || "—")}</td>
+          <td style="padding:5px 8px; color:#475569;">${escapeHtml(r["Distributor ID"] || "—")}</td>
           <td style="padding:5px 8px;">${badge100}</td>
           <td style="padding:5px 8px; color:#475569; font-size:10.5px;">${daysWithTicket}</td>
-          <td style="padding:5px 8px; color:#475569; font-size:10px;">${r["Last Booking Date"] || "—"}</td>
+          <td style="padding:5px 8px; color:#475569; font-size:10px;">${escapeHtml(r["Last Booking Date"] || "—")}</td>
           <td style="padding:5px 8px;">${statusBadge}</td>
         </tr>`;
       });
@@ -10216,40 +10556,57 @@ const VALID_TOKEN = _T_PARTS.join("");
     }
 
     async function dispatchFreshSaleRun() {
-      if (freshSaleIsRunning) {
+      // 1. Double-click prevention: check flags synchronously before any await
+      if (freshSaleDispatching || freshSaleIsRunning) {
         showToast("⚠️ FreshSale Automation is already running or starting on cloud!");
         return;
       }
-
-      const token = getToken();
-      if (!token) {
-        showToast("❌ Device not authorized. Enter device token first.");
-        return;
+      freshSaleDispatching = true;
+      const startBtn = document.getElementById("btn-start-fresh-sale");
+      const retryBtn = document.getElementById("btn-retry-fresh-sale");
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.style.opacity = "0.5";
+        startBtn.style.cursor = "not-allowed";
+      }
+      if (retryBtn) {
+        retryBtn.disabled = true;
+        retryBtn.style.opacity = "0.5";
+        retryBtn.style.cursor = "not-allowed";
       }
 
-      if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
-        showToast("❌ No records in queue. Upload an Excel file first.");
-        return;
-      }
-
-      const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
-      if (statusCheck.active) {
-        freshSaleIsRunning = true;
-        updateFreshSaleUploadBtn();
-        showToast("⚠️ FreshSale workflow is already running or queued on GitHub!");
-        return;
-      }
-
-      const dtSelect = document.getElementById("freshsale-dt-select");
-      const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
-
-      showToast(`🚀 Launching FreshSale Automation on cloud for ${dtCode}...`);
-
-      const dispatchTime = Date.now();
-      freshSaleIsRunning = true;
-      updateFreshSaleUploadBtn();
-
+      let runDispatched = false;
       try {
+        const token = getToken();
+        if (!token) {
+          showToast("❌ Device not authorized. Enter device token first.");
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          return;
+        }
+
+        if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+          showToast("❌ No records in queue. Upload an Excel file first.");
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          return;
+        }
+
+        const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+        if (statusCheck.active) {
+          freshSaleIsRunning = true;
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          showToast("⚠️ FreshSale workflow is already running or queued on GitHub!");
+          return;
+        }
+
+        const dtSelect = document.getElementById("freshsale-dt-select");
+        const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
+
+        showToast(`🚀 Launching FreshSale Automation on cloud for ${dtCode}...`);
+
+        const dispatchTime = Date.now();
         const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/dispatches`, {
           method: "POST",
           headers: {
@@ -10266,18 +10623,215 @@ const VALID_TOKEN = _T_PARTS.join("");
         });
 
         if (res.ok || res.status === 204) {
+          runDispatched = true;
+          freshSaleIsRunning = true;
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
           showToast(`✓ FreshSale Automation started on Cloud for ${dtCode}!`);
           startFreshSaleTracking(dispatchTime);
         } else {
-          freshSaleIsRunning = false;
+          freshSaleDispatching = false;
           updateFreshSaleUploadBtn();
           showToast(`❌ Dispatch failed: ${res.statusText}`);
         }
       } catch (err) {
-        freshSaleIsRunning = false;
-        updateFreshSaleUploadBtn();
         console.error("dispatchFreshSaleRun error:", err);
+        freshSaleDispatching = false;
+        if (!runDispatched && !freshSaleIsRunning) {
+          updateFreshSaleUploadBtn();
+        }
         showToast(`❌ Error launching: ${err.message}`);
+      }
+    }
+
+    async function retryFailedFreshSale() {
+      // 1. Double-click prevention: check flags synchronously before any await
+      if (freshSaleDispatching || freshSaleIsRunning) {
+        showToast("⚠️ FreshSale operation is already in progress!");
+        return;
+      }
+      freshSaleDispatching = true;
+      const retryBtn = document.getElementById("btn-retry-fresh-sale");
+      const startBtn = document.getElementById("btn-start-fresh-sale");
+      if (retryBtn) {
+        retryBtn.disabled = true;
+        retryBtn.style.opacity = "0.5";
+        retryBtn.style.cursor = "not-allowed";
+      }
+      if (startBtn) {
+        startBtn.disabled = true;
+        startBtn.style.opacity = "0.5";
+        startBtn.style.cursor = "not-allowed";
+      }
+
+      let runDispatched = false;
+      try {
+        const token = getToken();
+        if (!token) {
+          showToast("❌ Device not authorized. Enter device token first.");
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          return;
+        }
+
+        if (!currentFreshSaleRecords || currentFreshSaleRecords.length === 0) {
+          showToast("❌ No records in queue. Upload an Excel file or Sync from Cloud first.");
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          return;
+        }
+
+        // Check if workflow is already running on GitHub
+        const statusCheck = await getWorkflowRunStatus("fresh_sales.yml");
+        if (statusCheck.active) {
+          freshSaleIsRunning = true;
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          showToast("⚠️ FreshSale workflow is already running or queued on GitHub!");
+          return;
+        }
+
+        // Build the FULL records list: keep Success rows untouched, set Failed / Needs Recheck to Pending with Retry N
+        let retryCount = 0;
+        let successCount = 0;
+        const fullRecords = currentFreshSaleRecords.map(orig => {
+          const r = { ...orig };
+          const stat = String(r["Status"] || "").trim().toLowerCase();
+          const stat100 = String(r["100 Day Status"] || "").trim().toLowerCase();
+          const isSuccess = stat.startsWith("success");
+
+          if (isSuccess) {
+            successCount++;
+            return r; // Success rows stay completely untouched
+          }
+
+          // Failed / Needs Recheck / Non-Success row
+          retryCount++;
+          const curRetry = String(r["Retry"] || "").trim();
+          let nextRetry = "Retry 1";
+          if (curRetry) {
+            const m = curRetry.match(/\d+/);
+            const num = m ? parseInt(m[0], 10) + 1 : 2;
+            nextRetry = `Retry ${num}`;
+          }
+          r["Retry"] = nextRetry;
+          r["Status"] = "Pending";
+          r["Remark"] = `Queued for ${nextRetry}`;
+          return r;
+        });
+
+        if (retryCount === 0) {
+          showToast("ℹ️ All records are already Successful! Nothing to retry.");
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          return;
+        }
+
+        const dtSelect = document.getElementById("freshsale-dt-select");
+        const dtCode = dtSelect ? dtSelect.value : "DT-2016272";
+
+        showToast(`🔄 Queuing ${retryCount} failed card(s) for retry on cloud...`);
+
+        // Fetch latest fresh_sales_queue.json SHA to prevent 409 conflict
+        let targetSha = currentFreshSaleSha;
+        try {
+          const shaRes = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json?_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            },
+            cache: "no-store"
+          });
+          if (shaRes.ok) {
+            const shaJson = await shaRes.json();
+            targetSha = shaJson.sha;
+          }
+        } catch (e) {
+          console.warn("Could not refresh fresh_sales_queue.json SHA:", e);
+        }
+
+        // Full record list queue payload
+        const retryQueuePayload = {
+          status: "queued",
+          run_id: "",
+          started_at: "",
+          finished_at: "",
+          total: fullRecords.length,
+          processed: successCount,
+          pending: retryCount,
+          success: successCount,
+          failed: 0,
+          current_card: "",
+          activity: `Retrying ${retryCount} failed record(s)...`,
+          error: null,
+          updated_at: new Date().toISOString(),
+          records: fullRecords
+        };
+
+        const jsonStr = JSON.stringify(retryQueuePayload, null, 2);
+        const b64Content = btoa(unescape(encodeURIComponent(jsonStr)));
+
+        const putRes = await fetch(`https://api.github.com/repos/${REPO}/contents/fresh_sales_queue.json`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: `Queue retry for ${retryCount} failed FreshSale records (full list preserved) [skip ci]`,
+            content: b64Content,
+            sha: targetSha || undefined
+          })
+        });
+
+        if (!putRes.ok) {
+          const errData = await putRes.json().catch(() => ({}));
+          throw new Error(errData.message || `Failed to update queue (HTTP ${putRes.status})`);
+        }
+
+        const putData = await putRes.json();
+        currentFreshSaleSha = putData.content?.sha;
+        currentFreshSaleRecords = fullRecords;
+        updateFreshSaleUI(retryQueuePayload);
+
+        // Dispatch workflow
+        const dispatchTime = Date.now();
+        const dispatchRes = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fresh_sales.yml/dispatches`, {
+          method: "POST",
+          headers: {
+            "Authorization": `token ${token}`,
+            "Accept": "application/vnd.github.v3+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ref: "main",
+            inputs: {
+              dt_code: dtCode
+            }
+          })
+        });
+
+        if (dispatchRes.ok || dispatchRes.status === 204) {
+          runDispatched = true;
+          freshSaleIsRunning = true;
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          showToast(`✓ Retrying ${retryCount} failed cards on Cloud for ${dtCode}!`);
+          startFreshSaleTracking(dispatchTime);
+        } else {
+          freshSaleDispatching = false;
+          updateFreshSaleUploadBtn();
+          showToast(`❌ Dispatch failed: ${dispatchRes.statusText}`);
+        }
+      } catch (err) {
+        console.error("retryFailedFreshSale error:", err);
+        freshSaleDispatching = false;
+        // In catch, re-enable only if no run was dispatched; never set freshSaleIsRunning = false while a run is active
+        if (!runDispatched && !freshSaleIsRunning) {
+          updateFreshSaleUploadBtn();
+        }
+        showToast(`❌ Retry error: ${err.message}`);
       }
     }
 
@@ -10397,12 +10951,14 @@ const VALID_TOKEN = _T_PARTS.join("");
                 timeEl.innerText = formatHHMMSS(elapsedSec);
               }
 
+              updateFreshSaleUI(currentFreshSaleEnvelope);
               updateFreshSaleBoxes(currentRun);
               const conclusion = currentRun.conclusion || (currentFreshSaleEnvelope?.status === "completed" ? "success" : "failure");
               showToast(`✓ FreshSale Automation finished (${conclusion})`, conclusion === "success" ? "success" : "warning");
               return;
             } else {
               // Run still in progress or queued
+              updateFreshSaleUI(currentFreshSaleEnvelope);
               updateFreshSaleBoxes(currentRun);
             }
           } else {
@@ -10442,6 +10998,7 @@ const VALID_TOKEN = _T_PARTS.join("");
         }
 
         const wb = XLSX.utils.book_new();
+        const hasRetry = currentFreshSaleRecords.some(r => Boolean(r["Retry"]));
         const headers = [
           "Input Row Number",
           "Smart Card Number",
@@ -10464,6 +11021,7 @@ const VALID_TOKEN = _T_PARTS.join("");
           "Complaint Remark",
           "Complaint Status"
         ];
+        if (hasRetry) headers.push("Retry");
 
         // 1. Master Sheet
         const masterRows = [headers];
@@ -10494,12 +11052,14 @@ const VALID_TOKEN = _T_PARTS.join("");
             r["Complaint Remark"] || "",
             r["Complaint Status"] || ""
           ];
+          if (hasRetry) rowVals.push(r["Retry"] || "");
           masterRows.push(rowVals);
 
           // DT Grouping
           let dtKey = String(r["DT Code"] || "").trim();
           const distKey = String(r["Distributor ID"] || "").trim().toLowerCase();
           const statKey = String(r["Status"] || "").trim().toLowerCase();
+          const stat100 = String(r["100 Day Status"] || "").trim().toLowerCase();
 
           if (distKey.includes("it-ops") || dtKey.toLowerCase().includes("it-ops") || statKey.includes("it-ops")) {
             dtKey = "IT-Ops";
@@ -10514,12 +11074,14 @@ const VALID_TOKEN = _T_PARTS.join("");
           if (!dtGroups[dtKey]) dtGroups[dtKey] = [headers];
           dtGroups[dtKey].push(rowVals);
 
-          // Issues
-          const isIssue = (
-            statKey !== "success" &&
-            statKey !== "success (dt only)" &&
-            statKey !== "success (distributor id only)"
-          ) || statKey.includes("failed") || statKey.includes("not found") || statKey.includes("error") || Boolean(r["Remark"]);
+          // Issues: ONLY Failed / Needs Recheck rows (never include Success rows even if they have Remark)
+          const isIssue = statKey.includes("failed") ||
+                          statKey.includes("not found") ||
+                          statKey.includes("error") ||
+                          statKey.includes("skipped") ||
+                          statKey.includes("needs recheck") ||
+                          stat100 === "needs recheck" ||
+                          (!statKey.startsWith("success") && statKey !== "pending" && statKey !== "in progress...");
 
           if (isIssue) {
             issueRows.push(rowVals);
