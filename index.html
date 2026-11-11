@@ -2475,10 +2475,10 @@
       font-weight: 700;
     }
   
-    /* ================= ORIGINAL PINK THEME: COMPACT AUTO-SCHEDULE & LIVE RESULTS TABLE ================= */
+    /* ================= EXACT SUN DIRECT PINK (#E00084): AUTO-SCHEDULE & LIVE RESULTS TABLE ================= */
     .schedule-toolbar-pink {
       background: #FFFFFF;
-      border: 1px solid #FDA4AF;
+      border: 1.5px solid #FBCFE8;
       border-radius: 7px;
       padding: 8px 14px;
       display: flex;
@@ -2490,7 +2490,7 @@
     .field-col {
       display: flex;
       flex-direction: column;
-      align-items: center; /* Exactly centers the label above the box */
+      align-items: center;
       gap: 4px;
     }
     .field-label-clean {
@@ -2536,12 +2536,12 @@
       transition: .3s;
       border-radius: 50%;
     }
-    input:checked + .slider-pink { background-color: #E11D48; }
+    input:checked + .slider-pink { background-color: #E50087; }
     input:checked + .slider-pink:before { transform: translateX(16px); }
     .switch-label-pink {
       font-size: 11.5px;
       font-weight: 800;
-      color: #E11D48;
+      color: #E50087;
     }
 
     .field-input-clean {
@@ -2556,46 +2556,47 @@
       height: 28px;
       line-height: 28px;
     }
-    .field-input-clean:focus { border-color: #E11D48; outline: none; }
+    .field-input-clean:focus { border-color: #E50087; outline: none; }
     .time-clean { width: 85px; }
     .num-clean { width: 68px; }
     .target-clean {
       width: 75px;
-      border-color: #E11D48;
-      color: #BE123C;
+      border: 1.5px solid #E50087;
+      color: #E50087;
       font-weight: 800;
-      background: #FFF1F2;
+      background: #FDF2F8;
     }
 
+    /* Save Button - Exact Sun Pink */
     .btn-save-pink {
       height: 28px;
       padding: 0 16px;
-      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
+      background: linear-gradient(180deg, #E50087 0%, #C20072 100%);
       color: #FFFFFF;
       font-size: 11px;
       font-weight: 700;
-      border: 1px solid #9F1239;
+      border: 1px solid #C20072;
       border-radius: 4px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      box-shadow: 0 1px 2px rgba(225, 29, 72, 0.25);
+      box-shadow: 0 1px 3px rgba(224, 0, 132, 0.3);
     }
-    .btn-save-pink:hover { background: #BE123C; }
+    .btn-save-pink:hover { background: #C20072; }
 
-    /* TABLE: ORIGINAL APP PINK HEADER WITH WHITE TEXT, BLACK BODY TEXT, GREEN STATUS */
+    /* TABLE: EXACT SUN PINK (#E00084) HEADER WITH WHITE TEXT, BLACK BODY TEXT, GREEN STATUS */
     .table-container-pink {
       background: #FFFFFF;
-      border: 1.5px solid #FDA4AF;
+      border: 1.5px solid #E50087;
       border-radius: 7px;
       overflow: hidden;
       margin-top: 10px;
     }
     .table-toolbar-pink {
-      background: #FFF1F2;
-      border-bottom: 1px solid #FDA4AF;
+      background: #FDF2F8;
+      border-bottom: 1.5px solid #FBCFE8;
       padding: 7px 14px;
       display: flex;
       align-items: center;
@@ -2605,9 +2606,9 @@
     .table-title-pink {
       font-size: 12px;
       font-weight: 800;
-      color: #9F1239;
+      color: #E50087;
       padding-right: 12px;
-      border-right: 1.5px solid #FDA4AF;
+      border-right: 1.5px solid #FBCFE8;
       display: flex;
       align-items: center;
       height: 26px;
@@ -2621,7 +2622,7 @@
     }
     .filter-label-pink {
       font-weight: 700;
-      color: #881337;
+      color: #831843;
       font-size: 11px;
     }
     .btn-filter-pink {
@@ -2629,10 +2630,10 @@
       font-size: 11px;
       font-weight: 700;
       background: #FFFFFF;
-      border: 1px solid #FDA4AF;
+      border: 1px solid #FBCFE8;
       border-radius: 4px;
       cursor: pointer;
-      color: #9F1239;
+      color: #E50087;
       height: 26px;
       display: inline-flex;
       align-items: center;
@@ -2640,15 +2641,15 @@
       text-align: center;
     }
     .btn-filter-pink.active {
-      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
+      background: linear-gradient(180deg, #E50087 0%, #C20072 100%);
       color: #FFFFFF;
-      border-color: #9F1239;
+      border-color: #C20072;
     }
     .date-picker-pink {
       padding: 0 7px;
       font-size: 11px;
       font-weight: 700;
-      border: 1px solid #FDA4AF;
+      border: 1px solid #FBCFE8;
       border-radius: 4px;
       background: #FFFFFF;
       color: #000000;
@@ -2659,10 +2660,10 @@
       font-size: 11px;
       font-weight: 700;
       background: #FFFFFF;
-      border: 1px solid #FDA4AF;
+      border: 1.5px solid #E50087;
       border-radius: 4px;
       cursor: pointer;
-      color: #9F1239;
+      color: #E50087;
       height: 26px;
       display: inline-flex;
       align-items: center;
@@ -2670,13 +2671,16 @@
       text-align: center;
       margin-left: 8px;
     }
+    .btn-download-pink:hover {
+      background: #FDF2F8;
+    }
 
     /* Fixed Table Layout with Strict Widths */
     .table-booking-live-pink { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
     
-    /* EXCEL HEADER: PINK WITH WHITE TEXT */
+    /* EXCEL HEADER: EXACT SUN PINK (#E00084) WITH PURE WHITE TEXT */
     .table-booking-live-pink thead tr {
-      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
+      background: #E50087 !important;
     }
     .table-booking-live-pink th {
       padding: 8px 8px;
@@ -2684,14 +2688,15 @@
       font-size: 10.5px;
       color: #FFFFFF !important; /* Pure white header text */
       letter-spacing: 0.3px;
-      border-bottom: 1px solid #9F1239;
+      border-bottom: 1.5px solid #C20072;
       white-space: nowrap;
       text-align: left;
+      background: #E50087 !important;
     }
 
     .table-booking-live-pink tbody tr { border-bottom: 1px solid #E2E8F0; }
     .table-booking-live-pink tbody tr:nth-child(even) { background: #F8FAFC; }
-    .table-booking-live-pink tbody tr:hover { background: #FFF1F2; }
+    .table-booking-live-pink tbody tr:hover { background: #FDF2F8; }
     
     /* EXCEL DATA: PURE BLACK TEXT */
     .table-booking-live-pink td {
@@ -2749,13 +2754,13 @@
       display: inline-block;
     }
     .status-progress-pill {
-      color: #BE123C !important;
-      background: #FFF1F2;
+      color: #E50087 !important;
+      background: #FDF2F8;
       font-weight: 800;
       padding: 2px 7px;
       border-radius: 4px;
       display: inline-block;
-      border: 1px solid #FECDD3;
+      border: 1px solid #FBCFE8;
     }
 
     .dt-badge-clean {
@@ -2769,7 +2774,6 @@
       font-weight: 700;
       font-size: 10px;
     }
-
   </style>
 
 
