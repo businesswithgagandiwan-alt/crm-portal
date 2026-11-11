@@ -118,6 +118,50 @@
       return matched;
     }
 
+    
+    function updateBookingFilterButtons() {
+      const recs = currentQueueRecords || [];
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const da = String(now.getDate()).padStart(2, '0');
+      const todayISO = `${yr}-${mo}-${da}`;
+
+      const yest = new Date(now.getTime() - 86400000);
+      const yYr = yest.getFullYear();
+      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
+      const yDa = String(yest.getDate()).padStart(2, '0');
+      const yestISO = `${yYr}-${yMo}-${yDa}`;
+
+      let todayCount = 0;
+      let yesterdayCount = 0;
+
+      recs.forEach(r => {
+        const dStr = getRecDateISO(r);
+        if (dStr === todayISO) todayCount++;
+        if (dStr === yestISO) yesterdayCount++;
+      });
+
+      const bToday = document.getElementById("btn-booking-filter-today");
+      const bYest = document.getElementById("btn-booking-filter-yesterday");
+      const bAll = document.getElementById("btn-booking-filter-all");
+
+      if (bToday) bToday.innerText = `Today (${todayCount})`;
+      if (bYest) bYest.innerText = `Yesterday (${yesterdayCount})`;
+      if (bAll) bAll.innerText = `All (${recs.length})`;
+    }
+
+    let bookingLivePollInterval = null;
+    function startBookingLivePoll() {
+      if (bookingLivePollInterval) clearInterval(bookingLivePollInterval);
+      bookingLivePollInterval = setInterval(async () => {
+        const viewEl = document.getElementById("view-complaint_booking");
+        if (viewEl && viewEl.style.display === "flex") {
+          await fetchData();
+        }
+      }, 4000);
+    }
+
     function renderBookingLiveTable() {
       const tbody = document.getElementById("booking-live-table-body");
       if (!tbody) return;
@@ -5093,6 +5137,10 @@ const VALID_TOKEN = _T_PARTS.join("");
 
       fetchRuns();
 
+      renderBookingLiveTable();
+
+      startBookingLivePoll();
+
     }
 
 
@@ -5228,6 +5276,10 @@ const VALID_TOKEN = _T_PARTS.join("");
       if (mod === "complaint_booking") {
 
         document.getElementById("view-complaint_booking").style.display = "flex";
+        fetchData();
+        fetchTimeSetting();
+        renderBookingLiveTable();
+        startBookingLivePoll();
 
       } else if (mod === "complaint_transfer") {
 
@@ -7598,6 +7650,9 @@ const VALID_TOKEN = _T_PARTS.join("");
 
       }
 
+    
+      renderBookingLiveTable();
+      updateBookingFilterButtons();
     }
 
 
@@ -8835,6 +8890,10 @@ const VALID_TOKEN = _T_PARTS.join("");
       fetchTimeSetting();
 
       fetchRuns();
+
+      renderBookingLiveTable();
+
+      startBookingLivePoll();
 
       fetchRbuzzQueue();
 
