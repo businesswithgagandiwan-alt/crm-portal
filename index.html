@@ -2497,7 +2497,45 @@
     }
 
     /* Fixed Table Layout with Strict Widths */
-    .table-booking-live-pink { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .table-booking-live-pink {
+      width: 100%;
+      min-width: 1450px;
+      border-collapse: collapse;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    .booking-table-scroll-wrap::-webkit-scrollbar {
+      height: 9px;
+      width: 8px;
+    }
+    .booking-table-scroll-wrap::-webkit-scrollbar-track {
+      background: #F1F5F9;
+      border-radius: 4px;
+    }
+    .booking-table-scroll-wrap::-webkit-scrollbar-thumb {
+      background: #E50087;
+      border-radius: 4px;
+    }
+    .booking-table-scroll-wrap::-webkit-scrollbar-thumb:hover {
+      background: #C20072;
+    }
+    .table-booking-live-pink th {
+      position: relative;
+      user-select: none;
+    }
+    .col-resizer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 6px;
+      cursor: col-resize;
+      user-select: none;
+      height: 100%;
+      z-index: 10;
+    }
+    .col-resizer:hover, .col-resizer.resizing {
+      background-color: rgba(255, 255, 255, 0.45);
+    }
     
     /* EXCEL HEADER: EXACT SUN PINK (#E00084) WITH PURE WHITE TEXT */
     .table-booking-live-pink thead tr {
@@ -3077,7 +3115,7 @@
               </div>
             </div>
 
-            <div style="max-height:280px; overflow-y:auto; overflow-x:hidden;">
+            <div class="booking-table-scroll-wrap" style="max-height:360px; overflow-y:auto; overflow-x:auto;">
               <table class="table-booking-live-pink">
                 <thead>
                   <tr>
@@ -4892,27 +4930,8 @@ const VALID_TOKEN = _T_PARTS.join("");
         return dStr === targetDate;
       });
 
-      // If today has matched records, show them + pending queue
-      if (bookingFilterMode === "today") {
-        if (matched.length > 0) {
-          const pending = recs.filter(r => {
-            const dStr = getRecDateISO(r);
-            if (dStr) return false;
-            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
-            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
-          });
-          return matched.concat(pending);
-        } else {
-          // If no records processed today yet, show entire pending queue waiting for today's run!
-          const pending = recs.filter(r => {
-            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
-            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
-          });
-          return pending.length > 0 ? pending : recs.slice(0, 50);
-        }
-      }
-
-      // If yesterday or custom date, return matched records (or if empty, show friendly empty state)
+      // For Today, Yesterday, or Custom Date: strictly return only the records processed on that date!
+      // Do not mix pending queue into Today unless explicitly in All view.
       return matched;
     }
 
@@ -4960,6 +4979,46 @@ const VALID_TOKEN = _T_PARTS.join("");
       }, 4000);
     }
 
+    
+    function initTableColumnResizing() {
+      const table = document.querySelector(".table-booking-live-pink");
+      if (!table) return;
+      const ths = table.querySelectorAll("thead th");
+      
+      ths.forEach(th => {
+        if (th.querySelector(".col-resizer")) return;
+        const resizer = document.createElement("div");
+        resizer.className = "col-resizer";
+        th.appendChild(resizer);
+        
+        let startX = 0;
+        let startWidth = 0;
+        
+        const onMouseMove = (e) => {
+          const diff = e.pageX - startX;
+          const newWidth = Math.max(45, startWidth + diff);
+          th.style.width = newWidth + "px";
+          th.style.minWidth = newWidth + "px";
+        };
+        
+        const onMouseUp = () => {
+          resizer.classList.remove("resizing");
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        };
+        
+        resizer.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          startX = e.pageX;
+          startWidth = th.offsetWidth;
+          resizer.classList.add("resizing");
+          document.addEventListener("mousemove", onMouseMove);
+          document.addEventListener("mouseup", onMouseUp);
+        });
+      });
+    }
+
     function renderBookingLiveTable() {
       const tbody = document.getElementById("booking-live-table-body");
       if (!tbody) return;
@@ -4971,7 +5030,15 @@ const VALID_TOKEN = _T_PARTS.join("");
 
       const records = getFilteredBookingRecords();
       if (!records || records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8; font-weight:700;">No complaint records found for the selected date filter.</td></tr>';
+        let msg = "चुने गए फ़िल्टर के लिए कोई कम्पलेंट रिकॉर्ड नहीं मिला।";
+        if (bookingFilterMode === "today") {
+          msg = "📅 <b>आज (Today) कोई कम्पलेंट प्रोसेस नहीं हुई है (0 Booked).</b><br><span style=\"font-size:11px; color:#64748B; font-weight:600;\">कल का काम देखने के लिए <b>Yesterday</b> बटन पर क्लिक करें, या पूरा डेटा देखने के लिए <b>All Records</b> पर क्लिक करें।</span>";
+        } else if (bookingFilterMode === "yesterday") {
+          msg = "📅 <b>कल (Yesterday) कोई कम्पलेंट प्रोसेस नहीं हुई थी।</b>";
+        } else if (bookingFilterMode === "custom") {
+          msg = `📅 तारीख <b>${escapeHtml(bookingCustomDate)}</b> के लिए कोई कम्पलेंट रिकॉर्ड नहीं मिला।`;
+        }
+        tbody.innerHTML = `<tr><td colspan="11" style="padding:32px 16px; text-align:center; color:#334155; font-size:12px; font-weight:700; line-height:1.6;">${msg}</td></tr>`;
         return;
       }
 
@@ -5015,6 +5082,7 @@ const VALID_TOKEN = _T_PARTS.join("");
       });
 
       tbody.innerHTML = rowsHtml;
+      initTableColumnResizing();
     }
 
     function exportBookingLiveReport() {
