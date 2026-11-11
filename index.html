@@ -28,230 +28,7 @@
 
   <!-- SheetJS library for direct Excel parsing and 'Add More Data' in browser -->
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-    // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
-    let bookingFilterMode = "today"; // "today", "yesterday", "all", or "custom"
-    let bookingCustomDate = "";
-
-    function setBookingDateFilter(mode, dateVal = "") {
-      bookingFilterMode = mode;
-      if (dateVal) bookingCustomDate = dateVal;
-
-      const bToday = document.getElementById("btn-booking-filter-today");
-      const bYest = document.getElementById("btn-booking-filter-yesterday");
-      const bAll = document.getElementById("btn-booking-filter-all");
-      const dateInp = document.getElementById("booking-date-picker");
-
-      if (bToday) bToday.className = "btn-filter-pink" + (mode === "today" ? " active" : "");
-      if (bYest) bYest.className = "btn-filter-pink" + (mode === "yesterday" ? " active" : "");
-      if (bAll) bAll.className = "btn-filter-pink" + (mode === "all" ? " active" : "");
-      if (dateInp && mode !== "custom") dateInp.value = "";
-
-      renderBookingLiveTable();
-    }
-
-    function getRecDateISO(rec) {
-      if (!rec) return "";
-      const raw = String(rec["Processed At"] || rec["processed_at"] || "").trim();
-      if (!raw) return "";
-      const m = raw.match(/^\d{4}-\d{2}-\d{2}/);
-      if (m) return m[0];
-      try {
-        const d = new Date(raw.includes("Z") ? raw : (raw.replace(" ", "T") + "Z"));
-        if (!isNaN(d.getTime())) {
-          const yr = d.getFullYear();
-          const mo = String(d.getMonth() + 1).padStart(2, '0');
-          const da = String(d.getDate()).padStart(2, '0');
-          return `${yr}-${mo}-${da}`;
-        }
-      } catch(e) {}
-      return "";
-    }
-
-    function getFilteredBookingRecords() {
-      const recs = currentQueueRecords || [];
-      if (recs.length === 0) return [];
-      if (bookingFilterMode === "all") return recs;
-
-      const now = new Date();
-      const yr = now.getFullYear();
-      const mo = String(now.getMonth() + 1).padStart(2, '0');
-      const da = String(now.getDate()).padStart(2, '0');
-      const todayISO = `${yr}-${mo}-${da}`;
-
-      const yest = new Date(now.getTime() - 86400000);
-      const yYr = yest.getFullYear();
-      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
-      const yDa = String(yest.getDate()).padStart(2, '0');
-      const yestISO = `${yYr}-${yMo}-${yDa}`;
-
-      let targetDate = todayISO;
-      if (bookingFilterMode === "yesterday") targetDate = yestISO;
-      if (bookingFilterMode === "custom") targetDate = bookingCustomDate;
-
-      const matched = recs.filter(r => {
-        const dStr = getRecDateISO(r);
-        return dStr === targetDate;
-      });
-
-      // If today has matched records, show them + pending queue
-      if (bookingFilterMode === "today") {
-        if (matched.length > 0) {
-          const pending = recs.filter(r => {
-            const dStr = getRecDateISO(r);
-            if (dStr) return false;
-            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
-            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
-          });
-          return matched.concat(pending);
-        } else {
-          // If no records processed today yet, show entire pending queue waiting for today's run!
-          const pending = recs.filter(r => {
-            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
-            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
-          });
-          return pending.length > 0 ? pending : recs.slice(0, 50);
-        }
-      }
-
-      // If yesterday or custom date, return matched records (or if empty, show friendly empty state)
-      return matched;
-    }
-
-    
-    function updateBookingFilterButtons() {
-      const recs = currentQueueRecords || [];
-      const now = new Date();
-      const yr = now.getFullYear();
-      const mo = String(now.getMonth() + 1).padStart(2, '0');
-      const da = String(now.getDate()).padStart(2, '0');
-      const todayISO = `${yr}-${mo}-${da}`;
-
-      const yest = new Date(now.getTime() - 86400000);
-      const yYr = yest.getFullYear();
-      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
-      const yDa = String(yest.getDate()).padStart(2, '0');
-      const yestISO = `${yYr}-${yMo}-${yDa}`;
-
-      let todayCount = 0;
-      let yesterdayCount = 0;
-
-      recs.forEach(r => {
-        const dStr = getRecDateISO(r);
-        if (dStr === todayISO) todayCount++;
-        if (dStr === yestISO) yesterdayCount++;
-      });
-
-      const bToday = document.getElementById("btn-booking-filter-today");
-      const bYest = document.getElementById("btn-booking-filter-yesterday");
-      const bAll = document.getElementById("btn-booking-filter-all");
-
-      if (bToday) bToday.innerText = `Today (${todayCount})`;
-      if (bYest) bYest.innerText = `Yesterday (${yesterdayCount})`;
-      if (bAll) bAll.innerText = `All (${recs.length})`;
-    }
-
-    let bookingLivePollInterval = null;
-    function startBookingLivePoll() {
-      if (bookingLivePollInterval) clearInterval(bookingLivePollInterval);
-      bookingLivePollInterval = setInterval(async () => {
-        const viewEl = document.getElementById("view-complaint_booking");
-        if (viewEl && viewEl.style.display === "flex") {
-          await fetchData();
-        }
-      }, 4000);
-    }
-
-    function renderBookingLiveTable() {
-      const tbody = document.getElementById("booking-live-table-body");
-      if (!tbody) return;
-
-      if (!currentQueueRecords || currentQueueRecords.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">Loading complaints queue data...</td></tr>';
-        return;
-      }
-
-      const records = getFilteredBookingRecords();
-      if (!records || records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8; font-weight:700;">No complaint records found for the selected date filter.</td></tr>';
-        return;
-      }
-
-      let rowsHtml = "";
-      records.forEach((r, idx) => {
-        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
-        const rawStatus = String(r["Complaint Status"] || r["Status"] || "").trim();
-        const lowStatus = rawStatus.toLowerCase();
-
-        let statusBadge = `<span class="status-pending-pill">Pending</span>`;
-        if (lowStatus.includes("submitted") || lowStatus.includes("success") || lowStatus.includes("booked") || lowStatus.includes("done")) {
-          statusBadge = `<span class="status-green-pill">Submitted</span>`;
-        } else if (lowStatus.includes("in progress") || lowStatus.includes("processing") || lowStatus.includes("submitting")) {
-          statusBadge = `<span class="status-progress-pill">In Progress</span>`;
-        } else if (lowStatus.includes("fail") || lowStatus.includes("error") || lowStatus.includes("not found")) {
-          statusBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 7px; border-radius:4px; font-weight:800; border:1px solid #FCA5A5; display:inline-block;">Failed</span>`;
-        } else if (lowStatus.includes("skip")) {
-          statusBadge = `<span style="background:#F1F5F9; color:#475569; padding:2px 7px; border-radius:4px; font-weight:700; border:1px solid #CBD5E1; display:inline-block;">Skipped</span>`;
-        }
-
-        const dtCode = r["DT Code"] || r["dt_code"] || "—";
-        const distId = r["Distributor ID"] || r["distributor_id"] || dtCode;
-        const processedTime = formatISTTime(r["Processed At"] || r["processed_at"] || "");
-        const cid = r["Complaint ID"] || r["complaint_id"] || (lowStatus.includes("submitted") ? "#CMP-" + (r["Smart Card Number"] || "").slice(-6) : "—");
-        const remark = r["Complaint Remark"] || r["Remark"] || (lowStatus.includes("submitted") ? "Submitted successfully" : "—");
-
-        rowsHtml += `
-          <tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
-            <td class="bcol-sr">${idx + 1}</td>
-            <td class="bcol-card">${escapeHtml(r["Smart Card Number"] || "—")}</td>
-            <td class="bcol-name" title="${escapeHtml(r["Customer Name"] || "")}">${escapeHtml(r["Customer Name"] || "—")}</td>
-            <td class="bcol-rmn">${escapeHtml(r["OLD RMN"] || r["RMN"] || "—")}</td>
-            <td class="bcol-dt"><span class="dt-badge-clean">${escapeHtml(dtCode)}</span></td>
-            <td class="bcol-dist"><span class="dt-badge-clean">${escapeHtml(distId)}</span></td>
-            <td class="bcol-billing" title="${escapeHtml(r["Billing Cycle"] || "")}">${escapeHtml(r["Billing Cycle"] || "—")}</td>
-            <td class="bcol-time">${escapeHtml(processedTime)}</td>
-            <td class="bcol-status">${statusBadge}</td>
-            <td class="bcol-cid">${escapeHtml(cid)}</td>
-            <td class="bcol-remark" title="${escapeHtml(remark)}">${escapeHtml(remark)}</td>
-          </tr>`;
-      });
-
-      tbody.innerHTML = rowsHtml;
-    }
-
-    function exportBookingLiveReport() {
-      const records = getFilteredBookingRecords();
-      if (!records || records.length === 0) {
-        showToast("⚠️ No records to export for selected filter!");
-        return;
-      }
-      try {
-        const exportData = records.map((r, i) => ({
-          "Sr No": i + 1,
-          "Smart Card Number": r["Smart Card Number"] || "",
-          "Customer Name": r["Customer Name"] || "",
-          "Mobile / RMN": r["OLD RMN"] || r["RMN"] || "",
-          "DT Code": r["DT Code"] || "",
-          "Distributor ID": r["Distributor ID"] || r["DT Code"] || "",
-          "Billing Cycle": r["Billing Cycle"] || "",
-          "Processed At": r["Processed At"] || r["processed_at"] || "",
-          "Status": r["Complaint Status"] || r["Status"] || "Pending",
-          "Complaint ID": r["Complaint ID"] || "",
-          "Remark": r["Complaint Remark"] || r["Remark"] || ""
-        }));
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Complaint_Report");
-        const dateStr = new Date().toISOString().split("T")[0];
-        XLSX.writeFile(wb, `Complaint_Booking_Report_${dateStr}.xlsx`);
-        showToast("✓ Report downloaded successfully!");
-      } catch (err) {
-        console.error("Export error", err);
-        showToast("❌ Export failed: " + err.message);
-      }
-    }
-
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
 
@@ -5048,6 +4825,230 @@ const VALID_TOKEN = _T_PARTS.join("");
     let currentQueueRecords = [];
 
     let currentQueueSha = null;
+
+    // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
+    // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
+    let bookingFilterMode = "today"; // "today", "yesterday", "all", or "custom"
+    let bookingCustomDate = "";
+
+    function setBookingDateFilter(mode, dateVal = "") {
+      bookingFilterMode = mode;
+      if (dateVal) bookingCustomDate = dateVal;
+
+      const bToday = document.getElementById("btn-booking-filter-today");
+      const bYest = document.getElementById("btn-booking-filter-yesterday");
+      const bAll = document.getElementById("btn-booking-filter-all");
+      const dateInp = document.getElementById("booking-date-picker");
+
+      if (bToday) bToday.className = "btn-filter-pink" + (mode === "today" ? " active" : "");
+      if (bYest) bYest.className = "btn-filter-pink" + (mode === "yesterday" ? " active" : "");
+      if (bAll) bAll.className = "btn-filter-pink" + (mode === "all" ? " active" : "");
+      if (dateInp && mode !== "custom") dateInp.value = "";
+
+      renderBookingLiveTable();
+    }
+
+    function getRecDateISO(rec) {
+      if (!rec) return "";
+      const raw = String(rec["Processed At"] || rec["processed_at"] || "").trim();
+      if (!raw) return "";
+      const m = raw.match(/^\d{4}-\d{2}-\d{2}/);
+      if (m) return m[0];
+      try {
+        const d = new Date(raw.includes("Z") ? raw : (raw.replace(" ", "T") + "Z"));
+        if (!isNaN(d.getTime())) {
+          const yr = d.getFullYear();
+          const mo = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          return `${yr}-${mo}-${da}`;
+        }
+      } catch(e) {}
+      return "";
+    }
+
+    function getFilteredBookingRecords() {
+      const recs = currentQueueRecords || [];
+      if (recs.length === 0) return [];
+      if (bookingFilterMode === "all") return recs;
+
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const da = String(now.getDate()).padStart(2, '0');
+      const todayISO = `${yr}-${mo}-${da}`;
+
+      const yest = new Date(now.getTime() - 86400000);
+      const yYr = yest.getFullYear();
+      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
+      const yDa = String(yest.getDate()).padStart(2, '0');
+      const yestISO = `${yYr}-${yMo}-${yDa}`;
+
+      let targetDate = todayISO;
+      if (bookingFilterMode === "yesterday") targetDate = yestISO;
+      if (bookingFilterMode === "custom") targetDate = bookingCustomDate;
+
+      const matched = recs.filter(r => {
+        const dStr = getRecDateISO(r);
+        return dStr === targetDate;
+      });
+
+      // If today has matched records, show them + pending queue
+      if (bookingFilterMode === "today") {
+        if (matched.length > 0) {
+          const pending = recs.filter(r => {
+            const dStr = getRecDateISO(r);
+            if (dStr) return false;
+            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
+            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
+          });
+          return matched.concat(pending);
+        } else {
+          // If no records processed today yet, show entire pending queue waiting for today's run!
+          const pending = recs.filter(r => {
+            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
+            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
+          });
+          return pending.length > 0 ? pending : recs.slice(0, 50);
+        }
+      }
+
+      // If yesterday or custom date, return matched records (or if empty, show friendly empty state)
+      return matched;
+    }
+
+    
+    function updateBookingFilterButtons() {
+      const recs = currentQueueRecords || [];
+      const now = new Date();
+      const yr = now.getFullYear();
+      const mo = String(now.getMonth() + 1).padStart(2, '0');
+      const da = String(now.getDate()).padStart(2, '0');
+      const todayISO = `${yr}-${mo}-${da}`;
+
+      const yest = new Date(now.getTime() - 86400000);
+      const yYr = yest.getFullYear();
+      const yMo = String(yest.getMonth() + 1).padStart(2, '0');
+      const yDa = String(yest.getDate()).padStart(2, '0');
+      const yestISO = `${yYr}-${yMo}-${yDa}`;
+
+      let todayCount = 0;
+      let yesterdayCount = 0;
+
+      recs.forEach(r => {
+        const dStr = getRecDateISO(r);
+        if (dStr === todayISO) todayCount++;
+        if (dStr === yestISO) yesterdayCount++;
+      });
+
+      const bToday = document.getElementById("btn-booking-filter-today");
+      const bYest = document.getElementById("btn-booking-filter-yesterday");
+      const bAll = document.getElementById("btn-booking-filter-all");
+
+      if (bToday) bToday.innerText = `Today (${todayCount})`;
+      if (bYest) bYest.innerText = `Yesterday (${yesterdayCount})`;
+      if (bAll) bAll.innerText = `All (${recs.length})`;
+    }
+
+    let bookingLivePollInterval = null;
+    function startBookingLivePoll() {
+      if (bookingLivePollInterval) clearInterval(bookingLivePollInterval);
+      bookingLivePollInterval = setInterval(async () => {
+        const viewEl = document.getElementById("view-complaint_booking");
+        if (viewEl && viewEl.style.display === "flex") {
+          await fetchData();
+        }
+      }, 4000);
+    }
+
+    function renderBookingLiveTable() {
+      const tbody = document.getElementById("booking-live-table-body");
+      if (!tbody) return;
+
+      if (!currentQueueRecords || currentQueueRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">Loading complaints queue data...</td></tr>';
+        return;
+      }
+
+      const records = getFilteredBookingRecords();
+      if (!records || records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8; font-weight:700;">No complaint records found for the selected date filter.</td></tr>';
+        return;
+      }
+
+      let rowsHtml = "";
+      records.forEach((r, idx) => {
+        const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
+        const rawStatus = String(r["Complaint Status"] || r["Status"] || "").trim();
+        const lowStatus = rawStatus.toLowerCase();
+
+        let statusBadge = `<span class="status-pending-pill">Pending</span>`;
+        if (lowStatus.includes("submitted") || lowStatus.includes("success") || lowStatus.includes("booked") || lowStatus.includes("done")) {
+          statusBadge = `<span class="status-green-pill">Submitted</span>`;
+        } else if (lowStatus.includes("in progress") || lowStatus.includes("processing") || lowStatus.includes("submitting")) {
+          statusBadge = `<span class="status-progress-pill">In Progress</span>`;
+        } else if (lowStatus.includes("fail") || lowStatus.includes("error") || lowStatus.includes("not found")) {
+          statusBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 7px; border-radius:4px; font-weight:800; border:1px solid #FCA5A5; display:inline-block;">Failed</span>`;
+        } else if (lowStatus.includes("skip")) {
+          statusBadge = `<span style="background:#F1F5F9; color:#475569; padding:2px 7px; border-radius:4px; font-weight:700; border:1px solid #CBD5E1; display:inline-block;">Skipped</span>`;
+        }
+
+        const dtCode = r["DT Code"] || r["dt_code"] || "—";
+        const distId = r["Distributor ID"] || r["distributor_id"] || dtCode;
+        const processedTime = formatISTTime(r["Processed At"] || r["processed_at"] || "");
+        const cid = r["Complaint ID"] || r["complaint_id"] || (lowStatus.includes("submitted") ? "#CMP-" + (r["Smart Card Number"] || "").slice(-6) : "—");
+        const remark = r["Complaint Remark"] || r["Remark"] || (lowStatus.includes("submitted") ? "Submitted successfully" : "—");
+
+        rowsHtml += `
+          <tr style="background:${rowBg}; border-bottom:1px solid #E2E8F0;">
+            <td class="bcol-sr">${idx + 1}</td>
+            <td class="bcol-card">${escapeHtml(r["Smart Card Number"] || "—")}</td>
+            <td class="bcol-name" title="${escapeHtml(r["Customer Name"] || "")}">${escapeHtml(r["Customer Name"] || "—")}</td>
+            <td class="bcol-rmn">${escapeHtml(r["OLD RMN"] || r["RMN"] || "—")}</td>
+            <td class="bcol-dt"><span class="dt-badge-clean">${escapeHtml(dtCode)}</span></td>
+            <td class="bcol-dist"><span class="dt-badge-clean">${escapeHtml(distId)}</span></td>
+            <td class="bcol-billing" title="${escapeHtml(r["Billing Cycle"] || "")}">${escapeHtml(r["Billing Cycle"] || "—")}</td>
+            <td class="bcol-time">${escapeHtml(processedTime)}</td>
+            <td class="bcol-status">${statusBadge}</td>
+            <td class="bcol-cid">${escapeHtml(cid)}</td>
+            <td class="bcol-remark" title="${escapeHtml(remark)}">${escapeHtml(remark)}</td>
+          </tr>`;
+      });
+
+      tbody.innerHTML = rowsHtml;
+    }
+
+    function exportBookingLiveReport() {
+      const records = getFilteredBookingRecords();
+      if (!records || records.length === 0) {
+        showToast("⚠️ No records to export for selected filter!");
+        return;
+      }
+      try {
+        const exportData = records.map((r, i) => ({
+          "Sr No": i + 1,
+          "Smart Card Number": r["Smart Card Number"] || "",
+          "Customer Name": r["Customer Name"] || "",
+          "Mobile / RMN": r["OLD RMN"] || r["RMN"] || "",
+          "DT Code": r["DT Code"] || "",
+          "Distributor ID": r["Distributor ID"] || r["DT Code"] || "",
+          "Billing Cycle": r["Billing Cycle"] || "",
+          "Processed At": r["Processed At"] || r["processed_at"] || "",
+          "Status": r["Complaint Status"] || r["Status"] || "Pending",
+          "Complaint ID": r["Complaint ID"] || "",
+          "Remark": r["Complaint Remark"] || r["Remark"] || ""
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Complaint_Report");
+        const dateStr = new Date().toISOString().split("T")[0];
+        XLSX.writeFile(wb, `Complaint_Booking_Report_${dateStr}.xlsx`);
+        showToast("✓ Report downloaded successfully!");
+      } catch (err) {
+        console.error("Export error", err);
+        showToast("❌ Export failed: " + err.message);
+      }
+    }
+
 
 
 
