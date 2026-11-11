@@ -29,7 +29,7 @@
   <!-- SheetJS library for direct Excel parsing and 'Add More Data' in browser -->
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js">
-    // ================= BOOKING LIVE RESULTS TABLE & DATE FILTER LOGIC =================
+    // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
     let bookingFilterMode = "today"; // "today", "yesterday", "all", or "custom"
     let bookingCustomDate = "";
 
@@ -37,40 +37,41 @@
       bookingFilterMode = mode;
       if (dateVal) bookingCustomDate = dateVal;
 
-      // Update button active styling
       const bToday = document.getElementById("btn-booking-filter-today");
       const bYest = document.getElementById("btn-booking-filter-yesterday");
       const bAll = document.getElementById("btn-booking-filter-all");
       const dateInp = document.getElementById("booking-date-picker");
 
-      if (bToday) bToday.className = "btn-bfilter-tag" + (mode === "today" ? " active" : "");
-      if (bYest) bYest.className = "btn-bfilter-tag" + (mode === "yesterday" ? " active" : "");
-      if (bAll) bAll.className = "btn-bfilter-tag" + (mode === "all" ? " active" : "");
+      if (bToday) bToday.className = "btn-filter-pink" + (mode === "today" ? " active" : "");
+      if (bYest) bYest.className = "btn-filter-pink" + (mode === "yesterday" ? " active" : "");
+      if (bAll) bAll.className = "btn-filter-pink" + (mode === "all" ? " active" : "");
       if (dateInp && mode !== "custom") dateInp.value = "";
 
       renderBookingLiveTable();
     }
 
     function getRecDateISO(rec) {
-      const raw = rec["Processed At"] || rec["processed_at"] || "";
+      if (!rec) return "";
+      const raw = String(rec["Processed At"] || rec["processed_at"] || "").trim();
       if (!raw) return "";
+      const m = raw.match(/^\d{4}-\d{2}-\d{2}/);
+      if (m) return m[0];
       try {
         const d = new Date(raw.includes("Z") ? raw : (raw.replace(" ", "T") + "Z"));
-        if (isNaN(d.getTime())) return "";
-        const yr = d.getFullYear();
-        const mo = String(d.getMonth() + 1).padStart(2, '0');
-        const da = String(d.getDate()).padStart(2, '0');
-        return `${yr}-${mo}-${da}`;
-      } catch(e) {
-        return "";
-      }
+        if (!isNaN(d.getTime())) {
+          const yr = d.getFullYear();
+          const mo = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          return `${yr}-${mo}-${da}`;
+        }
+      } catch(e) {}
+      return "";
     }
 
     function getFilteredBookingRecords() {
       const recs = currentQueueRecords || [];
-      if (bookingFilterMode === "all") {
-        return recs;
-      }
+      if (recs.length === 0) return [];
+      if (bookingFilterMode === "all") return recs;
 
       const now = new Date();
       const yr = now.getFullYear();
@@ -88,41 +89,65 @@
       if (bookingFilterMode === "yesterday") targetDate = yestISO;
       if (bookingFilterMode === "custom") targetDate = bookingCustomDate;
 
-      return recs.filter(r => {
+      const matched = recs.filter(r => {
         const dStr = getRecDateISO(r);
-        if (dStr === targetDate) return true;
-        // In today view, also show pending records so the user sees live execution progress!
-        if (bookingFilterMode === "today" && !dStr) {
-          const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
-          return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
-        }
-        return false;
+        return dStr === targetDate;
       });
+
+      // If today has matched records, show them + pending queue
+      if (bookingFilterMode === "today") {
+        if (matched.length > 0) {
+          const pending = recs.filter(r => {
+            const dStr = getRecDateISO(r);
+            if (dStr) return false;
+            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
+            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
+          });
+          return matched.concat(pending);
+        } else {
+          // If no records processed today yet, show entire pending queue waiting for today's run!
+          const pending = recs.filter(r => {
+            const st = String(r["Complaint Status"] || r["Status"] || "").toLowerCase();
+            return !st.includes("submitted") && !st.includes("success") && !st.includes("booked");
+          });
+          return pending.length > 0 ? pending : recs.slice(0, 50);
+        }
+      }
+
+      // If yesterday or custom date, return matched records (or if empty, show friendly empty state)
+      return matched;
     }
 
     function renderBookingLiveTable() {
       const tbody = document.getElementById("booking-live-table-body");
       if (!tbody) return;
 
+      if (!currentQueueRecords || currentQueueRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">Loading complaints queue data...</td></tr>';
+        return;
+      }
+
       const records = getFilteredBookingRecords();
       if (!records || records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8;">No complaint records found for the selected date filter.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:24px; text-align:center; color:#94A3B8; font-weight:700;">No complaint records found for the selected date filter.</td></tr>';
         return;
       }
 
       let rowsHtml = "";
       records.forEach((r, idx) => {
         const rowBg = idx % 2 === 0 ? "#F8FAFC" : "#FFFFFF";
-        const rawStatus = String(r["Complaint Status"] || r["Status"] || "Pending").trim();
+        const rawStatus = String(r["Complaint Status"] || r["Status"] || "").trim();
         const lowStatus = rawStatus.toLowerCase();
 
-        let statusBadge = `<span style="color:#64748B; font-weight:700;">● Pending</span>`;
+        let statusBadge = `<span class="status-pending-pill">Pending</span>`;
         if (lowStatus.includes("submitted") || lowStatus.includes("success") || lowStatus.includes("booked") || lowStatus.includes("done")) {
-          statusBadge = `<span style="background:#DCFCE7; color:#15803D; padding:2px 6px; border-radius:3px; font-weight:700;">Submitted</span>`;
+          statusBadge = `<span class="status-green-pill">Submitted</span>`;
         } else if (lowStatus.includes("in progress") || lowStatus.includes("processing") || lowStatus.includes("submitting")) {
-          statusBadge = `<span style="background:#E0F2FE; color:#0369A1; padding:2px 6px; border-radius:3px; font-weight:700;">In Progress</span>`;
+          statusBadge = `<span class="status-progress-pill">In Progress</span>`;
         } else if (lowStatus.includes("fail") || lowStatus.includes("error") || lowStatus.includes("not found")) {
-          statusBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 6px; border-radius:3px; font-weight:700;">Failed</span>`;
+          statusBadge = `<span style="background:#FEE2E2; color:#B91C1C; padding:2px 7px; border-radius:4px; font-weight:800; border:1px solid #FCA5A5; display:inline-block;">Failed</span>`;
+        } else if (lowStatus.includes("skip")) {
+          statusBadge = `<span style="background:#F1F5F9; color:#475569; padding:2px 7px; border-radius:4px; font-weight:700; border:1px solid #CBD5E1; display:inline-block;">Skipped</span>`;
         }
 
         const dtCode = r["DT Code"] || r["dt_code"] || "—";
@@ -137,8 +162,8 @@
             <td class="bcol-card">${escapeHtml(r["Smart Card Number"] || "—")}</td>
             <td class="bcol-name" title="${escapeHtml(r["Customer Name"] || "")}">${escapeHtml(r["Customer Name"] || "—")}</td>
             <td class="bcol-rmn">${escapeHtml(r["OLD RMN"] || r["RMN"] || "—")}</td>
-            <td class="bcol-dt"><span style="display:inline-block; white-space:nowrap; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px;">${escapeHtml(dtCode)}</span></td>
-            <td class="bcol-dist"><span style="display:inline-block; white-space:nowrap; background:#EFF6FF; color:#1D4ED8; border:1px solid #BFDBFE; padding:1px 6px; border-radius:3px; font-weight:700; font-size:10px;">${escapeHtml(distId)}</span></td>
+            <td class="bcol-dt"><span class="dt-badge-clean">${escapeHtml(dtCode)}</span></td>
+            <td class="bcol-dist"><span class="dt-badge-clean">${escapeHtml(distId)}</span></td>
             <td class="bcol-billing" title="${escapeHtml(r["Billing Cycle"] || "")}">${escapeHtml(r["Billing Cycle"] || "—")}</td>
             <td class="bcol-time">${escapeHtml(processedTime)}</td>
             <td class="bcol-status">${statusBadge}</td>
@@ -2450,180 +2475,300 @@
       font-weight: 700;
     }
   
-    /* ================= COMPACT LEFT-ALIGNED AUTO-SCHEDULE & LIVE RESULTS TABLE ================= */
-    .schedule-toolbar-left {
+    /* ================= ORIGINAL PINK THEME: COMPACT AUTO-SCHEDULE & LIVE RESULTS TABLE ================= */
+    .schedule-toolbar-pink {
       background: #FFFFFF;
-      border: 1px solid #CBD5E1;
+      border: 1px solid #FDA4AF;
       border-radius: 7px;
-      padding: 7px 14px;
-      display: flex;
-      align-items: flex-end;
-      justify-content: flex-start;
-      gap: 16px;
-      margin-bottom: 12px;
-    }
-    .sched-field-col {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .sched-field-title {
-      font-size: 9.5px;
-      font-weight: 800;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-    .sched-switch-box {
+      padding: 8px 14px;
       display: flex;
       align-items: center;
-      gap: 7px;
-      height: 27px;
+      justify-content: flex-start;
+      gap: 16px;
+      margin-bottom: 11px;
     }
-    .sched-ctrl-input {
+    .field-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* Exactly centers the label above the box */
+      gap: 4px;
+    }
+    .field-label-clean {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #334155;
+      text-align: center;
+      width: 100%;
+      height: 14px;
+      line-height: 14px;
+      white-space: nowrap;
+    }
+    .switch-box-clean {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 28px;
+    }
+    .toggle-switch-pink {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      display: inline-block;
+    }
+    .toggle-switch-pink input { opacity: 0; width: 0; height: 0; }
+    .slider-pink {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #CBD5E1;
+      transition: .3s;
+      border-radius: 20px;
+    }
+    .slider-pink:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider-pink { background-color: #E11D48; }
+    input:checked + .slider-pink:before { transform: translateX(16px); }
+    .switch-label-pink {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #E11D48;
+    }
+
+    .field-input-clean {
       border: 1px solid #CBD5E1;
       border-radius: 4px;
-      padding: 3px 6px;
+      padding: 0 6px;
       font-size: 11.5px;
       font-weight: 700;
       color: #0F172A;
       background: #FFFFFF;
       text-align: center;
-      height: 27px;
+      height: 28px;
+      line-height: 28px;
     }
-    .sched-ctrl-input:focus {
-      border-color: #0284C7;
-      outline: none;
+    .field-input-clean:focus { border-color: #E11D48; outline: none; }
+    .time-clean { width: 85px; }
+    .num-clean { width: 68px; }
+    .target-clean {
+      width: 75px;
+      border-color: #E11D48;
+      color: #BE123C;
+      font-weight: 800;
+      background: #FFF1F2;
     }
-    .sched-input-time { width: 85px; }
-    .sched-input-num { width: 68px; }
-    .sched-input-target { width: 75px; border-color: #0284C7; color: #0284C7; font-weight: 800; background: #F0F9FF; }
-    .btn-sched-save-clean {
-      height: 27px;
+
+    .btn-save-pink {
+      height: 28px;
       padding: 0 16px;
-      background: #0F172A;
+      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
       color: #FFFFFF;
       font-size: 11px;
       font-weight: 700;
-      border: 1px solid #0F172A;
+      border: 1px solid #9F1239;
       border-radius: 4px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(225, 29, 72, 0.25);
     }
-    .btn-sched-save-clean:hover { background: #1E293B; }
+    .btn-save-pink:hover { background: #BE123C; }
 
-    /* Live Results Table Styling */
-    .booking-live-table-box {
+    /* TABLE: ORIGINAL APP PINK HEADER WITH WHITE TEXT, BLACK BODY TEXT, GREEN STATUS */
+    .table-container-pink {
       background: #FFFFFF;
-      border: 1px solid #CBD5E1;
+      border: 1.5px solid #FDA4AF;
       border-radius: 7px;
       overflow: hidden;
       margin-top: 10px;
     }
-    .booking-table-toolbar-left {
-      background: #F1F5F9;
-      border-bottom: 1px solid #CBD5E1;
-      padding: 6px 14px;
+    .table-toolbar-pink {
+      background: #FFF1F2;
+      border-bottom: 1px solid #FDA4AF;
+      padding: 7px 14px;
       display: flex;
       align-items: center;
       justify-content: flex-start;
       gap: 16px;
     }
-    .booking-table-heading {
+    .table-title-pink {
       font-size: 12px;
       font-weight: 800;
-      color: #0F172A;
-      letter-spacing: 0.3px;
-      padding-right: 8px;
-      border-right: 1.5px solid #CBD5E1;
+      color: #9F1239;
+      padding-right: 12px;
+      border-right: 1.5px solid #FDA4AF;
+      display: flex;
+      align-items: center;
+      height: 26px;
     }
-    .booking-filter-wrapper {
+    
+    .filter-group-pink {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 11px;
     }
-    .btn-bfilter-tag {
-      padding: 2px 10px;
-      font-size: 10.5px;
+    .filter-label-pink {
       font-weight: 700;
-      background: #E2E8F0;
-      border: 1px solid #CBD5E1;
+      color: #881337;
+      font-size: 11px;
+    }
+    .btn-filter-pink {
+      padding: 0 12px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #FFFFFF;
+      border: 1px solid #FDA4AF;
       border-radius: 4px;
       cursor: pointer;
-      color: #334155;
+      color: #9F1239;
       height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
-    .btn-bfilter-tag.active {
-      background: #0284C7;
+    .btn-filter-pink.active {
+      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
       color: #FFFFFF;
-      border-color: #0369A1;
+      border-color: #9F1239;
     }
-    .booking-date-input {
-      padding: 2px 7px;
+    .date-picker-pink {
+      padding: 0 7px;
       font-size: 11px;
       font-weight: 700;
-      border: 1px solid #CBD5E1;
+      border: 1px solid #FDA4AF;
       border-radius: 4px;
       background: #FFFFFF;
-      color: #0F172A;
+      color: #000000;
       height: 26px;
     }
-    .btn-booking-download-clean {
-      padding: 2px 12px;
+    .btn-download-pink {
+      padding: 0 12px;
       font-size: 11px;
       font-weight: 700;
       background: #FFFFFF;
-      border: 1px solid #CBD5E1;
+      border: 1px solid #FDA4AF;
       border-radius: 4px;
       cursor: pointer;
-      color: #0F172A;
+      color: #9F1239;
       height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       margin-left: 8px;
     }
 
-    /* Column widths & layout */
-    .table-booking-live {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      table-layout: fixed;
+    /* Fixed Table Layout with Strict Widths */
+    .table-booking-live-pink { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    
+    /* EXCEL HEADER: PINK WITH WHITE TEXT */
+    .table-booking-live-pink thead tr {
+      background: linear-gradient(180deg, #E11D48 0%, #BE123C 100%);
     }
-    .table-booking-live thead tr {
-      background: #0F172A;
-    }
-    .table-booking-live th {
-      padding: 7px 8px;
-      font-weight: 700;
-      font-size: 10px;
-      color: #FFFFFF !important;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      border-bottom: 1px solid #1E293B;
+    .table-booking-live-pink th {
+      padding: 8px 8px;
+      font-weight: 800;
+      font-size: 10.5px;
+      color: #FFFFFF !important; /* Pure white header text */
+      letter-spacing: 0.3px;
+      border-bottom: 1px solid #9F1239;
       white-space: nowrap;
       text-align: left;
     }
-    .table-booking-live tbody tr { border-bottom: 1px solid #E2E8F0; }
-    .table-booking-live tbody tr:nth-child(even) { background: #F8FAFC; }
-    .table-booking-live tbody tr:hover { background: #F1F5F9; }
-    .table-booking-live td {
+
+    .table-booking-live-pink tbody tr { border-bottom: 1px solid #E2E8F0; }
+    .table-booking-live-pink tbody tr:nth-child(even) { background: #F8FAFC; }
+    .table-booking-live-pink tbody tr:hover { background: #FFF1F2; }
+    
+    /* EXCEL DATA: PURE BLACK TEXT */
+    .table-booking-live-pink td {
       padding: 6px 8px;
-      color: #334155;
+      color: #000000 !important; /* Pure Black Data Text */
+      font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       vertical-align: middle;
     }
+
+    /* Column Sizing */
     .bcol-sr { width: 46px; text-align: center; }
-    .bcol-card { width: 108px; font-family: monospace; font-weight: 800; color: #0F172A; }
-    .bcol-name { width: 135px; font-weight: 700; color: #0F172A; }
-    .bcol-rmn { width: 92px; font-family: monospace; }
+    td.bcol-sr { font-weight: 700; color: #000000 !important; }
+
+    .bcol-card { width: 108px; }
+    td.bcol-card { font-family: monospace; font-weight: 800; color: #000000 !important; }
+
+    .bcol-name { width: 135px; }
+    td.bcol-name { font-weight: 700; color: #000000 !important; }
+
+    .bcol-rmn { width: 92px; }
+    td.bcol-rmn { font-family: monospace; color: #000000 !important; }
+
     .bcol-dt { width: 95px; }
     .bcol-dist { width: 105px; }
-    .bcol-billing { width: 125px; font-size: 10.5px; color: #475569; }
-    .bcol-time { width: 85px; font-size: 10.5px; color: #0284C7; font-weight: 600; text-align: center; }
-    .bcol-status { width: 90px; text-align: center; }
-    .bcol-cid { width: 95px; font-family: monospace; font-weight: 700; color: #0F172A; }
-    .bcol-remark { width: auto; font-size: 10.5px; color: #475569; }
+    .bcol-billing { width: 125px; }
+    td.bcol-billing { font-size: 10.5px; color: #000000 !important; }
+
+    .bcol-time { width: 85px; text-align: center; }
+    td.bcol-time { font-size: 10.5px; color: #000000 !important; font-weight: 700; }
+
+    .bcol-status { width: 95px; text-align: center; }
+    
+    .bcol-cid { width: 95px; }
+    td.bcol-cid { font-family: monospace; font-weight: 700; color: #000000 !important; }
+
+    .bcol-remark { width: auto; }
+    td.bcol-remark { font-size: 10.5px; color: #000000 !important; }
+
+    /* STATUS GREEN STYLING (Status Green Hoga) */
+    .status-green-pill {
+      color: #15803D !important;
+      font-weight: 800;
+      background: #DCFCE7;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+      border: 1px solid #86EFAC;
+    }
+    .status-pending-pill {
+      color: #64748B !important;
+      font-weight: 700;
+      display: inline-block;
+    }
+    .status-progress-pill {
+      color: #BE123C !important;
+      background: #FFF1F2;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+      border: 1px solid #FECDD3;
+    }
+
+    .dt-badge-clean {
+      display: inline-block;
+      white-space: nowrap;
+      background: #F1F5F9;
+      color: #000000 !important;
+      border: 1px solid #CBD5E1;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: 700;
+      font-size: 10px;
+    }
 
   </style>
 
@@ -3037,54 +3182,54 @@
 
 
 
-                    <!-- LEFT-ALIGNED COMPACT AUTO-SCHEDULE TOOLBAR (NO EMOJIS, LABELS ON TOP, CLEAN) -->
-          <div class="schedule-toolbar-left">
+          <!-- AUTO-SCHEDULE TOOLBAR: EXACT APP PINK, LABELS 100% CENTERED ABOVE BOXES -->
+          <div class="schedule-toolbar-pink">
             <!-- 1. Switch -->
-            <div class="sched-field-col">
-              <span class="sched-field-title">Auto-Schedule</span>
-              <div class="sched-switch-box">
-                <label class="switch-toggle" style="position:relative; width:34px; height:18px;">
+            <div class="field-col">
+              <span class="field-label-clean">Auto-Schedule</span>
+              <div class="switch-box-clean">
+                <label class="toggle-switch-pink">
                   <input type="checkbox" id="switch-auto-schedule" onchange="handleScheduleToggle(this.checked)">
-                  <span class="slider"></span>
+                  <span class="slider-pink"></span>
                 </label>
-                <span id="schedule-switch-label" style="font-size:11px; font-weight:800; color:#64748B;">OFF</span>
+                <span id="schedule-switch-label" class="switch-label-pink">OFF</span>
               </div>
             </div>
 
-            <!-- 2. Start Time -->
-            <div class="sched-field-col">
-              <label class="sched-field-title">Start Time</label>
-              <input type="time" id="sched-start-time" class="sched-ctrl-input sched-input-time" value="08:00">
+            <!-- 2. Start Time (Centered label) -->
+            <div class="field-col">
+              <label class="field-label-clean">Start Time</label>
+              <input type="time" id="sched-start-time" class="field-input-clean time-clean" value="08:00">
             </div>
 
-            <!-- 3. End Time -->
-            <div class="sched-field-col">
-              <label class="sched-field-title">End Time</label>
-              <input type="time" id="sched-end-time" class="sched-ctrl-input sched-input-time" value="21:30">
+            <!-- 3. End Time (Centered label) -->
+            <div class="field-col">
+              <label class="field-label-clean">End Time</label>
+              <input type="time" id="sched-end-time" class="field-input-clean time-clean" value="21:30">
             </div>
 
-            <!-- 4. Min Delay (No M) -->
-            <div class="sched-field-col">
-              <label class="sched-field-title">Min Delay</label>
-              <input type="number" id="sched-min-delay" class="sched-ctrl-input sched-input-num" value="5" min="1" max="180">
+            <!-- 4. Min Delay (Centered label) -->
+            <div class="field-col">
+              <label class="field-label-clean">Min Delay</label>
+              <input type="number" id="sched-min-delay" class="field-input-clean num-clean" value="5" min="1" max="180">
             </div>
 
-            <!-- 5. Max Delay (No M) -->
-            <div class="sched-field-col">
-              <label class="sched-field-title">Max Delay</label>
-              <input type="number" id="sched-max-delay" class="sched-ctrl-input sched-input-num" value="6" min="1" max="180">
+            <!-- 5. Max Delay (Centered label) -->
+            <div class="field-col">
+              <label class="field-label-clean">Max Delay</label>
+              <input type="number" id="sched-max-delay" class="field-input-clean num-clean" value="6" min="1" max="180">
             </div>
 
-            <!-- 6. Target Qty -->
-            <div class="sched-field-col">
-              <label class="sched-field-title">Target Qty</label>
-              <input type="number" id="sched-target-qty" class="sched-ctrl-input sched-input-target" value="2" min="1" max="500">
+            <!-- 6. Target Qty (Centered label) -->
+            <div class="field-col">
+              <label class="field-label-clean">Target Qty</label>
+              <input type="number" id="sched-target-qty" class="field-input-clean target-clean" value="2" min="1" max="500">
             </div>
 
             <!-- 7. Save Schedule Button -->
-            <div class="sched-field-col">
-              <label class="sched-field-title" style="opacity:0;">Action</label>
-              <button class="btn-sched-save-clean" onclick="saveScheduleSettings()">Save Schedule</button>
+            <div class="field-col">
+              <span class="field-label-clean" style="opacity:0;">Action</span>
+              <button class="btn-save-pink" onclick="saveScheduleSettings()">Save Schedule</button>
             </div>
           </div>
 
@@ -3093,22 +3238,22 @@
           <input type="checkbox" id="cb-timer-delay" checked style="display:none;">
           <span id="timer-status-label" style="display:none;"></span>
 
-          <!-- REFINED LIVE RESULTS TABLE (REPORT VIEW, LEFT-ALIGNED DATE FILTER, NO HORIZONTAL SCROLL) -->
-          <div class="booking-live-table-box">
-            <div class="booking-table-toolbar-left">
-              <div class="booking-table-heading">Live Results Table</div>
-              <div class="booking-filter-wrapper">
-                <span style="font-weight:700; color:#475569;">Date Filter:</span>
-                <button id="btn-booking-filter-today" class="btn-bfilter-tag active" onclick="setBookingDateFilter('today')">Today</button>
-                <button id="btn-booking-filter-yesterday" class="btn-bfilter-tag" onclick="setBookingDateFilter('yesterday')">Yesterday</button>
-                <button id="btn-booking-filter-all" class="btn-bfilter-tag" onclick="setBookingDateFilter('all')">All Records</button>
-                <input type="date" id="booking-date-picker" class="booking-date-input" onchange="setBookingDateFilter('custom', this.value)">
-                <button class="btn-booking-download-clean" onclick="exportBookingLiveReport()">Download Excel</button>
+          <!-- LIVE RESULTS TABLE: PINK HEADER WITH WHITE TEXT, PURE BLACK DATA, GREEN STATUS -->
+          <div class="table-container-pink">
+            <div class="table-toolbar-pink">
+              <div class="table-title-pink">Live Results Table</div>
+              <div class="filter-group-pink">
+                <span class="filter-label-pink">Date Filter:</span>
+                <button id="btn-booking-filter-today" class="btn-filter-pink active" onclick="setBookingDateFilter('today')">Today</button>
+                <button id="btn-booking-filter-yesterday" class="btn-filter-pink" onclick="setBookingDateFilter('yesterday')">Yesterday</button>
+                <button id="btn-booking-filter-all" class="btn-filter-pink" onclick="setBookingDateFilter('all')">All Records</button>
+                <input type="date" id="booking-date-picker" class="date-picker-pink" onchange="setBookingDateFilter('custom', this.value)">
+                <button class="btn-download-pink" onclick="exportBookingLiveReport()">Download Excel</button>
               </div>
             </div>
 
             <div style="max-height:280px; overflow-y:auto; overflow-x:hidden;">
-              <table class="table-booking-live">
+              <table class="table-booking-live-pink">
                 <thead>
                   <tr>
                     <th class="bcol-sr">Sr No</th>
@@ -7212,7 +7357,6 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
     function updateBreakdown(records) {
-      setTimeout(renderBookingLiveTable, 0);
 
       currentQueueRecords = records;
 
