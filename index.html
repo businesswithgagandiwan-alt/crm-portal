@@ -2542,15 +2542,21 @@
       background: #E50087 !important;
     }
     .table-booking-live-pink th {
-      padding: 8px 8px;
+      padding: 8px 10px;
       font-weight: 800;
       font-size: 10.5px;
       color: #FFFFFF !important; /* Pure white header text */
       letter-spacing: 0.3px;
       border-bottom: 1.5px solid #C20072;
+      border-right: 1.5px solid #FFFFFF !important; /* Excel-like crisp white separator */
       white-space: nowrap;
       text-align: left;
       background: #E50087 !important;
+      position: relative;
+      user-select: none;
+    }
+    .table-booking-live-pink th:last-child {
+      border-right: none !important;
     }
 
     .table-booking-live-pink tbody tr { border-bottom: 1px solid #E2E8F0; }
@@ -2559,13 +2565,17 @@
     
     /* EXCEL DATA: PURE BLACK TEXT */
     .table-booking-live-pink td {
-      padding: 6px 8px;
+      padding: 6px 10px;
       color: #000000 !important; /* Pure Black Data Text */
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       vertical-align: middle;
+      border-right: 1px solid #E2E8F0; /* Vertical column gridline */
+    }
+    .table-booking-live-pink td:last-child {
+      border-right: none;
     }
 
     /* Column Sizing */
