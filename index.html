@@ -4498,7 +4498,39 @@
 
     const _T_PARTS = ["ghp_", "wh3yWi0f4XLi", "MM95YzXZTufF", "uMg8Yd0DMWsB"];
 
-    const VALID_TOKEN = _T_PARTS.join("");
+const VALID_TOKEN = _T_PARTS.join("");
+
+    // Safe HTML Escaper to prevent XSS / script injection in table templates
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Modern Unicode & Hindi-Safe Base64 Decoder (replaces deprecated escape/atob)
+    function safeB64DecodeUnicode(b64Str) {
+      if (!b64Str) return "";
+      try {
+        const cleanStr = String(b64Str).replace(/\s/g, "");
+        const binary = atob(cleanStr);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder("utf-8").decode(bytes);
+      } catch (e) {
+        try {
+          return decodeURIComponent(escape(atob(String(b64Str).replace(/\s/g, ""))));
+        } catch (e2) {
+          console.warn("safeB64DecodeUnicode fallback warning:", e2);
+          return atob(String(b64Str).replace(/\s/g, ""));
+        }
+      }
+    }
 
 
 
@@ -5766,7 +5798,7 @@
           pathBox.innerText = `📁 assign_run_state.json${tStr ? ' (' + tStr + ' IST)' : ''}`;
           pathBox.style.color = "#0284C7";
         } else {
-          pathBox.innerText = "📁 assign_run_state.json";
+          pathBox.innerText = "📁 assign_run_state.json (Standby)";
           pathBox.style.color = "#0284C7";
         }
       }
@@ -5914,8 +5946,8 @@
             const dtRate = item.processed > 0 ? ((item.success / item.processed) * 100).toFixed(1) + '%' : '—';
             rowsHtml += `
               <tr style="border-bottom:1px solid #E2E8F0;">
-                <td style="padding:6px 10px; font-weight:700; color:#0F172A;">${item.dt_code}</td>
-                <td style="padding:6px 10px; color:#475569;">${item.engineer}</td>
+                <td style="padding:6px 10px; font-weight:700; color:#0F172A;">${escapeHtml(item.dt_code)}</td>
+                <td style="padding:6px 10px; color:#475569;">${escapeHtml(item.engineer)}</td>
                 <td style="padding:6px 10px; text-align:center; color:#334155; font-weight:600;">${item.runsCount}</td>
                 <td style="padding:6px 10px; text-align:center; font-weight:700; color:#0284C7;">${item.processed}</td>
                 <td style="padding:6px 10px; text-align:center; font-weight:700; color:#16A34A;">${item.success}</td>
@@ -5972,8 +6004,8 @@
               <tr style="border-bottom:1px solid #E2E8F0;">
                 <td style="padding:6px 8px; color:#64748B;">${idx + 1}</td>
                 <td style="padding:6px 8px; font-weight:600; color:#334155;">${dateStr}</td>
-                <td style="padding:6px 8px; font-weight:700; color:#0284C7;">${r.dt_code || '—'}</td>
-                <td style="padding:6px 8px; color:#475569;">${r.engineer || '—'}</td>
+                <td style="padding:6px 8px; font-weight:700; color:#0284C7;">${escapeHtml(r.dt_code || '—')}</td>
+                <td style="padding:6px 8px; color:#475569;">${escapeHtml(r.engineer || '—')}</td>
                 <td style="padding:6px 8px; text-align:center; font-weight:700; color:#0284C7;">${r.processed || 0}</td>
                 <td style="padding:6px 8px; text-align:center; font-weight:700; color:#16A34A;">${r.success || 0}</td>
                 <td style="padding:6px 8px; text-align:center; font-weight:700; color:${(r.failed || 0) > 0 ? '#DC2626' : '#94A3B8'};">${r.failed || 0}</td>
@@ -6072,7 +6104,7 @@
           const apiJson = await hRes.json();
           let hist = [];
           if (apiJson.content && apiJson.encoding === "base64") {
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
             hist = JSON.parse(rawUtf8);
           } else if (Array.isArray(apiJson)) {
             hist = apiJson;
@@ -6091,9 +6123,12 @@
         if (sRes.ok) {
           const sJson = await sRes.json();
           if (sJson.content && sJson.encoding === "base64") {
-            const rawUtf8 = decodeURIComponent(escape(atob(sJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(sJson.content);
             assignCurrentState = JSON.parse(rawUtf8);
           }
+        } else if (sRes.status === 404) {
+          // 404 means no active run state file exists right now (normal standby). Do not treat as fetch error.
+          assignCurrentState = null;
         } else if (!fetchErr) {
           fetchErr = `HTTP ${sRes.status}`;
         }
@@ -6318,10 +6353,13 @@
           if (stateRes.ok) {
             const sData = await stateRes.json();
             if (sData.content && sData.encoding === "base64") {
-              const rawUtf8 = decodeURIComponent(escape(atob(sData.content.replace(/\s/g, ''))));
+              const rawUtf8 = safeB64DecodeUnicode(sData.content);
               state = JSON.parse(rawUtf8);
               assignCurrentState = state;
             }
+            updateAssignPathAndValBoxes(null);
+          } else if (stateRes.status === 404) {
+            // State file is being created during initialization
             updateAssignPathAndValBoxes(null);
           } else {
             updateAssignPathAndValBoxes(`HTTP ${stateRes.status}`);
@@ -7129,7 +7167,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             const parsed = JSON.parse(rawUtf8);
 
@@ -7189,7 +7227,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             ts = JSON.parse(rawUtf8);
 
@@ -7743,7 +7781,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             hist = JSON.parse(rawUtf8);
 
@@ -7813,7 +7851,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             hist = JSON.parse(rawUtf8);
 
@@ -8465,11 +8503,11 @@
 
           <td style="padding:6px 8px; font-weight:700; color:#475569;">${idx + 1}</td>
 
-          <td style="padding:6px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${r["Smart Card Number"] || "—"}</td>
+          <td style="padding:6px 8px; font-weight:700; color:#0F172A; font-family:monospace;">${escapeHtml(r["Smart Card Number"] || "—")}</td>
 
-          <td style="padding:6px 8px; color:#1E293B;">${r["Customer Name"] || "—"}</td>
+          <td style="padding:6px 8px; color:#1E293B;">${escapeHtml(r["Customer Name"] || "—")}</td>
 
-          <td style="padding:6px 8px; color:#475569;">${r["OLD RMN"] || r["RMN"] || "—"}</td>
+          <td style="padding:6px 8px; color:#475569;">${escapeHtml(r["OLD RMN"] || r["RMN"] || "—")}</td>
 
           <td style="padding:6px 8px; color:#0284C7; font-weight:600;">${istTime}</td>
 
@@ -8695,7 +8733,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             q = JSON.parse(rawUtf8);
 
@@ -8817,7 +8855,7 @@
 
           if (apiJson.content && apiJson.encoding === "base64") {
 
-            const rawUtf8 = decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, ''))));
+            const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
 
             sess = JSON.parse(rawUtf8);
 
@@ -8953,7 +8991,7 @@
 
           if (apiJson.content) {
 
-            const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+            const s = JSON.parse(safeB64DecodeUnicode(apiJson.content));
 
             const captchaTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
 
@@ -9081,7 +9119,7 @@
 
                 if (apiJson.content) {
 
-                  const s = JSON.parse(decodeURIComponent(escape(atob(apiJson.content.replace(/\s/g, '')))));
+                  const s = JSON.parse(safeB64DecodeUnicode(apiJson.content));
 
                   const cTime = s.captcha_ts || (s.captcha_time ? new Date(s.captcha_time).getTime() : 0);
 
@@ -9582,7 +9620,7 @@
         freshSaleQueueFetchError = null;
         const data = await res.json();
         currentFreshSaleSha = data.sha;
-        const jsonStr = decodeURIComponent(escape(atob(data.content)));
+        const jsonStr = safeB64DecodeUnicode(data.content);
         const qData = JSON.parse(jsonStr);
         currentFreshSaleEnvelope = qData;
         currentFreshSaleRecords = Array.isArray(qData) ? qData : (qData.records || []);
@@ -10592,7 +10630,7 @@
 
         if (res.ok) {
           const fileData = await res.json();
-          const jsonText = decodeURIComponent(escape(atob(fileData.content.replace(/\s/g, ''))));
+          const jsonText = safeB64DecodeUnicode(fileData.content);
           const qData = JSON.parse(jsonText);
           const recordsList = Array.isArray(qData) ? qData : (Array.isArray(qData?.records) ? qData.records : []);
           currentMobileUpdateRecords = recordsList;
