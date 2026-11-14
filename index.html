@@ -3038,6 +3038,7 @@
                 <div class="stacked-card-title">FAILED</div>
 
                 <div class="stacked-card-value" id="booking-stat-failed">● 0</div>
+                <div id="booking-stat-failed-note" style="font-size:8px; color:#DC2626; font-weight:600; margin-top:2px; display:none;">Pending sync: 0 runs</div>
 
               </div>
 
@@ -4873,6 +4874,7 @@ const VALID_TOKEN = _T_PARTS.join("");
     let currentQueueRecords = [];
 
     let currentQueueSha = null;
+    let currentFinishedRecords = [];
 
     // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
     // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
@@ -5118,6 +5120,20 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Complaint_Report");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const failedExport = pendingSyncFailedRecords.map((r, idx) => ({
+            "Sr No": idx + 1,
+            "Smart Card Number": String(r["Smart Card Number"] || ""),
+            "Customer Name": r["Customer Name"] || "",
+            "Mobile / RMN": r["OLD RMN"] || r["RMN"] || "",
+            "DT Code": r["DT Code"] || "",
+            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+            "Status": r["Complaint Status"] || "Failed"
+          }));
+          const wsFailed = XLSX.utils.json_to_sheet(failedExport);
+          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+        }
         const dateStr = new Date().toISOString().split("T")[0];
         XLSX.writeFile(wb, `Complaint_Booking_Report_${dateStr}.xlsx`);
         showToast("✓ Report downloaded successfully!");
@@ -5926,47 +5942,75 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
-          // Ensure fresh queue is loaded
-
+          // Ensure fresh queue and finished records are loaded
           await fetchData();
+          if (typeof fetchFinishedData === "function") {
+            try { await fetchFinishedData(); } catch (e) {}
+          }
 
-
+          const finishedScSet = new Set(
+            (currentFinishedRecords || [])
+              .filter(isComplaintAlreadyBooked)
+              .map(r => String(r["Smart Card Number"] || "").trim())
+          );
+          const queueBookedScSet = new Set(
+            (currentQueueRecords || [])
+              .filter(isComplaintAlreadyBooked)
+              .map(r => String(r["Smart Card Number"] || "").trim())
+          );
+          const allBookedScSet = new Set([...finishedScSet, ...queueBookedScSet]);
+          allBookedScSet.delete("");
 
           let finalRecords = [];
-
           if (mode === "append") {
+            const existingScSet = new Set([
+              ...(currentQueueRecords || []).map(r => String(r["Smart Card Number"] || "").trim()),
+              ...allBookedScSet
+            ]);
+            existingScSet.delete("");
 
-            const existingScSet = new Set(
-
-              currentQueueRecords.map(r => String(r["Smart Card Number"] || "").trim())
-
-            );
-
-            const newUniqueRecords = parsedRecords.filter(r => !existingScSet.has(r["Smart Card Number"]));
-
-
+            const newUniqueRecords = parsedRecords.filter(r => {
+              const card = String(r["Smart Card Number"] || "").trim();
+              return card && !existingScSet.has(card);
+            });
 
             if (newUniqueRecords.length === 0) {
-
-              alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue!`);
-
+              alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue or already booked!`);
               return;
-
             }
 
-
-
-            // Append new records
-
             finalRecords = [...currentQueueRecords, ...newUniqueRecords];
-
             showToast(`✓ Merging ${newUniqueRecords.length} new records into queue...`);
-
           } else {
+            // Replace mode: Skip cards already in complaint_finished.json (and booked in queue), keep booked in queue
+            const keptQueueBooked = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
+            const unbookedInQueue = (currentQueueRecords || []).filter(r => !isComplaintAlreadyBooked(r));
+            if (unbookedInQueue.length > 0) {
+              const sampleNames = unbookedInQueue
+                .slice(0, 3)
+                .map(r => r["Customer Name"] || r["Smart Card Number"] || "Record")
+                .join(", ");
+              const moreText = unbookedInQueue.length > 3 ? ` and ${unbookedInQueue.length - 3} more` : "";
+              const confirmMsg = `Replace Mode Warning:\n\nReplacing the queue will remove ${unbookedInQueue.length} pending/failed row(s) currently in the queue (${sampleNames}${moreText}).\n\n(All ${keptQueueBooked.length} booked rows will be preserved).\n\nAre you sure you want to proceed?`;
+              if (!confirm(confirmMsg)) {
+                showToast("Replace cancelled by user.");
+                return;
+              }
+            }
 
-            finalRecords = parsedRecords;
+            const uniqueUploaded = [];
+            const seenUpload = new Set();
+            for (const r of parsedRecords) {
+              const card = String(r["Smart Card Number"] || "").trim();
+              if (!card || seenUpload.has(card) || allBookedScSet.has(card)) {
+                continue;
+              }
+              seenUpload.add(card);
+              uniqueUploaded.push(r);
+            }
 
-            showToast(`✓ Replacing queue with ${parsedRecords.length} records...`);
+            finalRecords = [...keptQueueBooked, ...uniqueUploaded];
+            showToast(`✓ Updating queue with ${uniqueUploaded.length} new records (${keptQueueBooked.length} booked preserved)...`);
 
           }
 
@@ -7418,21 +7462,20 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
     function isComplaintAlreadyBooked(rec) {
+      const sr = String(rec["SR Number"] || rec["Complaint Number"] || rec["Complaint ID"] || rec["sr_number"] || rec["complaint_number"] || "").trim();
+      const srUpper = sr.toUpperCase();
+      const isPlaceholderSr = !sr || sr === "---" || sr === "--" || sr === "-" || srUpper === "NA" || srUpper === "N/A" || srUpper === "NONE" || srUpper === "NULL" || srUpper === "NAN" || srUpper === "0" || srUpper.startsWith("PENDING");
+      if (!isPlaceholderSr && (srUpper.startsWith("SR") || /^\d+$/.test(sr))) {
+        return true;
+      }
 
       const st = String(rec["Complaint Status"] || rec["status"] || "").trim().toLowerCase();
-
-      const rem = String(rec["Complaint Remark"] || "").trim().toLowerCase();
-
       if (st.includes("skip")) return false;
 
       return (
-
         (st.includes("submitted") || st.includes("success") || st.includes("booked") || st.includes("done") || st.includes("complete")) &&
-
-        !st.includes("fail") && !st.includes("not found") && !st.includes("not submitted")
-
-      ) || (rem.length >= 15 && !rem.startsWith("fail") && !rem.startsWith("error"));
-
+        !st.includes("fail") && !st.includes("not found") && !st.includes("not submitted") && !st.includes("not booked")
+      );
     }
 
 
@@ -7491,49 +7534,239 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
-    function updateBreakdown(records) {
+    let lastFinishedBreakdownFetch = 0;
+    let finishedBreakdownPromise = null;
+    let hasFinishedLoadedOnce = false;
+    let previousBookedCount = null;
+    let previousTotalCount = null;
+    let lastFinishedDataFingerprint = null;
 
+    async function loadFinishedForBreakdown() {
+      const now = Date.now();
+      if (finishedBreakdownPromise && (now - lastFinishedBreakdownFetch < 60000)) {
+        return finishedBreakdownPromise;
+      }
+      lastFinishedBreakdownFetch = now;
+      finishedBreakdownPromise = (async () => {
+        const token = getToken();
+        if (!token) {
+          hasFinishedLoadedOnce = true;
+          return currentFinishedRecords;
+        }
+        try {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_finished.json?_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+          if (res.ok) {
+            const apiJson = await res.json();
+            let records = [];
+            if (apiJson.content && apiJson.encoding === "base64") {
+              const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
+              const parsed = JSON.parse(rawUtf8);
+              records = Array.isArray(parsed) ? parsed : (parsed.records || []);
+            } else if (Array.isArray(apiJson)) {
+              records = apiJson;
+            } else if (apiJson.records) {
+              records = apiJson.records;
+            }
+            currentFinishedRecords = records;
+            hasFinishedLoadedOnce = true;
+          } else if (res.status === 404) {
+            currentFinishedRecords = [];
+            hasFinishedLoadedOnce = true;
+          } else {
+            hasFinishedLoadedOnce = true;
+          }
+        } catch (e) {
+          console.error("Finished fetch error for breakdown", e);
+          hasFinishedLoadedOnce = true;
+        }
+        return currentFinishedRecords;
+      })();
+      return finishedBreakdownPromise;
+    }
+
+    let currentPendingSyncReports = [];
+    let pendingSyncFailedRecords = [];
+    let lastPendingSyncFetch = 0;
+    let pendingSyncPromise = null;
+    let lastPendingSyncError = null;
+
+    async function fetchPendingSyncReports() {
+      const now = Date.now();
+      if (pendingSyncPromise && (now - lastPendingSyncFetch < 60000)) {
+        return pendingSyncPromise;
+      }
+      lastPendingSyncFetch = now;
+      pendingSyncPromise = (async () => {
+        const token = getToken();
+        if (!token) {
+          lastPendingSyncError = null;
+          return [];
+        }
+        try {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/reports/pending_sync?_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+          if (res.ok) {
+            lastPendingSyncError = null;
+            const files = await res.json();
+            if (Array.isArray(files)) {
+              const jsonFiles = files.filter(f => f.type === "file" && String(f.name || "").endsWith(".json"));
+              const reports = [];
+              const allFailed = [];
+              for (const f of jsonFiles) {
+                try {
+                  const targetUrl = f.url || f.download_url;
+                  const fRes = await fetch(targetUrl, {
+                    headers: {
+                      "Authorization": `token ${token}`,
+                      "Accept": "application/vnd.github.raw"
+                    }
+                  });
+                  if (fRes.ok) {
+                    const rep = await fRes.json();
+                    reports.push(rep);
+                    if (Array.isArray(rep.failed)) {
+                      rep.failed.forEach(item => {
+                        allFailed.push({
+                          ...item,
+                          _run_id: rep.run_id,
+                          _run_time_ist: rep.run_time_ist
+                        });
+                      });
+                    }
+                  } else {
+                    console.warn("Failed to fetch pending sync report file:", f.name, fRes.status);
+                    lastPendingSyncError = "Failed to fetch reports ⚠️";
+                  }
+                } catch (err) {
+                  console.warn("Failed to fetch pending sync report:", f.name, err);
+                  lastPendingSyncError = "Failed to fetch reports ⚠️";
+                }
+              }
+              currentPendingSyncReports = reports;
+              pendingSyncFailedRecords = allFailed;
+            } else {
+              currentPendingSyncReports = [];
+              pendingSyncFailedRecords = [];
+            }
+          } else if (res.status === 404) {
+            lastPendingSyncError = null;
+            currentPendingSyncReports = [];
+            pendingSyncFailedRecords = [];
+          } else {
+            lastPendingSyncError = "Failed to fetch reports ⚠️";
+            currentPendingSyncReports = [];
+            pendingSyncFailedRecords = [];
+          }
+        } catch (e) {
+          console.warn("Pending sync reports fetch error:", e);
+          lastPendingSyncError = "Failed to fetch reports ⚠️";
+          currentPendingSyncReports = [];
+          pendingSyncFailedRecords = [];
+        }
+        return pendingSyncFailedRecords;
+      })();
+      return pendingSyncPromise;
+    }
+
+    function updateBreakdown(records) {
       currentQueueRecords = records;
 
-      const booked = records.filter(isComplaintAlreadyBooked).length;
+      const isStale = (Date.now() - lastFinishedBreakdownFetch > 60000);
+      if (!hasFinishedLoadedOnce || isStale) {
+        loadFinishedForBreakdown().then(fin => {
+          const newFingerprint = JSON.stringify((fin || []).map(r => r["Smart Card Number"] || ""));
+          const dataChanged = (lastFinishedDataFingerprint === null) || (newFingerprint !== lastFinishedDataFingerprint);
+          lastFinishedDataFingerprint = newFingerprint;
+          if (dataChanged && currentQueueRecords === records) {
+            updateBreakdown(records);
+          }
+        });
+      }
 
-      const total = records.length;
+      // Unique booked cards across queue + finished (no double-counting)
+      const bookedCards = new Set([
+        ...(records || []).filter(isComplaintAlreadyBooked).map(r => String(r["Smart Card Number"] || "").trim()),
+        ...(currentFinishedRecords || []).filter(isComplaintAlreadyBooked).map(r => String(r["Smart Card Number"] || "").trim())
+      ]);
+      bookedCards.delete("");
+      const booked = bookedCards.size;
 
-      const totalPending = total - booked;
+      // Total = unique cards across queue + finished
+      const allUniqueCards = new Set([
+        ...(records || []).map(r => String(r["Smart Card Number"] || "").trim()),
+        ...(currentFinishedRecords || []).map(r => String(r["Smart Card Number"] || "").trim())
+      ]);
+      allUniqueCards.delete("");
+      const total = allUniqueCards.size;
 
+      // Until finished fetch returns once, show previous Total/Booked value or "..." (no flicker to 0)
+      let totalDisplay = `${total}`;
+      let bookedDisplay = `${booked}`;
+      if (!hasFinishedLoadedOnce) {
+        totalDisplay = (previousTotalCount !== null) ? `${previousTotalCount}` : "...";
+        bookedDisplay = (previousBookedCount !== null) ? `${previousBookedCount}` : "...";
+      } else {
+        previousTotalCount = total;
+        previousBookedCount = booked;
+      }
 
+      // Pending = only real pending in queue; never negative
+      const pendingInQueue = (records || []).filter(r => !isComplaintAlreadyBooked(r) && !isComplaintSkipped(r)).length;
+      const totalPending = Math.max(0, pendingInQueue);
 
       // Update 3-Row Strip Dashboard Cards
-
       const statTotal = document.getElementById("booking-stat-total");
-
       const statProcessed = document.getElementById("booking-stat-processed");
-
       const statPending = document.getElementById("booking-stat-pending");
-
       const statBooked = document.getElementById("booking-stat-booked");
-
+      const statFailed = document.getElementById("booking-stat-failed");
+      const noteFailed = document.getElementById("booking-stat-failed-note");
       const pathPending = document.getElementById("path-pending-count");
-
       const valPending = document.getElementById("val-pending-count");
-
       const valBooked = document.getElementById("val-booked-count");
 
-
-
-      if (statTotal) statTotal.innerText = `● ${total}`;
-
-      if (statProcessed) statProcessed.innerText = `● ${booked}`;
-
+      if (statTotal) statTotal.innerText = `● ${totalDisplay}`;
+      if (statProcessed) statProcessed.innerText = `● ${bookedDisplay}`;
       if (statPending) statPending.innerText = `● ${totalPending}`;
-
-      if (statBooked) statBooked.innerText = `● ${booked}`;
-
+      if (statBooked) statBooked.innerText = `● ${bookedDisplay}`;
       if (pathPending) pathPending.innerText = totalPending;
-
       if (valPending) valPending.innerText = totalPending;
+      if (valBooked) valBooked.innerText = bookedDisplay;
 
-      if (valBooked) valBooked.innerText = booked;
+      // Fetch and display real Failed count & Pending Sync Runs note
+      fetchPendingSyncReports().then(failedList => {
+        const fCount = (failedList || []).length;
+        const rCount = (currentPendingSyncReports || []).length;
+        if (statFailed) statFailed.innerText = `● ${fCount}`;
+        if (noteFailed) {
+          if (!getToken()) {
+            noteFailed.innerText = "Not connected";
+            noteFailed.style.color = "#6B7280";
+            noteFailed.style.display = "block";
+          } else if (lastPendingSyncError) {
+            noteFailed.innerText = lastPendingSyncError;
+            noteFailed.style.color = "#DC2626";
+            noteFailed.style.display = "block";
+          } else if (rCount > 0) {
+            noteFailed.innerText = `Pending sync: ${rCount} run${rCount > 1 ? 's' : ''}`;
+            noteFailed.style.color = "#DC2626";
+            noteFailed.style.display = "block";
+          } else {
+            noteFailed.innerText = "Synced ✓";
+            noteFailed.style.color = "#16A34A";
+            noteFailed.style.display = "block";
+          }
+        }
+      });
 
 
 
@@ -9032,8 +9265,7 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
-    let currentFinishedRecords = [];
-
+    // currentFinishedRecords declared above
     async function fetchFinishedData() {
       const token = getToken();
       if (!token) return [];
@@ -9143,6 +9375,27 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const todayIst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+          const todayFailed = pendingSyncFailedRecords.filter(r => {
+            const timeStr = String(r["_run_time_ist"] || r["Processed At"] || r["processed_at"] || "").trim();
+            return timeStr.startsWith(todayIst);
+          });
+          if (todayFailed.length > 0) {
+            const failedRows = todayFailed.map((r, idx) => ({
+              "S.No": idx + 1,
+              "Smart Card Number": String(r["Smart Card Number"] || ""),
+              "Customer Name": r["Customer Name"] || "",
+              "Mobile": r["OLD RMN"] || r["RMN"] || "",
+              "DT Code": r["DT Code"] || "",
+              "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+              "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+              "Complaint Status": r["Complaint Status"] || "Failed"
+            }));
+            const wsFailed = XLSX.utils.json_to_sheet(failedRows);
+            XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+          }
+        }
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         XLSX.writeFile(wb, `Today_Complaints_Booked_${dateStr}.xlsx`);
         showToast("✓ Today's Booked Excel downloaded!");
@@ -9177,6 +9430,20 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "All Booked Complaints");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const failedRows = pendingSyncFailedRecords.map((r, idx) => ({
+            "S.No": idx + 1,
+            "Smart Card Number": String(r["Smart Card Number"] || ""),
+            "Customer Name": r["Customer Name"] || "",
+            "Mobile": r["OLD RMN"] || r["RMN"] || "",
+            "DT Code": r["DT Code"] || "",
+            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+            "Complaint Status": r["Complaint Status"] || "Failed"
+          }));
+          const wsFailed = XLSX.utils.json_to_sheet(failedRows);
+          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+        }
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         XLSX.writeFile(wb, `All_Booked_Complaints_${dateStr}.xlsx`);
         showToast("✓ All Booked Excel downloaded!");
@@ -12019,7 +12286,7 @@ const VALID_TOKEN = _T_PARTS.join("");
             !stLow.includes("updated") &&
             !stLow.includes("dry run - would update") &&
             !stLow.includes("dry run - already updated")
-          ) || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error") || Boolean(r["Remark"]);
+          ) || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error");
 
           if (isIssue) {
             issueRows.push(rowVals);
