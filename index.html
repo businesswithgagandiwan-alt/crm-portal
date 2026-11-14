@@ -7523,6 +7523,8 @@ const VALID_TOKEN = _T_PARTS.join("");
     let finishedBreakdownPromise = null;
     let hasFinishedLoadedOnce = false;
     let previousBookedCount = null;
+    let previousTotalCount = null;
+    let lastFinishedDataFingerprint = null;
 
     async function loadFinishedForBreakdown() {
       const now = Date.now();
@@ -7532,7 +7534,10 @@ const VALID_TOKEN = _T_PARTS.join("");
       lastFinishedBreakdownFetch = now;
       finishedBreakdownPromise = (async () => {
         const token = getToken();
-        if (!token) return currentFinishedRecords;
+        if (!token) {
+          hasFinishedLoadedOnce = true;
+          return currentFinishedRecords;
+        }
         try {
           const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_finished.json?_t=${Date.now()}`, {
             headers: {
@@ -7557,9 +7562,12 @@ const VALID_TOKEN = _T_PARTS.join("");
           } else if (res.status === 404) {
             currentFinishedRecords = [];
             hasFinishedLoadedOnce = true;
+          } else {
+            hasFinishedLoadedOnce = true;
           }
         } catch (e) {
           console.error("Finished fetch error for breakdown", e);
+          hasFinishedLoadedOnce = true;
         }
         return currentFinishedRecords;
       })();
@@ -7569,9 +7577,13 @@ const VALID_TOKEN = _T_PARTS.join("");
     function updateBreakdown(records) {
       currentQueueRecords = records;
 
-      if (!currentFinishedRecords || currentFinishedRecords.length === 0 || (Date.now() - lastFinishedBreakdownFetch > 60000)) {
-        loadFinishedForBreakdown().then(() => {
-          if (currentQueueRecords === records) {
+      const isStale = (Date.now() - lastFinishedBreakdownFetch > 60000);
+      if (!hasFinishedLoadedOnce || isStale) {
+        loadFinishedForBreakdown().then(fin => {
+          const newFingerprint = JSON.stringify((fin || []).map(r => r["Smart Card Number"] || ""));
+          const dataChanged = (lastFinishedDataFingerprint === null) || (newFingerprint !== lastFinishedDataFingerprint);
+          lastFinishedDataFingerprint = newFingerprint;
+          if (dataChanged && currentQueueRecords === records) {
             updateBreakdown(records);
           }
         });
@@ -7585,18 +7597,6 @@ const VALID_TOKEN = _T_PARTS.join("");
       bookedCards.delete("");
       const booked = bookedCards.size;
 
-      // Until finished fetch returns once, show previous Booked value or "..." (no flicker to 0)
-      let bookedDisplay = `${booked}`;
-      if (!hasFinishedLoadedOnce) {
-        if (previousBookedCount !== null) {
-          bookedDisplay = `${previousBookedCount}`;
-        } else {
-          bookedDisplay = "...";
-        }
-      } else {
-        previousBookedCount = booked;
-      }
-
       // Total = unique cards across queue + finished
       const allUniqueCards = new Set([
         ...(records || []).map(r => String(r["Smart Card Number"] || "").trim()),
@@ -7604,6 +7604,17 @@ const VALID_TOKEN = _T_PARTS.join("");
       ]);
       allUniqueCards.delete("");
       const total = allUniqueCards.size;
+
+      // Until finished fetch returns once, show previous Total/Booked value or "..." (no flicker to 0)
+      let totalDisplay = `${total}`;
+      let bookedDisplay = `${booked}`;
+      if (!hasFinishedLoadedOnce) {
+        totalDisplay = (previousTotalCount !== null) ? `${previousTotalCount}` : "...";
+        bookedDisplay = (previousBookedCount !== null) ? `${previousBookedCount}` : "...";
+      } else {
+        previousTotalCount = total;
+        previousBookedCount = booked;
+      }
 
       // Pending = only real pending in queue; never negative
       const pendingInQueue = (records || []).filter(r => !isComplaintAlreadyBooked(r) && !isComplaintSkipped(r)).length;
@@ -7618,7 +7629,7 @@ const VALID_TOKEN = _T_PARTS.join("");
       const valPending = document.getElementById("val-pending-count");
       const valBooked = document.getElementById("val-booked-count");
 
-      if (statTotal) statTotal.innerText = `● ${total}`;
+      if (statTotal) statTotal.innerText = `● ${totalDisplay}`;
       if (statProcessed) statProcessed.innerText = `● ${bookedDisplay}`;
       if (statPending) statPending.innerText = `● ${totalPending}`;
       if (statBooked) statBooked.innerText = `● ${bookedDisplay}`;
