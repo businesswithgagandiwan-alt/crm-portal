@@ -4873,6 +4873,7 @@ const VALID_TOKEN = _T_PARTS.join("");
     let currentQueueRecords = [];
 
     let currentQueueSha = null;
+    let currentFinishedRecords = [];
 
     // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
     // ================= BOOKING LIVE RESULTS TABLE & REAL DATA LOGIC =================
@@ -5967,6 +5968,21 @@ const VALID_TOKEN = _T_PARTS.join("");
             showToast(`✓ Merging ${newUniqueRecords.length} new records into queue...`);
           } else {
             // Replace mode: Skip cards already in complaint_finished.json (and booked in queue), keep booked in queue
+            const keptQueueBooked = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
+            const unbookedInQueue = (currentQueueRecords || []).filter(r => !isComplaintAlreadyBooked(r));
+            if (unbookedInQueue.length > 0) {
+              const sampleNames = unbookedInQueue
+                .slice(0, 3)
+                .map(r => r["Customer Name"] || r["Smart Card Number"] || "Record")
+                .join(", ");
+              const moreText = unbookedInQueue.length > 3 ? ` and ${unbookedInQueue.length - 3} more` : "";
+              const confirmMsg = `Replace Mode Warning:\n\nReplacing the queue will remove ${unbookedInQueue.length} pending/failed row(s) currently in the queue (${sampleNames}${moreText}).\n\n(All ${keptQueueBooked.length} booked rows will be preserved).\n\nAre you sure you want to proceed?`;
+              if (!confirm(confirmMsg)) {
+                showToast("Replace cancelled by user.");
+                return;
+              }
+            }
+
             const uniqueUploaded = [];
             const seenUpload = new Set();
             for (const r of parsedRecords) {
@@ -5978,7 +5994,6 @@ const VALID_TOKEN = _T_PARTS.join("");
               uniqueUploaded.push(r);
             }
 
-            const keptQueueBooked = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
             finalRecords = [...keptQueueBooked, ...uniqueUploaded];
             showToast(`✓ Updating queue with ${uniqueUploaded.length} new records (${keptQueueBooked.length} booked preserved)...`);
 
@@ -7504,8 +7519,60 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
+    let lastFinishedBreakdownFetch = 0;
+    let finishedBreakdownPromise = null;
+
+    async function loadFinishedForBreakdown() {
+      const now = Date.now();
+      if (finishedBreakdownPromise && (now - lastFinishedBreakdownFetch < 60000)) {
+        return finishedBreakdownPromise;
+      }
+      lastFinishedBreakdownFetch = now;
+      finishedBreakdownPromise = (async () => {
+        const token = getToken();
+        if (!token) return currentFinishedRecords;
+        try {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/complaint_finished.json?_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+          if (res.ok) {
+            const apiJson = await res.json();
+            let records = [];
+            if (apiJson.content && apiJson.encoding === "base64") {
+              const rawUtf8 = safeB64DecodeUnicode(apiJson.content);
+              const parsed = JSON.parse(rawUtf8);
+              records = Array.isArray(parsed) ? parsed : (parsed.records || []);
+            } else if (Array.isArray(apiJson)) {
+              records = apiJson;
+            } else if (apiJson.records) {
+              records = apiJson.records;
+            }
+            currentFinishedRecords = records;
+          } else if (res.status === 404) {
+            currentFinishedRecords = [];
+          }
+        } catch (e) {
+          console.error("Finished fetch error for breakdown", e);
+        }
+        return currentFinishedRecords;
+      })();
+      return finishedBreakdownPromise;
+    }
+
     function updateBreakdown(records) {
       currentQueueRecords = records;
+
+      if (!currentFinishedRecords || currentFinishedRecords.length === 0 || (Date.now() - lastFinishedBreakdownFetch > 60000)) {
+        loadFinishedForBreakdown().then(fin => {
+          if (fin && fin.length > 0 && currentQueueRecords === records) {
+            updateBreakdown(records);
+          }
+        });
+      }
+
       const bookedInQueue = (records || []).filter(isComplaintAlreadyBooked).length;
       const bookedInFinished = (currentFinishedRecords || []).filter(isComplaintAlreadyBooked).length;
       const booked = bookedInQueue + bookedInFinished;
@@ -7516,7 +7583,7 @@ const VALID_TOKEN = _T_PARTS.join("");
         ...(currentFinishedRecords || []).map(r => String(r["Smart Card Number"] || "").trim())
       ]);
       allUniqueCards.delete("");
-      const total = Math.max(allUniqueCards.size, (records || []).length + (currentFinishedRecords || []).length);
+      const total = allUniqueCards.size;
 
       // Pending = only real pending in queue; never negative
       const pendingInQueue = (records || []).filter(r => !isComplaintAlreadyBooked(r) && !isComplaintSkipped(r)).length;
@@ -9053,8 +9120,7 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
-    let currentFinishedRecords = [];
-
+    // currentFinishedRecords declared above
     async function fetchFinishedData() {
       const token = getToken();
       if (!token) return [];
