@@ -3038,6 +3038,7 @@
                 <div class="stacked-card-title">FAILED</div>
 
                 <div class="stacked-card-value" id="booking-stat-failed">● 0</div>
+                <div id="booking-stat-failed-note" style="font-size:8px; color:#DC2626; font-weight:600; margin-top:2px; display:none;">Pending sync: 0 runs</div>
 
               </div>
 
@@ -5119,6 +5120,20 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Complaint_Report");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const failedExport = pendingSyncFailedRecords.map((r, idx) => ({
+            "Sr No": idx + 1,
+            "Smart Card Number": String(r["Smart Card Number"] || ""),
+            "Customer Name": r["Customer Name"] || "",
+            "Mobile / RMN": r["OLD RMN"] || r["RMN"] || "",
+            "DT Code": r["DT Code"] || "",
+            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+            "Status": r["Complaint Status"] || "Failed"
+          }));
+          const wsFailed = XLSX.utils.json_to_sheet(failedExport);
+          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+        }
         const dateStr = new Date().toISOString().split("T")[0];
         XLSX.writeFile(wb, `Complaint_Booking_Report_${dateStr}.xlsx`);
         showToast("✓ Report downloaded successfully!");
@@ -7574,6 +7589,78 @@ const VALID_TOKEN = _T_PARTS.join("");
       return finishedBreakdownPromise;
     }
 
+    let currentPendingSyncReports = [];
+    let pendingSyncFailedRecords = [];
+    let lastPendingSyncFetch = 0;
+    let pendingSyncPromise = null;
+
+    async function fetchPendingSyncReports() {
+      const now = Date.now();
+      if (pendingSyncPromise && (now - lastPendingSyncFetch < 60000)) {
+        return pendingSyncPromise;
+      }
+      lastPendingSyncFetch = now;
+      pendingSyncPromise = (async () => {
+        const token = getToken();
+        if (!token) return [];
+        try {
+          const res = await fetch(`https://api.github.com/repos/${REPO}/contents/reports/pending_sync?_t=${Date.now()}`, {
+            headers: {
+              "Authorization": `token ${token}`,
+              "Accept": "application/vnd.github.v3+json"
+            }
+          });
+          if (res.ok) {
+            const files = await res.json();
+            if (Array.isArray(files)) {
+              const jsonFiles = files.filter(f => f.type === "file" && String(f.name || "").endsWith(".json"));
+              const reports = [];
+              const allFailed = [];
+              for (const f of jsonFiles) {
+                try {
+                  const fRes = await fetch(f.download_url || f.url, {
+                    headers: {
+                      "Authorization": `token ${token}`,
+                      "Accept": "application/vnd.github.v3.raw"
+                    }
+                  });
+                  if (fRes.ok) {
+                    const rep = await fRes.json();
+                    reports.push(rep);
+                    if (Array.isArray(rep.failed)) {
+                      rep.failed.forEach(item => {
+                        allFailed.push({
+                          ...item,
+                          _run_id: rep.run_id,
+                          _run_time_ist: rep.run_time_ist
+                        });
+                      });
+                    }
+                  }
+                } catch (err) {
+                  console.warn("Failed to fetch pending sync report:", f.name, err);
+                }
+              }
+              currentPendingSyncReports = reports;
+              pendingSyncFailedRecords = allFailed;
+            } else {
+              currentPendingSyncReports = [];
+              pendingSyncFailedRecords = [];
+            }
+          } else {
+            currentPendingSyncReports = [];
+            pendingSyncFailedRecords = [];
+          }
+        } catch (e) {
+          console.warn("Pending sync reports fetch error:", e);
+          currentPendingSyncReports = [];
+          pendingSyncFailedRecords = [];
+        }
+        return pendingSyncFailedRecords;
+      })();
+      return pendingSyncPromise;
+    }
+
     function updateBreakdown(records) {
       currentQueueRecords = records;
 
@@ -7625,6 +7712,8 @@ const VALID_TOKEN = _T_PARTS.join("");
       const statProcessed = document.getElementById("booking-stat-processed");
       const statPending = document.getElementById("booking-stat-pending");
       const statBooked = document.getElementById("booking-stat-booked");
+      const statFailed = document.getElementById("booking-stat-failed");
+      const noteFailed = document.getElementById("booking-stat-failed-note");
       const pathPending = document.getElementById("path-pending-count");
       const valPending = document.getElementById("val-pending-count");
       const valBooked = document.getElementById("val-booked-count");
@@ -7636,6 +7725,21 @@ const VALID_TOKEN = _T_PARTS.join("");
       if (pathPending) pathPending.innerText = totalPending;
       if (valPending) valPending.innerText = totalPending;
       if (valBooked) valBooked.innerText = bookedDisplay;
+
+      // Fetch and display real Failed count & Pending Sync Runs note
+      fetchPendingSyncReports().then(failedList => {
+        const fCount = (failedList || []).length;
+        const rCount = (currentPendingSyncReports || []).length;
+        if (statFailed) statFailed.innerText = `● ${fCount}`;
+        if (noteFailed) {
+          if (rCount > 0) {
+            noteFailed.innerText = `Pending sync: ${rCount} run${rCount > 1 ? 's' : ''}`;
+            noteFailed.style.display = "block";
+          } else {
+            noteFailed.style.display = "none";
+          }
+        }
+      });
 
 
 
@@ -9244,6 +9348,20 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const failedRows = pendingSyncFailedRecords.map((r, idx) => ({
+            "S.No": idx + 1,
+            "Smart Card Number": String(r["Smart Card Number"] || ""),
+            "Customer Name": r["Customer Name"] || "",
+            "Mobile": r["OLD RMN"] || r["RMN"] || "",
+            "DT Code": r["DT Code"] || "",
+            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+            "Complaint Status": r["Complaint Status"] || "Failed"
+          }));
+          const wsFailed = XLSX.utils.json_to_sheet(failedRows);
+          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+        }
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         XLSX.writeFile(wb, `Today_Complaints_Booked_${dateStr}.xlsx`);
         showToast("✓ Today's Booked Excel downloaded!");
@@ -9278,6 +9396,20 @@ const VALID_TOKEN = _T_PARTS.join("");
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "All Booked Complaints");
+        if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
+          const failedRows = pendingSyncFailedRecords.map((r, idx) => ({
+            "S.No": idx + 1,
+            "Smart Card Number": String(r["Smart Card Number"] || ""),
+            "Customer Name": r["Customer Name"] || "",
+            "Mobile": r["OLD RMN"] || r["RMN"] || "",
+            "DT Code": r["DT Code"] || "",
+            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+            "Complaint Status": r["Complaint Status"] || "Failed"
+          }));
+          const wsFailed = XLSX.utils.json_to_sheet(failedRows);
+          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+        }
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         XLSX.writeFile(wb, `All_Booked_Complaints_${dateStr}.xlsx`);
         showToast("✓ All Booked Excel downloaded!");
