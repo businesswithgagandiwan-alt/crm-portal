@@ -7593,6 +7593,7 @@ const VALID_TOKEN = _T_PARTS.join("");
     let pendingSyncFailedRecords = [];
     let lastPendingSyncFetch = 0;
     let pendingSyncPromise = null;
+    let lastPendingSyncError = null;
 
     async function fetchPendingSyncReports() {
       const now = Date.now();
@@ -7602,7 +7603,10 @@ const VALID_TOKEN = _T_PARTS.join("");
       lastPendingSyncFetch = now;
       pendingSyncPromise = (async () => {
         const token = getToken();
-        if (!token) return [];
+        if (!token) {
+          lastPendingSyncError = null;
+          return [];
+        }
         try {
           const res = await fetch(`https://api.github.com/repos/${REPO}/contents/reports/pending_sync?_t=${Date.now()}`, {
             headers: {
@@ -7611,6 +7615,7 @@ const VALID_TOKEN = _T_PARTS.join("");
             }
           });
           if (res.ok) {
+            lastPendingSyncError = null;
             const files = await res.json();
             if (Array.isArray(files)) {
               const jsonFiles = files.filter(f => f.type === "file" && String(f.name || "").endsWith(".json"));
@@ -7618,10 +7623,11 @@ const VALID_TOKEN = _T_PARTS.join("");
               const allFailed = [];
               for (const f of jsonFiles) {
                 try {
-                  const fRes = await fetch(f.download_url || f.url, {
+                  const targetUrl = f.url || f.download_url;
+                  const fRes = await fetch(targetUrl, {
                     headers: {
                       "Authorization": `token ${token}`,
-                      "Accept": "application/vnd.github.v3.raw"
+                      "Accept": "application/vnd.github.raw"
                     }
                   });
                   if (fRes.ok) {
@@ -7636,9 +7642,13 @@ const VALID_TOKEN = _T_PARTS.join("");
                         });
                       });
                     }
+                  } else {
+                    console.warn("Failed to fetch pending sync report file:", f.name, fRes.status);
+                    lastPendingSyncError = "Failed to fetch reports ⚠️";
                   }
                 } catch (err) {
                   console.warn("Failed to fetch pending sync report:", f.name, err);
+                  lastPendingSyncError = "Failed to fetch reports ⚠️";
                 }
               }
               currentPendingSyncReports = reports;
@@ -7647,12 +7657,18 @@ const VALID_TOKEN = _T_PARTS.join("");
               currentPendingSyncReports = [];
               pendingSyncFailedRecords = [];
             }
+          } else if (res.status === 404) {
+            lastPendingSyncError = null;
+            currentPendingSyncReports = [];
+            pendingSyncFailedRecords = [];
           } else {
+            lastPendingSyncError = "Failed to fetch reports ⚠️";
             currentPendingSyncReports = [];
             pendingSyncFailedRecords = [];
           }
         } catch (e) {
           console.warn("Pending sync reports fetch error:", e);
+          lastPendingSyncError = "Failed to fetch reports ⚠️";
           currentPendingSyncReports = [];
           pendingSyncFailedRecords = [];
         }
@@ -7732,11 +7748,18 @@ const VALID_TOKEN = _T_PARTS.join("");
         const rCount = (currentPendingSyncReports || []).length;
         if (statFailed) statFailed.innerText = `● ${fCount}`;
         if (noteFailed) {
-          if (rCount > 0) {
+          if (lastPendingSyncError) {
+            noteFailed.innerText = lastPendingSyncError;
+            noteFailed.style.color = "#DC2626";
+            noteFailed.style.display = "block";
+          } else if (rCount > 0) {
             noteFailed.innerText = `Pending sync: ${rCount} run${rCount > 1 ? 's' : ''}`;
+            noteFailed.style.color = "#DC2626";
             noteFailed.style.display = "block";
           } else {
-            noteFailed.style.display = "none";
+            noteFailed.innerText = "Synced ✓";
+            noteFailed.style.color = "#16A34A";
+            noteFailed.style.display = "block";
           }
         }
       });
@@ -9349,18 +9372,26 @@ const VALID_TOKEN = _T_PARTS.join("");
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
         if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
-          const failedRows = pendingSyncFailedRecords.map((r, idx) => ({
-            "S.No": idx + 1,
-            "Smart Card Number": String(r["Smart Card Number"] || ""),
-            "Customer Name": r["Customer Name"] || "",
-            "Mobile": r["OLD RMN"] || r["RMN"] || "",
-            "DT Code": r["DT Code"] || "",
-            "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
-            "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
-            "Complaint Status": r["Complaint Status"] || "Failed"
-          }));
-          const wsFailed = XLSX.utils.json_to_sheet(failedRows);
-          XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+          const todayIso = new Date().toISOString().slice(0, 10);
+          const todayLoc = new Date().toLocaleDateString('en-CA');
+          const todayFailed = pendingSyncFailedRecords.filter(r => {
+            const timeStr = String(r["_run_time_ist"] || r["Processed At"] || r["processed_at"] || "").trim();
+            return timeStr.startsWith(todayIso) || timeStr.startsWith(todayLoc);
+          });
+          if (todayFailed.length > 0) {
+            const failedRows = todayFailed.map((r, idx) => ({
+              "S.No": idx + 1,
+              "Smart Card Number": String(r["Smart Card Number"] || ""),
+              "Customer Name": r["Customer Name"] || "",
+              "Mobile": r["OLD RMN"] || r["RMN"] || "",
+              "DT Code": r["DT Code"] || "",
+              "Failure Reason": r["Complaint Remark"] || r["Complaint Status"] || r["Remark"] || "Failed",
+              "Run Time (IST)": r["_run_time_ist"] || r["Processed At"] || "",
+              "Complaint Status": r["Complaint Status"] || "Failed"
+            }));
+            const wsFailed = XLSX.utils.json_to_sheet(failedRows);
+            XLSX.utils.book_append_sheet(wb, wsFailed, "Failed");
+          }
         }
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         XLSX.writeFile(wb, `Today_Complaints_Booked_${dateStr}.xlsx`);
