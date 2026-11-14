@@ -5926,47 +5926,61 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
 
-          // Ensure fresh queue is loaded
-
+          // Ensure fresh queue and finished records are loaded
           await fetchData();
+          if (typeof fetchFinishedData === "function") {
+            try { await fetchFinishedData(); } catch (e) {}
+          }
 
-
+          const finishedScSet = new Set(
+            (currentFinishedRecords || [])
+              .filter(isComplaintAlreadyBooked)
+              .map(r => String(r["Smart Card Number"] || "").trim())
+          );
+          const queueBookedScSet = new Set(
+            (currentQueueRecords || [])
+              .filter(isComplaintAlreadyBooked)
+              .map(r => String(r["Smart Card Number"] || "").trim())
+          );
+          const allBookedScSet = new Set([...finishedScSet, ...queueBookedScSet]);
+          allBookedScSet.delete("");
 
           let finalRecords = [];
-
           if (mode === "append") {
+            const existingScSet = new Set([
+              ...(currentQueueRecords || []).map(r => String(r["Smart Card Number"] || "").trim()),
+              ...allBookedScSet
+            ]);
+            existingScSet.delete("");
 
-            const existingScSet = new Set(
-
-              currentQueueRecords.map(r => String(r["Smart Card Number"] || "").trim())
-
-            );
-
-            const newUniqueRecords = parsedRecords.filter(r => !existingScSet.has(r["Smart Card Number"]));
-
-
+            const newUniqueRecords = parsedRecords.filter(r => {
+              const card = String(r["Smart Card Number"] || "").trim();
+              return card && !existingScSet.has(card);
+            });
 
             if (newUniqueRecords.length === 0) {
-
-              alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue!`);
-
+              alert(`All ${parsedRecords.length} records in "${file.name}" are already present in cloud queue or already booked!`);
               return;
-
             }
 
-
-
-            // Append new records
-
             finalRecords = [...currentQueueRecords, ...newUniqueRecords];
-
             showToast(`✓ Merging ${newUniqueRecords.length} new records into queue...`);
-
           } else {
+            // Replace mode: Skip cards already in complaint_finished.json (and booked in queue), keep booked in queue
+            const uniqueUploaded = [];
+            const seenUpload = new Set();
+            for (const r of parsedRecords) {
+              const card = String(r["Smart Card Number"] || "").trim();
+              if (!card || seenUpload.has(card) || allBookedScSet.has(card)) {
+                continue;
+              }
+              seenUpload.add(card);
+              uniqueUploaded.push(r);
+            }
 
-            finalRecords = parsedRecords;
-
-            showToast(`✓ Replacing queue with ${parsedRecords.length} records...`);
+            const keptQueueBooked = (currentQueueRecords || []).filter(isComplaintAlreadyBooked);
+            finalRecords = [...keptQueueBooked, ...uniqueUploaded];
+            showToast(`✓ Updating queue with ${uniqueUploaded.length} new records (${keptQueueBooked.length} booked preserved)...`);
 
           }
 
@@ -7418,21 +7432,20 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
     function isComplaintAlreadyBooked(rec) {
+      const sr = String(rec["SR Number"] || rec["Complaint Number"] || rec["Complaint ID"] || rec["sr_number"] || rec["complaint_number"] || "").trim();
+      const srUpper = sr.toUpperCase();
+      const isPlaceholderSr = !sr || sr === "---" || sr === "--" || sr === "-" || srUpper === "NA" || srUpper === "N/A" || srUpper === "NONE" || srUpper === "NULL" || srUpper === "NAN" || srUpper === "0" || srUpper.startsWith("PENDING");
+      if (!isPlaceholderSr && (srUpper.startsWith("SR") || /^\d+$/.test(sr))) {
+        return true;
+      }
 
       const st = String(rec["Complaint Status"] || rec["status"] || "").trim().toLowerCase();
-
-      const rem = String(rec["Complaint Remark"] || "").trim().toLowerCase();
-
       if (st.includes("skip")) return false;
 
       return (
-
         (st.includes("submitted") || st.includes("success") || st.includes("booked") || st.includes("done") || st.includes("complete")) &&
-
-        !st.includes("fail") && !st.includes("not found") && !st.includes("not submitted")
-
-      ) || (rem.length >= 15 && !rem.startsWith("fail") && !rem.startsWith("error"));
-
+        !st.includes("fail") && !st.includes("not found") && !st.includes("not submitted") && !st.includes("not booked")
+      );
     }
 
 
@@ -7492,14 +7505,22 @@ const VALID_TOKEN = _T_PARTS.join("");
 
 
     function updateBreakdown(records) {
-
       currentQueueRecords = records;
+      const bookedInQueue = (records || []).filter(isComplaintAlreadyBooked).length;
+      const bookedInFinished = (currentFinishedRecords || []).filter(isComplaintAlreadyBooked).length;
+      const booked = bookedInQueue + bookedInFinished;
 
-      const booked = records.filter(isComplaintAlreadyBooked).length;
+      // Total = unique cards across queue + finished
+      const allUniqueCards = new Set([
+        ...(records || []).map(r => String(r["Smart Card Number"] || "").trim()),
+        ...(currentFinishedRecords || []).map(r => String(r["Smart Card Number"] || "").trim())
+      ]);
+      allUniqueCards.delete("");
+      const total = Math.max(allUniqueCards.size, (records || []).length + (currentFinishedRecords || []).length);
 
-      const total = records.length;
-
-      const totalPending = total - booked;
+      // Pending = only real pending in queue; never negative
+      const pendingInQueue = (records || []).filter(r => !isComplaintAlreadyBooked(r) && !isComplaintSkipped(r)).length;
+      const totalPending = Math.max(0, pendingInQueue);
 
 
 
@@ -12019,7 +12040,7 @@ const VALID_TOKEN = _T_PARTS.join("");
             !stLow.includes("updated") &&
             !stLow.includes("dry run - would update") &&
             !stLow.includes("dry run - already updated")
-          ) || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error") || Boolean(r["Remark"]);
+          ) || stLow.includes("failed") || stLow.includes("not found") || stLow.includes("error");
 
           if (isIssue) {
             issueRows.push(rowVals);
