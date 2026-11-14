@@ -7521,6 +7521,8 @@ const VALID_TOKEN = _T_PARTS.join("");
 
     let lastFinishedBreakdownFetch = 0;
     let finishedBreakdownPromise = null;
+    let hasFinishedLoadedOnce = false;
+    let previousBookedCount = null;
 
     async function loadFinishedForBreakdown() {
       const now = Date.now();
@@ -7551,8 +7553,10 @@ const VALID_TOKEN = _T_PARTS.join("");
               records = apiJson.records;
             }
             currentFinishedRecords = records;
+            hasFinishedLoadedOnce = true;
           } else if (res.status === 404) {
             currentFinishedRecords = [];
+            hasFinishedLoadedOnce = true;
           }
         } catch (e) {
           console.error("Finished fetch error for breakdown", e);
@@ -7566,16 +7570,32 @@ const VALID_TOKEN = _T_PARTS.join("");
       currentQueueRecords = records;
 
       if (!currentFinishedRecords || currentFinishedRecords.length === 0 || (Date.now() - lastFinishedBreakdownFetch > 60000)) {
-        loadFinishedForBreakdown().then(fin => {
-          if (fin && fin.length > 0 && currentQueueRecords === records) {
+        loadFinishedForBreakdown().then(() => {
+          if (currentQueueRecords === records) {
             updateBreakdown(records);
           }
         });
       }
 
-      const bookedInQueue = (records || []).filter(isComplaintAlreadyBooked).length;
-      const bookedInFinished = (currentFinishedRecords || []).filter(isComplaintAlreadyBooked).length;
-      const booked = bookedInQueue + bookedInFinished;
+      // Unique booked cards across queue + finished (no double-counting)
+      const bookedCards = new Set([
+        ...(records || []).filter(isComplaintAlreadyBooked).map(r => String(r["Smart Card Number"] || "").trim()),
+        ...(currentFinishedRecords || []).filter(isComplaintAlreadyBooked).map(r => String(r["Smart Card Number"] || "").trim())
+      ]);
+      bookedCards.delete("");
+      const booked = bookedCards.size;
+
+      // Until finished fetch returns once, show previous Booked value or "..." (no flicker to 0)
+      let bookedDisplay = `${booked}`;
+      if (!hasFinishedLoadedOnce) {
+        if (previousBookedCount !== null) {
+          bookedDisplay = `${previousBookedCount}`;
+        } else {
+          bookedDisplay = "...";
+        }
+      } else {
+        previousBookedCount = booked;
+      }
 
       // Total = unique cards across queue + finished
       const allUniqueCards = new Set([
@@ -7589,39 +7609,22 @@ const VALID_TOKEN = _T_PARTS.join("");
       const pendingInQueue = (records || []).filter(r => !isComplaintAlreadyBooked(r) && !isComplaintSkipped(r)).length;
       const totalPending = Math.max(0, pendingInQueue);
 
-
-
       // Update 3-Row Strip Dashboard Cards
-
       const statTotal = document.getElementById("booking-stat-total");
-
       const statProcessed = document.getElementById("booking-stat-processed");
-
       const statPending = document.getElementById("booking-stat-pending");
-
       const statBooked = document.getElementById("booking-stat-booked");
-
       const pathPending = document.getElementById("path-pending-count");
-
       const valPending = document.getElementById("val-pending-count");
-
       const valBooked = document.getElementById("val-booked-count");
 
-
-
       if (statTotal) statTotal.innerText = `● ${total}`;
-
-      if (statProcessed) statProcessed.innerText = `● ${booked}`;
-
+      if (statProcessed) statProcessed.innerText = `● ${bookedDisplay}`;
       if (statPending) statPending.innerText = `● ${totalPending}`;
-
-      if (statBooked) statBooked.innerText = `● ${booked}`;
-
+      if (statBooked) statBooked.innerText = `● ${bookedDisplay}`;
       if (pathPending) pathPending.innerText = totalPending;
-
       if (valPending) valPending.innerText = totalPending;
-
-      if (valBooked) valBooked.innerText = booked;
+      if (valBooked) valBooked.innerText = bookedDisplay;
 
 
 
