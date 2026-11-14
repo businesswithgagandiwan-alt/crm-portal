@@ -7748,7 +7748,11 @@ const VALID_TOKEN = _T_PARTS.join("");
         const rCount = (currentPendingSyncReports || []).length;
         if (statFailed) statFailed.innerText = `● ${fCount}`;
         if (noteFailed) {
-          if (lastPendingSyncError) {
+          if (!getToken()) {
+            noteFailed.innerText = "Not connected";
+            noteFailed.style.color = "#6B7280";
+            noteFailed.style.display = "block";
+          } else if (lastPendingSyncError) {
             noteFailed.innerText = lastPendingSyncError;
             noteFailed.style.color = "#DC2626";
             noteFailed.style.display = "block";
@@ -9372,11 +9376,10 @@ const VALID_TOKEN = _T_PARTS.join("");
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Today Booked Complaints");
         if (pendingSyncFailedRecords && pendingSyncFailedRecords.length > 0) {
-          const todayIso = new Date().toISOString().slice(0, 10);
-          const todayLoc = new Date().toLocaleDateString('en-CA');
+          const todayIst = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
           const todayFailed = pendingSyncFailedRecords.filter(r => {
             const timeStr = String(r["_run_time_ist"] || r["Processed At"] || r["processed_at"] || "").trim();
-            return timeStr.startsWith(todayIso) || timeStr.startsWith(todayLoc);
+            return timeStr.startsWith(todayIst);
           });
           if (todayFailed.length > 0) {
             const failedRows = todayFailed.map((r, idx) => ({
